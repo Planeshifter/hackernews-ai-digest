@@ -59,11 +59,9 @@ async function main() {
 				timeout: 10000
 			});
 			const summary = completion.data.choices[0].message.content;
-			digest += '### ' + story.title + ' [(HN URL)](https://news.ycombinator.com/item?id='+story.id+')\n\n';
-			digest += '#### ['+story.url+']('+story.url+') | ' + story.score + ' points | by [' + story.by + '](https://news.ycombinator.com/user?id='+story.by+') | ' + story.descendants + ' comments\n\n';
-			digest += '#### Submission\n\n';
+			digest += '### ' + story.title + '\n\n';
+			digest += '#### [Submission URL]('+story.url+') | ' + story.score + ' points | by [' + story.by + '](https://news.ycombinator.com/user?id='+story.by+') | [' + story.descendants + ' comments](https://news.ycombinator.com/item?id='+story.id+')\n\n';
 			digest += summary + '\n\n';
-			digest += '#### Comments\n\n';
 			
 			const comments = jsonSerializeCompressed( story.comments ).substring(0, 8000);
 			completion =await openai.createChatCompletion({
@@ -77,6 +75,7 @@ async function main() {
 				timeout: 10000
 			});
 			digest += completion.data.choices[0].message.content;
+			digest += '\n\n';
 			await sleep(1000);
 		}
 		catch (error) {
