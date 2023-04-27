@@ -18,8 +18,8 @@ digests.sort( ( a, b ) => {
 let digestTexts = '';
 for ( let i = 0; i < digests.length; i++ ) {
     const digest = digests[i];
-    const digestText = fs.readFileSync( path.join( __dirname, '..', 'data', digest ), 'utf8' );
-    digestTexts += digestText;
+    const text = fs.readFileSync( path.join( __dirname, '..', 'data', digest ), 'utf8' );
+    digestTexts += text.trim();
     if ( i < digests.length - 1 ) {
         digestTexts += '\n\n---\n\n';
     }
