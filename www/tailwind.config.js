@@ -18,7 +18,20 @@ module.exports = {
         7.5: '0.075',
         15: '0.15',
       },
-    },
+      backgroundColor: {
+        'primary': '#ff6600', // Hacker News orange
+        'secondary': '#828282', // Hacker News gray
+        'background': '#f6f6ef' // Hacker News background color
+      },
+      textColor: {
+        'primary': '#ff6600', // Hacker News orange
+        'secondary': '#828282' // Hacker News gray
+      },
+      borderColor: {
+        'primary': '#ff6600', // Hacker News orange
+        'secondary': '#828282' // Hacker News gray
+      }
+    }
   },
   plugins: [],
 }

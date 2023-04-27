@@ -34,7 +34,7 @@ export function Intro() {
     <>
       <h1 className="mt-14 font-display text-4xl/tight font-light text-white">
         Hacker News<br />
-        <span className="text-sky-300">Daily AI Digest</span>
+        <span className="text-orange-300">Daily AI Digest</span>
       </h1>
       <p className="mt-4 text-sm/6 text-gray-300">
       Welcome to the Hacker News Daily AI Digest, where you will find a daily summary of the latest and most intriguing artificial intelligence news, projects, and discussions among the Hacker News community. Subscribe now and join a growing network of AI enthusiasts, professionals, and researchers who are shaping the future of technology.
