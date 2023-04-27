@@ -21,7 +21,7 @@ function sleep(ms) {
 async function fetchNewestStories() {
 	try {
 		const response = await axios.get(NEW_STORIES_URL);
-		const newStoryIds = response.data.slice(0, 50);
+		const newStoryIds = response.data.slice(0, 250);
 		console.log( 'Retrieved ' + newStoryIds.length + ' stories' );
 		const out = [];
 		for (const storyId of newStoryIds) {

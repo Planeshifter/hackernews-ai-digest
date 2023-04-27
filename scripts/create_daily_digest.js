@@ -11,6 +11,10 @@ const configuration = new Configuration({
 const openai = new OpenAIApi(configuration);
 const TODAY = new Date();
 const YESTERDAY = new Date( TODAY.getTime() - (24 * 60 * 60 * 1000) );
+const YESTERDAY_STRING = YESTERDAY
+	.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })
+	.replace(/\//g, '-');
+console.log( 'Creating digest for: ' + YESTERDAY_STRING );
 
 function sleep(ms) {
 	return new Promise(resolve => setTimeout(resolve, ms));
@@ -82,7 +86,7 @@ async function main() {
 			console.error('Error generating daily digest:', error);
 		}
 	}
-	fs.writeFileSync( path.join( __dirname, '..', 'data', 'digest.md' ), digest );
+	fs.writeFileSync( path.join( __dirname, '..', 'data', `digest_${YESTERDAY_STRING}.md`), digest );
 }
 
 main();
