@@ -1,0 +1,56 @@
+name: Create Daily Digest
+
+on:
+  workflow_dispatch:
+
+# Workflow jobs:
+jobs:
+  # Define job to create daily digest:
+  digest:
+    # Define display name:
+    name: 'Create Daily Digest'
+
+    # Define the type of virtual host machine:
+    runs-on: 'ubuntu-latest'
+
+    # Define the sequence of job steps...
+    steps:
+      # Checkout the repository:
+      - name: 'Checkout repository'
+        uses: actions/checkout@v3
+
+      # Install Node.js:
+      - name: 'Install Node.js'
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+        timeout-minutes: 5
+
+      # Install dependencies:
+      - name: 'Install dependencies'
+        run: 'npm install'
+        timeout-minutes: 5
+
+      # Create daily stories:
+      - name: 'Create daily stories'
+        run: 'node scripts/create_daily_stories.js'
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        timeout-minutes: 15
+
+      # Create daily digest:
+      - name: 'Create daily digest'
+        run: 'node scripts/create_daily_digest.js'
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        timeout-minutes: 15
+
+      # Create pull request:
+      - name: 'Create pull request'
+        uses: peter-evans/create-pull-request@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: 'Create daily digest'
+          title: 'Create daily digest'
+          body: |
+            This pull request was automatically created with the help of AI. Please review and make any necessary changes to the daily digest.
