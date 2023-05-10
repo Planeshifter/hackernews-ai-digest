@@ -7,19 +7,26 @@ const md = new MarkdownIt();
 const LIST_ID = 'a495b09cd9';
 const TEMPLATE_PATH = path.join(__dirname, 'templates', 'newsletter.html');
 const TEMPLATE_CONTENT = fs.readFileSync(TEMPLATE_PATH, 'utf8');
-const fileName = process.argv[2];
-if ( !fileName ) {
-	console.error( 'Please specify a file name' );
-	process.exit( 1 );
-}
-console.log( `Sending email with content from ${fileName}` );
-const FILE_PATH = path.join(__dirname, '..', 'data', fileName );
+
+const TODAY = new Date();
+const YESTERDAY = new Date( TODAY.getTime() - (24 * 60 * 60 * 1000) );
+const YESTERDAY_STRING = YESTERDAY
+	.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })
+	.replace(/\//g, '-');
+const DIGEST_FILE = `digest_${YESTERDAY_STRING}.md`;
+console.log( `Sending email with content from ${DIGEST_FILE}` );
+
+const FILE_PATH = path.join(__dirname, '..', 'data', DIGEST_FILE );
 const FILE_CONTENT = fs.readFileSync(FILE_PATH, 'utf8')
   .replace(/{{[^}]+}}/g, '')
 
-require('dotenv').config({
-    path: path.join( __dirname, '..', 'www', '.env.local' )
-});
+try {
+	require('dotenv').config({
+			path: path.join( __dirname, '..', 'www', '.env.local' )
+	});
+} catch ( err ) {
+	console.error( 'Could not load .env.local file...' );
+}
 
 mailchimp.setConfig({
 	apiKey: process.env.MAILCHIMP_API_KEY,
