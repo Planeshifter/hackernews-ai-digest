@@ -4,17 +4,19 @@ const fs = require('fs');
 
 // Get digest files from the data directory:
 
-const digests = fs
+let digests = fs
     .readdirSync( path.join( __dirname, '..', 'data' ) )
     .filter( filename => filename.startsWith( 'digest_' ) );
-    
+
 // Sort digests by date in descending order:
 digests.sort( ( a, b ) => {
     const aDate = new Date( a.replace( 'digest_', '' ).replace( '.md', '' ) );
     const bDate = new Date( b.replace( 'digest_', '' ).replace( '.md', '' ) );
     return bDate - aDate;
 });
-    
+
+digests = digests.slice( 0, 10 );
+
 let digestTexts = '';
 for ( let i = 0; i < digests.length; i++ ) {
     const digest = digests[i];
