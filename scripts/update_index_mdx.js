@@ -3,7 +3,6 @@ const fs = require('fs');
 
 
 // Get digest files from the data directory:
-
 let digests = fs
     .readdirSync( path.join( __dirname, '..', 'data' ) )
     .filter( filename => filename.startsWith( 'digest_' ) );
@@ -14,7 +13,6 @@ digests.sort( ( a, b ) => {
     const bDate = new Date( b.replace( 'digest_', '' ).replace( '.md', '' ) );
     return bDate - aDate;
 });
-
 digests = digests.slice( 0, 10 );
 
 let digestTexts = '';
