@@ -1,6 +1,7 @@
 import Head from 'next/head'
 import { ThemeProvider } from 'next-themes'
 import { MDXProvider } from '@mdx-js/react'
+import { Analytics } from '@vercel/analytics/react';
 
 import { Layout } from '@/components/Layout'
 import * as mdxComponents from '@/components/mdx'
@@ -25,6 +26,7 @@ export default function App({ Component, pageProps }) {
           </Layout>
         </MDXProvider>
       </ThemeProvider>
+      <Analytics />
     </>
   )
 }
