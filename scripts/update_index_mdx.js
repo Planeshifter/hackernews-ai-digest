@@ -13,7 +13,7 @@ digests.sort( ( a, b ) => {
     const bDate = new Date( b.replace( 'digest_', '' ).replace( '.md', '' ) );
     return bDate - aDate;
 });
-digests = digests.slice( 0, 10 );
+digests = digests.slice( 0, 5 );
 
 let digestTexts = '';
 for ( let i = 0; i < digests.length; i++ ) {
