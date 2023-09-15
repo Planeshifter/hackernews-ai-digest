@@ -1,12 +1,11 @@
 const path = require('path');
 const fs = require('fs');
 const axios = require('axios');
-const { Configuration, OpenAIApi } = require('openai');
+const OpenAI = require('openai');
 
-const configuration = new Configuration({
-	apiKey: process.env.OPENAI_API_KEY,
+const openai = new OpenAI({
+	apiKey: process.env.OPENAI_API_KEY
 });
-const openai = new OpenAIApi(configuration);
 
 const NEW_STORIES_URL = 'https://hacker-news.firebaseio.com/v0/topstories.json';
 const ITEM_URL = 'https://hacker-news.firebaseio.com/v0/item/';
@@ -32,21 +31,21 @@ async function fetchNewestStories() {
 				if ( storyData.descendants >= 3 && storyData.score >= 5 ) {
 					console.log( 'Checking story "' + storyData.title +'" for AI content...' );
 					try {
-						const completion = await openai.createChatCompletion({
+						const completion = await openai.chat.completions.create({
 							model: 'gpt-3.5-turbo',
 							messages: [
-								{ role: 'system', content: 'You are a classifier deciding whether a story is about AI or not soley based on its title. You return "true" if the story is about AI and "false" if it is not. You have to choose one or the other.' },
+								{ role: 'system', content: 'You are a classifier deciding whether a story is about AI or not solely based on its title. You return "true" if the story is about AI and "false" if it is not. You have to choose one or the other.' },
 								{ role: 'user', content: 'Story: '+storyData.title+'. Result (true|false):' },
 							]
 						}, {
 							timeout: 10000,
 						});
-						const label = completion.data.choices[0].message.content.toLowerCase();
+						const label = completion.choices[0].message.content.toLowerCase();
 						console.log( 'About AI? ' + label );
 						if ( !label.startsWith( 'true' ) ) {
-							continue;	
+							continue;
 						}
-					
+
 						// Retrieve all kids of the story and add them to the out array
 						await fetchKids( storyData );
 						delete storyData.kids;

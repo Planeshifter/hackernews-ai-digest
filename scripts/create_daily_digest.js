@@ -2,13 +2,12 @@ const path = require('path');
 const fs = require('fs');
 const axios = require('axios');
 const cheerio = require('cheerio');
-const { Configuration, OpenAIApi } = require('openai');
+const OpenAI = require('openai');
 const jsonSerializeCompressed = require('./serialize_compressed.js');
 
-const configuration = new Configuration({
-	apiKey: process.env.OPENAI_API_KEY,
+const openai = new OpenAI({
+	apiKey: process.env.OPENAI_API_KEY
 });
-const openai = new OpenAIApi(configuration);
 const TODAY = new Date();
 const YESTERDAY = new Date( TODAY.getTime() - (24 * 60 * 60 * 1000) );
 const YESTERDAY_STRING = YESTERDAY
@@ -54,7 +53,7 @@ async function main() {
 
 			const content = innerText.trim().substring(0, 6000);
 			try {
-				let completion = await openai.createChatCompletion({
+				let completion = await openai.chat.completions.create({
 					model: 'gpt-3.5-turbo',
 					messages: [
 						{ role: 'system', content: 'This AI will write a daily digest of the top stories on Hacker News; it will summarize the following submission in an engaging way.' },
@@ -63,13 +62,13 @@ async function main() {
 				}, {
 					timeout: 10000
 				});
-				const summary = completion.data.choices[0].message.content;
+				const summary = completion.choices[0].message.content;
 				digest += '### ' + story.title + '\n\n';
 				digest += '#### [Submission URL]('+story.url+') | ' + story.score + ' points | by [' + story.by + '](https://news.ycombinator.com/user?id='+story.by+') | [' + story.descendants + ' comments](https://news.ycombinator.com/item?id='+story.id+')\n\n';
 				digest += summary + '\n\n';
 
 				const comments = jsonSerializeCompressed( story.comments ).substring(0, 6000);
-				completion =await openai.createChatCompletion({
+				completion = await openai.chat.completions.create({
 					model: 'gpt-3.5-turbo',
 					messages: [
 						{ role: 'system', content: 'This AI will write a daily digest of the top stories on Hacker News; it will summarize the following discussion about the submission in the comments on Hacker News.' },
@@ -79,7 +78,7 @@ async function main() {
 				}, {
 					timeout: 10000
 				});
-				digest += completion.data.choices[0].message.content;
+				digest += completion.choices[0].message.content;
 				digest += '\n\n';
 				await sleep(1000);
 			}

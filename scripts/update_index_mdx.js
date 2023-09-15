@@ -1,7 +1,6 @@
 const path = require('path');
 const fs = require('fs');
 
-
 // Get digest files from the data directory:
 let digests = fs
     .readdirSync( path.join( __dirname, '..', 'data' ) )
