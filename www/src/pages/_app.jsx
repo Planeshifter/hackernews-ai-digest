@@ -16,7 +16,7 @@ export default function App({ Component, pageProps }) {
         <title>Hacker News Daily AI Digest</title>
         <meta
           name="description"
-          content="Commit is a lightweight Git client you can open from anywhere any time you’re ready to commit your work with a single keyboard shortcut. It’s fast, beautiful, and completely unnecessary."
+          content="Stay updated with the latest AI news and discussions with Hacker News Daily AI Digest, curating top stories on artificial intelligence every day."
         />
       </Head>
       <ThemeProvider attribute="class" disableTransitionOnChange>
