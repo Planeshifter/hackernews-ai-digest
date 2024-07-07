@@ -11,7 +11,7 @@ const openai = new OpenAI({
 const TODAY = new Date();
 const YESTERDAY = new Date( TODAY.getTime() - (24 * 60 * 60 * 1000) );
 const YESTERDAY_STRING = YESTERDAY
-	.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })
+	.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' })
 	.replace(/\//g, '-');
 console.log( 'Creating digest for: ' + YESTERDAY_STRING );
 
