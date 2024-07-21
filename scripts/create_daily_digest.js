@@ -52,7 +52,7 @@ async function main() {
 			const content = innerText.trim().substring(0, 6000);
 			try {
 				let completion = await openai.chat.completions.create({
-					model: 'gpt-3.5-turbo',
+					model: 'gpt-4o-mini',
 					messages: [
 						{ role: 'system', content: 'This AI will write a daily digest of the top stories on Hacker News; it will summarize the following submission in an engaging way.' },
 						{ role: 'user', content: content },
@@ -67,7 +67,7 @@ async function main() {
 
 				const comments = jsonSerializeCompressed( story.comments ).substring(0, 6000);
 				completion = await openai.chat.completions.create({
-					model: 'gpt-3.5-turbo',
+					model: 'gpt-4o-mini',
 					messages: [
 						{ role: 'system', content: 'This AI will write a daily digest of the top stories on Hacker News; it will summarize the following discussion about the submission in the comments on Hacker News.' },
 						{ role: 'user', content: 'Summary of Submission: '+summary+'.' },
