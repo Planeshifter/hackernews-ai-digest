@@ -10,9 +10,7 @@ const openai = new OpenAI({
 });
 const TODAY = new Date();
 const YESTERDAY = new Date( TODAY.getTime() - (24 * 60 * 60 * 1000) );
-const YESTERDAY_STRING = YESTERDAY
-	.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' })
-	.replace(/\//g, '-');
+const YESTERDAY_STRING = YESTERDAY.toISOString().split('T')[0];
 console.log( 'Creating digest for: ' + YESTERDAY_STRING );
 
 function sleep(ms) {

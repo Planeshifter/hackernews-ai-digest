@@ -10,9 +10,7 @@ const TEMPLATE_CONTENT = fs.readFileSync(TEMPLATE_PATH, 'utf8');
 
 const TODAY = new Date();
 const YESTERDAY = new Date( TODAY.getTime() - (24 * 60 * 60 * 1000) );
-const YESTERDAY_STRING = YESTERDAY
-	.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' })
-	.replace(/\//g, '-');
+const YESTERDAY_STRING = YESTERDAY.toISOString().split('T')[0];
 const DIGEST_FILE = `digest_${YESTERDAY_STRING}.md`;
 console.log( `Sending email with content from ${DIGEST_FILE}` );
 
