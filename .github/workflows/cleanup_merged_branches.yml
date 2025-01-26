@@ -1,0 +1,67 @@
+# Workflow name:
+name: 'Cleanup Merged Branches'
+
+# Workflow triggers:
+on:
+  # Allow workflow to be manually triggered:
+  workflow_dispatch:
+
+  # Schedule workflow to run every Sunday at 00:00 UTC:
+  schedule:
+    - cron: '0 0 * * 0'
+
+# Workflow jobs:
+jobs:
+  # Define the cleanup job:
+  cleanup:
+    # Define display name:
+    name: 'Delete Merged Branches'
+
+    # Define the type of virtual host machine:
+    runs-on: 'ubuntu-latest'
+
+    # Define the sequence of job steps:
+    steps:
+      # Checkout the repository with full history:
+      - name: 'Checkout repository'
+        uses: actions/checkout@v3
+        with:
+          # We need the full commit history to check merges properly.
+          fetch-depth: 0
+
+      # Delete merged branches (that are ancestors of the default branch):
+      - name: 'Delete merged branches'
+        run: |
+          # Identify the default branch (e.g., main or master).
+          DEFAULT_BRANCH="$(git remote show origin | sed -n '/HEAD branch/s/.*: //p')"
+          echo "Default branch is: $DEFAULT_BRANCH"
+
+          # Switch to default branch.
+          git checkout "$DEFAULT_BRANCH"
+
+          # Fetch all remote branches to ensure local knowledge is current.
+          git fetch --all
+
+          # List *remote* branches (excluding HEAD pointer and the default branch).
+          # Example line: origin/feature/some-branch
+          for remoteBranch in $(git branch -r | grep -v 'HEAD' | grep -v "$DEFAULT_BRANCH"); do
+            # Strip out 'origin/' prefix to get the actual branch name.
+            localBranch="${remoteBranch#origin/}"
+
+            # Ensure we don't accidentally re-check the default branch:
+            if [ "$localBranch" = "$DEFAULT_BRANCH" ]; then
+              continue
+            fi
+
+            echo "Checking if branch '$localBranch' is merged..."
+
+            # Check if the default branch contains the remote branch's HEAD.
+            # If this returns 0, then the remote branch is fully merged into default.
+            if git merge-base --is-ancestor "$remoteBranch" "$DEFAULT_BRANCH"; then
+              echo "Branch '$localBranch' is merged. Deleting..."
+              # Delete the branch from remote.
+              git push origin --delete "$localBranch"
+            else
+              echo "Branch '$localBranch' is NOT merged. Keeping."
+            fi
+          done
