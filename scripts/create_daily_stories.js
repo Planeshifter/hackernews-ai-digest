@@ -4,7 +4,8 @@ const axios = require('axios');
 const OpenAI = require('openai');
 
 const openai = new OpenAI({
-	apiKey: process.env.OPENAI_API_KEY
+	baseURL: 'https://openrouter.ai/api/v1',
+	apiKey: process.env.OPEN_ROUTER_API_KEY
 });
 
 const NEW_STORIES_URL = 'https://hacker-news.firebaseio.com/v0/topstories.json';
@@ -32,7 +33,7 @@ async function fetchNewestStories() {
 					console.log( 'Checking story "' + storyData.title +'" for AI content...' );
 					try {
 						const completion = await openai.chat.completions.create({
-							model: 'gpt-4o-mini',
+							model: 'deepseek/deepseek-r1',
 							messages: [
 								{ role: 'system', content: 'You are a classifier deciding whether a story is about AI or not solely based on its title. You return "true" if the story is about AI and "false" if it is not. You have to choose one or the other.' },
 								{ role: 'user', content: 'Story: '+storyData.title+'. Result (true|false):' },
