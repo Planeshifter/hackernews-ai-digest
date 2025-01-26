@@ -53,7 +53,7 @@ async function main() {
 			const content = innerText.trim().substring(0, 6000);
 			try {
 				let completion = await openai.chat.completions.create({
-					model: 'deepseek/deepseek-r1',
+					model: 'google/gemini-2.0-flash-thinking-exp:free',
 					messages: [
 						{ role: 'system', content: 'This AI will write a daily digest of the top stories on Hacker News; it will summarize the following submission in an engaging way.' },
 						{ role: 'user', content: content },
