@@ -33,7 +33,7 @@ async function fetchNewestStories() {
 					console.log( 'Checking story "' + storyData.title +'" for AI content...' );
 					try {
 						const completion = await openai.chat.completions.create({
-							model: 'deepseek/deepseek-r1',
+							model: 'gpt-4o-mini',
 							messages: [
 								{ role: 'system', content: 'You are a classifier deciding whether a story is about AI or not solely based on its title. You return "true" if the story is about AI and "false" if it is not. You have to choose one or the other.' },
 								{ role: 'user', content: 'Story: '+storyData.title+'. Result (true|false):' },
