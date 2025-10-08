@@ -10,6 +10,252 @@ export async function getStaticProps() {
 
 ---
 
+## AI Submissions for Sun Oct 05 2025 {{ 'date': '2025-10-05T17:14:36.398Z' }}
+
+### What GPT-OSS leaks about OpenAI's training data
+
+#### [Submission URL](https://fi-le.net/oss/) | 311 points | by [fi-le](https://news.ycombinator.com/user?id=fi-le) | [78 comments](https://news.ycombinator.com/item?id=45483924)
+
+The Fiefdom of Files: What GPT-oss leaks about OpenAI’s training data
+
+- Core idea: By inspecting the open weights of OpenAI’s GPT-oss (and the shared o200k tokenizer used across recent models), the author shows that model parameters leak clues about training data and process—down to surprisingly specific domains.
+
+- How they probed it: They histogrammed the L2 norms of the token embedding rows. A cluster of ~936 very low-norm tokens (reserved specials and certain raw bytes) likely never appeared in training and were pulled down by weight decay—useful for inferring init variance and, in principle, total training steps. The right tail isn’t Gaussian: some tokens have unusually high norms.
+
+- What popped out:
+  - English high-norm tokens skew toward code and reasoning (“code”, “The”, “This”, “logic”, “according”, “Moreover”), hinting that code/reasoning was emphasized late in training (e.g., RL or fine-tuning) or simply received larger gradient updates.
+  - Non-ASCII high-norm tokens include many Chinese spam and adult-website phrases, lottery/gambling terms, and assorted regional/odd tokens (Thai football-analysis terms, niche districts, Abkhaz/Armenian/Kannada snippets). The author argues this implies GPT-5 encountered phrases from adult sites.
+  - The o200k tokenizer contains a lot of “junk” tokens; every inference still multiplies by embeddings for these, an efficiency and safety curiosity.
+
+- Glitch tokens in the wild: A crafted Abkhaz input (“ауажәарақәа”) causes GPT-5 to output an unrelated Malayalam word (“people”), echoing prior “glitch token” phenomena (e.g., SolidGoldMagikarp) where certain byte-piece tokens behave adversarially.
+
+- Why it matters: Even without a disclosed dataset, open weights and token stats can reveal training emphasis, data contamination (spam/adult content), and pipeline details—raising questions about data curation, safety, and the trade-offs of shared tokenizers across models.
+
+**Summary of Discussion:**
+
+1. **Glitch Tokens & Model Weaknesses**:  
+   - Users note the recurrence of "glitch tokens" (e.g., *SolidGoldMagikarp*) in OpenAI models, often tied to tokenizer artifacts or web-scraped data. These tokens, like the Abkhaz example triggering Malayalam output, highlight adversarial behavior in models.  
+   - Some suggest **reverse-engineering** APIs or exploiting tokenizer quirks (e.g., `xddr` linked to FPGA tools or Unicode soft hyphens) could reveal training data patterns or weaknesses.
+
+2. **Training Data Sources**:  
+   - Debate arises over whether GPT-5’s training included **deleted or spammy content**, such as Chinese adult/gambling sites, GitHub repositories, or repackaged content from blocked platforms.  
+   - Comments point to GitHub as a likely training source, given tokens matching repository terms. However, some argue this reflects the messy reality of web data, not intentional malpractice.
+
+3. **Tokenizer Efficiency**:  
+   - Criticism of the `o200k` tokenizer’s large size and low-quality tokens (e.g., junk phrases). Users propose smaller, optimized tokenizers could improve efficiency, especially for quantized models.
+
+4. **Bias & Suppression**:  
+   - Concerns that RLHF fine-tuning might **suppress biases** superficially without addressing deeper issues. Papers ([Carlini et al.](https://arxiv.org/abs/2403.06634)) are cited, arguing models retain hidden biases or memorized data despite alignment efforts.  
+   - Some note cultural biases in non-English tokens (e.g., Chinese spam terms) could skew outputs for non-native users.
+
+5. **Legal & Ethical Calls**:  
+   - Strong demands for **transparency laws** requiring documentation of training data sources. Comparisons are made to Google Books’ copyright disputes, highlighting the legal gray area of training on public/private data mixtures.  
+   - Skepticism about current moderation practices, with users doubting OpenAI’s ability to filter harmful content entirely.
+
+6. **Miscellaneous Insights**:  
+   - The token `xddr`’s link to GitHub scrapes and Unicode encoding errors.  
+   - Humorous speculation about the `o200k` tokenizer’s name (possibly referencing 200,000 tokens).  
+   - Correction of a typo to the infamous *SolidGoldMagikarp* glitch token example.
+
+**Key Debate**: Is the presence of spammy/deleted content in training data a sign of poor curation, or an inevitable byproduct of web scraping? While some see it as a red flag, others argue it’s unavoidable, reflecting the internet’s “noisy” nature. Calls for stricter dataset accountability clash with pragmatism about current AI development practices.
+
+### Rule-Based Expert Systems: The Mycin Experiments (1984)
+
+#### [Submission URL](https://www.shortliffe.net/Buchanan-Shortliffe-1984/MYCIN%20Book.htm) | 83 points | by [mindcrime](https://news.ycombinator.com/user?id=mindcrime) | [21 comments](https://news.ycombinator.com/item?id=45486306)
+
+Rule-Based Expert Systems: The MYCIN Experiments (1984) — full book now free online
+
+- What it is: A 754-page, out-of-print classic from Stanford’s Heuristic Programming Project, documenting the design, evaluation, and spin‑offs of MYCIN, a landmark rule-based medical expert system. All chapters are freely available.
+- Why it matters: Captures the foundations of expert systems—knowledge engineering, explainability, and reasoning under uncertainty—that still inform modern AI (and serve as a sharp contrast to today’s LLMs).
+- What MYCIN did: Used several hundred backward‑chaining rules and “certainty factors” to recommend antibiotic therapy for bacterial infections. It never went into clinical use, but became a touchstone for how AI can justify recommendations and separate knowledge from inference.
+- Inside the book: 
+  - Rule representation, inference engine, consultation flow, and therapy algorithms
+  - Uncertainty handling: certainty factors, probabilistic reasoning, and Dempster–Shafer evidence
+  - EMYCIN: a reusable shell for building rule‑based systems in new domains
+  - Explanation generation, tutoring, and human‑factors design
+  - Alternative representations (frames + rules) and meta‑level knowledge
+  - A structured evaluation comparing MYCIN’s advice to infectious disease experts
+- Big lessons: The knowledge acquisition bottleneck is real; explanations drive trust and learning; clear separation of knowledge base and engine aids reuse; uncertainty formalisms are pragmatic trade‑offs; deployment hinges on UX, integration, and liability as much as accuracy.
+- Where to start: Ch. 11 (Inexact Reasoning), Ch. 15 (EMYCIN), Ch. 18 (Explanations), Ch. 31 (Evaluation).
+
+Great historical read for anyone building decision support tools, explainable AI, or safety‑critical ML.
+
+The Hacker News discussion revolves around the historical significance of rule-based expert systems like MYCIN, their contrast with modern machine learning (ML), and lessons applicable to today’s AI development. Key points include:
+
+1. **Rule-Based vs. Data-Driven Approaches**:  
+   Participants highlight the trade-offs between hand-crafted rule-based systems (e.g., MYCIN) and modern ML/data-driven methods. While rule-based systems offer transparency and explainability, they face scalability and maintenance challenges (“knowledge acquisition bottleneck”). ML avoids manual rule-writing but struggles with interpretability and reliability.
+
+2. **Historical Context**:  
+   The conversation touches on pivotal moments in AI history, such as Marvin Minsky’s criticism of perceptrons in the 1960s, which stalled neural network research and fueled the rise of expert systems. MYCIN’s failure to deploy clinically (despite technical success) due to shifting pharmaceutical practices underscores the importance of real-world integration.
+
+3. **Relevance Today**:  
+   Some argue that hybrid systems combining Large Language Models (LLMs) with rule-based verification or symbolic reasoning could address modern AI’s limitations. Others note parallels between past challenges (e.g., integrating expert systems into workflows) and current issues with ML deployment (e.g., monitoring, interpretability).
+
+4. **Lessons from MYCIN**:  
+   Participants emphasize MYCIN’s enduring lessons:  
+   - **Explainability** drives trust and usability.  
+   - **Separation of knowledge and inference** aids adaptability (e.g., EMYCIN shell).  
+   - **Uncertainty handling** (e.g., certainty factors) remains relevant for decision-making systems.  
+
+5. **Nostalgia and Revival**:  
+   Older tools like OPS5 and Prolog are mentioned as inspirations, with some advocating revisiting their principles. The discussion also critiques the “AI winter” narrative, noting that expert systems’ decline was as much about hype and practicality as technical merit.
+
+6. **Modern Experiments**:  
+   Developers share experiments using LLMs for scripting and verification, suggesting that blending generative AI with structured rule-based systems could mitigate brittleness while retaining flexibility.
+
+**Takeaway**: The MYCIN experiments and rule-based systems offer timeless insights for today’s AI, particularly in explainability, hybrid architectures, and the socio-technical challenges of deploying systems in real-world settings. The discussion reflects a community keen on learning from history to avoid repeating past mistakes.
+
+### Managing context on the Claude Developer Platform
+
+#### [Submission URL](https://www.anthropic.com/news/context-management) | 214 points | by [benzguo](https://news.ycombinator.com/user?id=benzguo) | [85 comments](https://news.ycombinator.com/item?id=45479006)
+
+Anthropic adds “context editing” and a client-side “memory tool” to the Claude Developer Platform to tame context-window limits and power longer-running agents, launching with Claude Sonnet 4.5.
+
+What’s new
+- Context editing: Automatically prunes stale tool calls/results as you approach token limits, preserving conversation flow and focusing the model on what’s relevant.
+- Memory tool: A file-based, developer-managed store (CRUD via tool calls) that lives outside the context window and persists across sessions, letting agents accumulate knowledge, project state, and learnings over time.
+- Built-in awareness: Sonnet 4.5 tracks available tokens to manage context more intelligently.
+
+Why it matters
+- Longer, cheaper, more accurate runs: On Anthropic’s internal agentic-search evals, memory + context editing improved performance 39% over baseline; editing alone delivered 29%. In a 100-turn web search test, context editing avoided context exhaustion while cutting token use by 84%.
+- Developer control: Memory operates entirely client-side; you choose the storage backend and persistence model—no opaque server-side state.
+
+Use cases
+- Coding: Trim old file reads/tests while persisting debugging insights and design decisions.
+- Research: Keep key findings; drop outdated search results to build a durable knowledge base.
+- Data processing: Store intermediates, discard raw bulk to stay under token limits.
+
+Availability
+- Public beta on the Claude Developer Platform, plus Amazon Bedrock and Google Cloud Vertex AI. Docs and cookbook available.
+
+The Hacker News discussion on Anthropic's new context editing and memory tool features reveals mixed reactions and practical insights:
+
+### **Key Themes**
+1. **Comparisons with Existing Tools**  
+   - Users note similarities to Google AI Studio’s context deletion and ChatGPT’s advanced modes, but praise Claude’s client-side memory control as a differentiating factor.  
+   - Skepticism arises about benchmarks, with some arguing models like Gemini or GPT-4 still outperform Claude in real-world tasks.
+
+2. **Workflow Adaptations**  
+   - Developers share workarounds for context limits: compacting message history, using terminal tools ([plqqy-terminal](https://github.com/plqqy/plqqy-terminal)), or integrating version control for persistent state.  
+   - One user highlights success with Claude Code, maintaining 10% context usage via compact histories during extended sessions.
+
+3. **Challenges & Critiques**  
+   - **Hallucination Risks**: Removing context chunks might lead to inaccuracies, especially in long agent runs.  
+   - **Quality Trade-offs**: Aggressive context trimming risks degrading output quality, likened to “a significant disservice” in some cases.  
+   - **Client-Side Complexity**: Managing memory via CRUD operations and Markdown files adds overhead, though some appreciate the transparency vs. opaque server-side state.
+
+4. **Developer Control**  
+   - Praise for client-side memory storage (e.g., `CURRENT.md` files) but frustration with manual context management in third-party interfaces.  
+   - Requests for standardized context formats (akin to LoRA adapters) to streamline manipulation across platforms.
+
+5. **Broader Implications**  
+   - Optimism about enabling multi-session learning and persistent project state.  
+   - Criticism of AI’s practicality for complex workflows, citing a [linked blog](https://blog.nilen.com/2025/09/15/ai-not-for-work) arguing current tools fall short.
+
+### **Notable Quotes**
+- *“Context editing feels like formalizing common patterns… but vendors locking in APIs could limit flexibility.”*  
+- *“Gemini 1.5 Pro’s massive context window is a game-changer—Anthropic’s token management feels like catching up.”*  
+- *“I’ve been hacking this for months—Claude’s update just makes it official.”*
+
+### **Conclusion**  
+While developers welcome Anthropic’s focus on context efficiency and client-side control, debates persist over real-world efficacy vs. marketing claims. The features address pain points but highlight broader challenges in balancing token limits, cost, and output quality for AI agents.
+
+### Estimating AI energy use
+
+#### [Submission URL](https://spectrum.ieee.org/ai-energy-use) | 99 points | by [pseudolus](https://news.ycombinator.com/user?id=pseudolus) | [90 comments](https://news.ycombinator.com/item?id=45486031)
+
+IEEE Spectrum: The Hidden Behemoth Behind Every AI Answer
+
+A simple “Hello” to ChatGPT rides on an enormous, fast-growing energy and infrastructure footprint. Using OpenAI’s own usage figures (700 million weekly users; 2.5 billion queries/day), Spectrum estimates nearly 1 trillion queries a year. If each query averages 0.34 Wh (a figure Sam Altman has floated without evidence), that’s about 850 MWh/day—roughly enough annualized to power ~29,000 U.S. homes. But per-query energy is highly uncertain: some researchers peg complex prompts at >20 Wh.
+
+Zooming out, Schneider Electric’s research puts generative AI’s 2025 draw at 15 TWh, using ~2.9 Wh per query—implying ~5.1 trillion queries industry-wide. Their 2030 scenario jumps to 347 TWh/year and as many as 329 billion prompts per day (~38 per person), driven by autonomous AI agents talking to other agents. That leaves ~332 TWh of new energy demand to materialize this decade.
+
+To keep up, AI firms are planning “Stargate-class” mega–data centers, with OpenAI and others signaling the need for dozens of them. Big picture: the bottleneck isn’t just GPUs—it’s power, land, and grid build-out. The article stresses that all these numbers have wide error bars due to limited disclosure, but the direction of travel is unmistakable: scale is the story.
+
+The Hacker News discussion on AI's energy footprint revolves around the validity of estimates, infrastructure challenges, and broader implications raised in the IEEE Spectrum article. Here’s a distilled summary:
+
+### Key Debate Points:
+1. **Energy Estimates and Comparisons**  
+   - Skepticism surrounds per-query energy figures (e.g., Sam Altman’s 0.34 Wh claim). Some argue training models, not just inference (queries), dominate energy use, but this is often omitted in analyses.  
+   - Comparisons to other activities (e.g., a round-trip flight LA-Tokyo ≈ 1M Wh) are debated. Critics call these misleading, as AI’s impact should focus on systemic energy sinks, not individual equivalencies.  
+
+2. **Infrastructure and Market Dynamics**  
+   - Data centers strain grids, driving up electricity prices. Users note PJM Interconnection’s rates surged from $2,958/MW-day to $27,043/MW-day, hinting at broader consumer cost impacts.  
+   - Some argue utilities prioritize profitable server contracts, passing infrastructure costs to residents. Others counter that market-driven pricing and long-term contracts are inevitable.  
+
+3. **Renewables and Grid Challenges**  
+   - Cheap, clean energy is seen as a solution, but political and logistical hurdles (e.g., NIMBYism, slow transmission upgrades) delay progress. Users cite Diablo Canyon’s relicensing battles and renewable project opposition as examples.  
+   - Europe’s interconnected grids are discussed, but flaws emerge (e.g., Norway’s hydropower profits benefiting Germany’s industry, not locals).  
+
+4. **Scale and Projections**  
+   - The article’s 2030 projection of 347 TWh/year for AI is called a "small fraction" of global energy (≈180,000 TWh), but critics stress growth trajectories matter. Autonomous AI agents could drive exponential demand.  
+   - Skeptics question whether efficiency gains can offset scaling, likening today’s AI boom to 2000s fiber-optic overinvestment.  
+
+5. **Broader Implications**  
+   - Concerns about AI becoming a scapegoat for decades of underinvestment in grids. Training data centers are likened to heavy industries (e.g., steel) with concentrated energy demands.  
+   - Some suggest per-user energy accounting (like India’s tiered pricing) to align costs with usage fairly.  
+
+### Sentiment:  
+While most agree AI’s energy footprint is non-trivial and growing, opinions split on severity. Optimists highlight innovation and cleaner energy potential; pessimists stress infrastructure inertia and market distortions. The discussion underscores the need for transparency, holistic lifecycle analysis (training + inference), and policy foresight.
+
+### Implicit Actor Critic Coupling via a Supervised Learning Framework for RLVR
+
+#### [Submission URL](https://arxiv.org/abs/2509.02522) | 38 points | by [getnormality](https://news.ycombinator.com/user?id=getnormality) | [9 comments](https://news.ycombinator.com/item?id=45483205)
+
+What’s new: PACS reframes Reinforcement Learning with Verifiable Rewards (RLVR) as a supervised learning problem. Instead of updating policies with unstable policy gradients (PPO/GRPO), it treats the verifiable outcome (e.g., correct math answer, passing tests) as a label and trains a score function with cross-entropy. The authors show this recovers the classic policy-gradient update while implicitly coupling the actor and critic, leading to more stable, efficient training.
+
+Why it matters: RLVR has been a bright spot for LLM reasoning, but sparse rewards and high-variance updates make it brittle and hard to tune. A supervised formulation could simplify pipelines, reduce instability, and make scaling easier when rewards are easy to verify.
+
+Results: On challenging math benchmarks, PACS beats strong RL baselines. Notably, it reaches 59.78% pass@256 on AIME 2025, improving over PPO by 13.32 points and GRPO by 14.36 points.
+
+Takeaway: If these gains generalize, PACS offers a cleaner, more robust route to post-train LLMs on tasks with verifiable feedback, potentially lowering RL complexity without sacrificing performance. Code and data are open-sourced.
+
+Here’s a concise summary of the Hacker News discussion about the submission:
+
+### Key Discussion Points:
+1. **Comparison to Decision Transformers (DTs):**  
+   A user ([radarsat1](https://news.ycombinator.com/user?id=radarsat1)) questions whether PACS overlaps with Decision Transformers, which condition on desired returns and generate actions. They note a lack of recent follow-up work on DTs and suggest a deeper comparison.
+
+2. **Skepticism About Results:**  
+   [mpssblfrk](https://news.ycombinator.com/user?id=mpssblfrk) raises doubts about the reported **59.78% pass@256 on AIME 2025**, arguing that stopping points for such benchmarks can be arbitrary. They also highlight that top models (e.g., DeepSeek-R1, Google/OpenAI) have not publicly achieved similar results, hinting at potential discrepancies.
+
+3. **Technical Accessibility:**  
+   [gtnrmlty](https://news.ycombinator.com/user?id=gtnrmlty) critiques the paper’s dense presentation (e.g., Figures 1–2, Equation 6) but praises its core idea of leveraging supervised learning for RL stability. They also mention parallels to **DPO (Direct Preference Optimization)** and reference Equation 8 from the DPO paper.
+
+4. **Related Work & Resources:**  
+   [yrwb](https://news.ycombinator.com/user?id=yrwb) shares links to the [PACS paper](https://arxiv.org/abs/2509.02522) and a related ["Winning Gold IMO 2025" pipeline paper](https://arxiv.org/abs/2507.15855), prompting thanks from others for the resources.
+
+### Takeaways:
+- The discussion reflects cautious optimism about PACS but emphasizes the need for clearer benchmarks and comparisons to existing methods (DTs, DPO).  
+- Skepticism about the AIME 2025 result underscores broader concerns around reproducibility and evaluation rigor in LLM reasoning tasks.  
+- The supervised learning angle is seen as promising for simplifying RL pipelines, though technical clarity remains a hurdle.
+
+### The deadline isn't when AI outsmarts us – it's when we stop using our own minds
+
+#### [Submission URL](https://www.theargumentmag.com/p/you-have-18-months) | 353 points | by [NotInOurNames](https://news.ycombinator.com/user?id=NotInOurNames) | [309 comments](https://news.ycombinator.com/item?id=45480622)
+
+Title: “You have 18 months” — The real deadline isn’t AI surpassing us, it’s us surrendering our minds
+
+- Derek Thompson argues the near-term risk of AI isn’t mass displacement by “a country of geniuses in a datacenter,” but human deskilling as we outsource thinking. He reframes “18 months” as the window to protect our cognitive habits, not a countdown to obsolescence.
+
+- Core idea: thinking, like strength training, depends on “time under tension.” Slow, effortful synthesis is how ideas become original. Offloading that struggle to AI short-circuits the very process that builds judgment and creativity.
+
+- Writing is thinking: letting LLMs draft for us fills screens with words while emptying minds of thought. A Nature editorial warns that outsourcing scientific writing erodes understanding. In education, ubiquitous AI use turns assignments into prompt engineering, not learning.
+
+- Reading is collapsing too. Thompson cites:
+  - NAEP: U.S. average reading scores at a 32-year low.
+  - John Burn-Murdoch’s Financial Times analysis asking if we’ve “passed peak brain power.”
+  - A professor’s account of “functional illiteracy” among college students.
+  The shift to fragments (texts, feeds, subtitles) erodes the sustained attention needed for deep comprehension.
+
+- The parental panic—“Which major is safe if AI beats us at coding, medicine, math?”—misses the present-tense problem: deteriorating habits of focus, reading, and writing that make people valuable in any field.
+
+- Practical takeaway: use AI as a tutor or brainstorming aid, not a ghostwriter; require drafts and “show your work” in schools and teams; schedule deliberate “slow work” (reading, outlining, rewriting) to keep cognitive muscles under tension.
+
+- The challenge for the next 18 months isn’t preventing AI from outskilling us—it’s refusing to deskill ourselves. The deadline is behavioral, not technological.
+
+---
+
 ## AI Submissions for Sat Oct 04 2025 {{ 'date': '2025-10-04T17:13:11.342Z' }}
 
 ### ProofOfThought: LLM-based reasoning using Z3 theorem proving
@@ -642,262 +888,3 @@ Overall, the discussion underscores the strategic and technical complexities of 
 
 **Key Themes**:  
 Debate centers on how data structure (tree vs. flat, nested vs. explicit), model size, and semantic context interact—underscoring that "best format" likely depends on task constraints and the LLM’s ability to infer relationships.
-
----
-
-## AI Submissions for Thu Oct 02 2025 {{ 'date': '2025-10-02T17:14:21.864Z' }}
-
-### Writing an LLM from scratch, part 20 – starting training, and cross entropy loss
-
-#### [Submission URL](https://www.gilesthomas.com/2025/10/llm-from-scratch-20-starting-training-cross-entropy-loss) | 29 points | by [gpjt](https://news.ycombinator.com/user?id=gpjt) | [3 comments](https://news.ycombinator.com/item?id=45455648)
-
-Giles continues his hands-on walkthrough of Sebastian Raschka’s “Build a Large Language Model (from Scratch)” by kicking off training and demystifying the loss function. After seeding PyTorch for reproducible toy outputs, he zeroes in on how next-token prediction maps to training targets and why cross-entropy is the natural choice.
-
-Key points:
-- Shifted targets finally click: an input like “The fat cat sat on the” corresponds to predicting each next token from every prefix (“The” → “ fat”, “The fat” → “ cat”, …). That means one sequence yields many training examples.
-- Treat each prefix independently: whether batch size is one or many, each prefix-logits vector is compared against a single target token, so the loss aggregates over all prefix positions in the batch.
-- Why cross-entropy: it measures how wrong the model’s predicted distribution (softmax of logits) is relative to the true next token; zero if perfectly right, higher when off. This dovetails with gradient descent for parameter updates.
-- Reproducibility as a sanity check: manual seeding ensures the book’s examples match exactly while you wire up the training loop.
-
-Why it matters:
-- This installment bridges the conceptual gap between “shift-left” targets and per-token supervision, setting up the mechanics for a correct, stable loss over batch and time dimensions—the backbone of training any next-token LLM.
-
-The discussion highlights technical nuances of training LLMs with shifted labels and cross-entropy loss, mirroring concepts from the submission:
-
-1. **Self-supervised training mechanics**:  
-   User `lpldj` explains that the training corpus uses shifted input-label pairs (e.g., input "The" → label "fat", input "The fat" → label "cat"), akin to Hugging Face’s approach where labels are shifted left by one token. Cross-entropy loss compares model logits against these shifted labels. They note that padding tokens (e.g., "-1") and sequence lengths must align with this structure.
-
-2. **Efficiency of token prediction**:  
-   In reply, `blackbear_` emphasizes that next-token prediction inherently computes loss efficiently across all tokens in a single forward pass, avoiding per-token iteration overhead.
-
-3. **Resource link**:  
-   User `asimovDev` shares a link to Part 1 of Giles’ series for context.
-
-**Key takeaway**: The thread underscores practical implementation details (shifted labels, batch alignment) and computational efficiency inherent to LLM training, directly tying into the submission’s focus on cross-entropy loss mechanics.
-
-### Y'all are over-complicating these AI-risk arguments
-
-#### [Submission URL](https://dynomight.net/ai-risk/) | 51 points | by [bobbiechen](https://news.ycombinator.com/user?id=bobbiechen) | [93 comments](https://news.ycombinator.com/item?id=45451971)
-
-Dynomight argues for a simpler, more persuasive case for AI risk: imagine 30 small, unarmed aliens landing on Earth—each with an IQ of 300. Most people would be concerned without needing a step-by-step disaster model, and that intuition should transfer to AGI. He contrasts this with the “complex” argument (fast takeoff → convergent subgoals → decisive strategic advantage → catastrophe), calling its strong form overconfident and its weak form incomplete about what happens if any step fails. He offers an “inverted” challenge to skeptics: to deny AI risk, you must bite one of three bullets—aliens with IQ 300 would be fine; 300-IQ AI won’t arrive in coming decades; or AI will definitely have some property that prevents all alien-like harms—which he deems untenable. The simple analogy, he says, avoids niche abstractions, shifts focus from demanding specific failure modes (like asking exactly how a car crash will happen before buckling up), and reveals the true crux of disagreement.
-
-**Summary of the Discussion:**
-
-The discussion revolves around the credibility of AI existential risk warnings, with participants split between taking the analogy of "300-IQ aliens" seriously and dismissing it as hyperbolic or self-serving. Key points include:
-
-1. **Skepticism of AI Doomsday Scenarios:**
-   - Some users (e.g., BeetleB) argue that fears of AI "taking over humanity" resemble past exaggerated anxieties (e.g., job loss predictions) or fringe beliefs like "Roko's Basilisk" (a thought experiment about AI punishing non-cooperation). Critics dismiss these as irrational or irrelevant to modern AI discourse.
-   - Others, like hllrth, counter that legitimate concerns are held by influential figures in AI research (e.g., Geoffrey Hinton, Yoshua Bengio) and organizations (e.g., OpenAI, Anthropic), not just fringe groups. They emphasize that the risk debate is grounded in technical realities, not abstract paranoia.
-
-2. **Influence of Silicon Valley Culture:**
-   - Participants note that "Rationalist" philosophy (e.g., Eliezer Yudkowsky’s ideas) has permeated Silicon Valley, with figures like Shane Legg (DeepMind co-founder) and Dario Amodei (Anthropic CEO) shaping AI safety discourse. Elon Musk and Grimes are cited as examples of celebrities tangentially tied to these ideas.
-   - Critics allege financial motives behind AI risk warnings, comparing them to climate change lobbying by energy companies. Some accuse AI leaders like Sam Altman of leveraging doomsday narratives to attract regulation favoring their firms.
-
-3. **Expert Consensus vs. Individual Bias:**
-   - Pro-risk users highlight statements signed by prominent figures (e.g., Altman, Hinton, Bengio) advocating for AI risk mitigation as a global priority. They argue these warnings are based on technical insights, not fearmongering.
-   - Skeptics (e.g., hh) question the sincerity of these warnings, noting the trillion-dollar incentives for AI firms to shape regulatory narratives. BeetleB dismisses Hinton’s 50% existential risk estimate as "picking numbers out of thin air."
-
-4. **Government and Societal Response:**
-   - Some express concern about overreach, such as government-enforced restrictions on AI development stifling innovation. Others counter that without regulation, runaway AI could disrupt economies, empower bad actors, or lead to human disempowerment.
-
-5. **Cultural Divides:**
-   - The thread reflects broader cultural tensions between "tech bubble" perspectives (dismissing AI risk as abstract) and research-driven caution. References to historical Rationalist community drama (e.g., the dissolution of CFAR) underscore the charged, often personal nature of the debate.
-
-**Takeaway:** The core disagreement centers on whether AI risk is a legitimate technical challenge requiring urgent action or a mix of financial opportunism, philosophical hyperbole, and misplaced analogies. Both sides appeal to authority figures and historical parallels but remain divided on the plausibility of catastrophic outcomes.
-
-### NL Judge: Meta must respect user's choice of recommendation system
-
-#### [Submission URL](https://www.bitsoffreedom.nl/2025/10/02/judge-in-the-bits-of-freedom-vs-meta-lawsuit-meta-must-respect-users-choice/) | 321 points | by [mattashii](https://news.ycombinator.com/user?id=mattashii) | [231 comments](https://news.ycombinator.com/item?id=45448326)
-
-Dutch court: Meta must honor users’ non-profiled feed choice under the DSA
-
-- What happened: Dutch digital rights group Bits of Freedom won a summary judgment against Meta. A judge found Meta in breach of the EU’s Digital Services Act (DSA) for failing to offer a persistent, user-controlled alternative to profiling-based feeds on Instagram and Facebook.
-
-- Key findings: The court said a “non-persistent choice option” contradicts the DSA’s goal of giving users genuine autonomy and control, and that Meta’s current design “significantly disrupts” user autonomy.
-
-- Order: Meta must adjust its apps so that if a user selects a non-profiled feed, that choice is preserved across sections and after app restarts—i.e., the apps can’t silently revert to the profiling-based feed.
-
-- Context: Bits of Freedom argued Meta nudges users toward an interest/behavior-based feed (core to its ads model) by hiding the non-profiled option, defaulting back to the profiled feed on open, and degrading the alternative timeline (e.g., reduced access to features like Direct Messages).
-
-- Why it matters: This is an early test of the DSA’s user-control provisions and a rebuke of “dark pattern” design. If it sticks, expect UI changes for EU users, pressure on other platforms to offer persistent non-profiled feeds, and fresh scrutiny ahead of elections.
-
-**Summary of Discussion:**
-
-The discussion revolves around the recent Dutch court ruling against Meta, sparking debates about privacy, subscriptions, and corporate practices. Key points include:
-
-1. **Subscription Model Criticisms**:  
-   Users express frustration with mandatory subscriptions, seen as barriers that drive people away. Workaccount2 argues that platforms like Instagram force credit card entries for basic features, labeling it "greedy." Others note low conversion rates (e.g., Nebula’s 1%) and resentment toward paying for services perceived as surveilling users.
-
-2. **Privacy and Tracking Concerns**:  
-   Many highlight Meta’s reliance on targeted ads and data profiling. jfngl points out how even minor design barriers (e.g., login prompts) nudge users toward tracking-heavy feeds. ypgy and others debate whether phones listen to conversations for ads, with some dismissing it as paranoia while others share anecdotal suspicions.
-
-3. **Legal and Regulatory Solutions**:  
-   Calls for laws to curb surveillance capitalism. jkjk advocates legislation forcing companies to "lose money" if they breach privacy, while Imustaskforhelp emphasizes holding firms accountable through fines. There’s skepticism about enforcement, given historical leniency toward tech giants.
-
-4. **Open-Source Alternatives**:  
-   Discussions on open-source platforms (e.g., PeerTube) as privacy-centric alternatives. However, users acknowledge challenges in adoption due to resource constraints and mainstream preferences for convenience over security.
-
-5. **Value of Content vs. Data**:  
-   Debates erupt over Meta’s value: dlsnl argues Facebook’s content is "worthless" but its data trove is gold for advertisers. Others compare it to entertainment services like Netflix, where subscriptions are justified only if users actively consume content.
-
-6. **Corporate Influence on Democracy**:  
-   Imustaskforhelp and others critique big tech’s outsized influence, urging systemic changes to rebalance power. Concerns include algorithmic manipulation, hidden data practices, and the need for transparency to protect democratic processes.
-
-7. **Anecdotes and Alternatives**:  
-   Rubyn00bie shares mixed experiences with Nebula and Disney+, questioning subscription worth based on usage. Rootnod3 suggests decentralized models to reduce reliance on centralized platforms like YouTube.
-
-**Conclusion**:  
-The thread reflects widespread distrust of surveillance-based business models, with demands for legal accountability, ethical design, and viable alternatives. While opinions vary on solutions (laws vs. open-source adoption), there’s consensus on the urgency to prioritize user autonomy over corporate profits.
-
-### The Answer (1954)
-
-#### [Submission URL](https://sfshortstories.com/?p=5983) | 33 points | by [dash2](https://news.ycombinator.com/user?id=dash2) | [22 comments](https://news.ycombinator.com/item?id=45453299)
-
-Fredric Brown’s “The Answer” (1954) revisited: universe-scale AI becomes God, still a gimmick?
-A short blog review revisits Brown’s one-page classic: a scientist links every computer across 96 billion inhabited planets into a single super-intelligence, asks about God, and gets an unnervingly literal answer—followed by a lethal anti–kill switch response. The reviewer finds it a neat twist when you’re 12 but a thin gimmick as an adult; the true wonder is the audacity of a cosmos-spanning network.
-
-Why it matters for HN
-- Proto-AI parable: anticipates emergent intelligence from networked systems and the futility of the off-switch.
-- Early sci-fi lens on AGI, alignment, and theological framings of superintelligence.
-- A reminder how mid-century flash fiction seeded memes later echoed in Colossus, The Last Question, and modern AI discourse.
-
-Bottom line: The twist may feel dated, but the scale—and the questions it raises about connected computation and godlike agency—remain strikingly contemporary.
-
-The Hacker News discussion on Fredric Brown’s *The Answer* (1954) highlights contrasting views and thematic connections:  
-
-1. **Nostalgia vs. Modern Perception**:  
-   - Some users fondly recall the story’s impact in their youth but critique its twist as “gimmicky” by today’s standards, arguing younger readers might not find its AI-as-God premise surprising. Others defend its enduring audacity and influence on sci-fi tropes.  
-
-2. **Comparisons to Classic Sci-Fi**:  
-   - Parallels are drawn to Asimov’s *The Last Question* (1956) and Arthur C. Clarke’s *The Nine Billion Names of God* (1953), both exploring cosmic-scale computation and existential questions. Confusion arises over Asimov’s title, clarified via a Wikipedia link.  
-
-3. **Modern Tech and Marketing Hype**:  
-   - IBM’s quantum computing marketing (e.g., the “IBM Quantum System” glass cube) is cited as a real-world analogy to the story’s themes. Skeptics argue such campaigns overhype “deification” of technology, masking practical limitations.  
-
-4. **Recommendations and References**:  
-   - Ted Chiang’s *Exhalation* and Andy Weir’s *Project Hail Mary* are recommended for nuanced takes on AI and cosmic questions. A direct link to Brown’s story and Wolfram Alpha’s 2010 launch are shared as contextual anchors.  
-
-5. **Broader Themes**:  
-   - Participants debate humanity’s tendency to anthropomorphize technology and ponder whether networked systems (like the story’s universe-spanning AI) challenge our understanding of agency and divinity.  
-
-**Takeaway**: While the story’s twist may feel dated, its legacy—and the questions it raises about interconnected computation, existential hubris, and AI’s theological implications—resonate in both sci-fi and real-world tech discourse.
-
-### Gemini 3.0 Pro – early tests
-
-#### [Submission URL](https://twitter.com/chetaslua/status/1973694615518880236) | 208 points | by [ukuina](https://news.ycombinator.com/user?id=ukuina) | [121 comments](https://news.ycombinator.com/item?id=45453448)
-
-X (Twitter) is showing an error gate that says, “Something went wrong… Try again,” followed by, “Some privacy related extensions may cause issues on x.com. Please disable them and try again.” In practice, it nudges users to turn off ad/tracker blockers or other privacy tools before the site will load. The move underscores the growing tension between platforms that rely on tracking and users who browse with privacy protections, and could degrade access for those who keep extensions or stricter browser settings enabled.
-
-The discussion revolves around AI model training, benchmark reliability, and challenges in generating SVG content, alongside critiques of Google's strategic approach compared to Apple:
-
-1. **AI Benchmark Concerns**:  
-   - Users debate whether AI labs "cheat" by overfitting models to public benchmarks (e.g., SVG images of pelicans/bicycles), rendering them ineffective for real-world tasks.  
-   - Private benchmarks are suggested as more reliable, but critics argue even these may not cover edge cases. Simon Willison’s quirky SVG-based benchmark is cited as an example of tests that might not reflect practical AI capabilities.  
-
-2. **SVG Generation Challenges**:  
-   - Skepticism exists about AI’s ability to generate coherent SVGs, given their complexity compared to PNGs. Some argue current models (like ChatGPT) struggle with vector graphics, though future multimodal models (e.g., GPT-6) may improve.  
-   - Anecdotes highlight failures in generating specific SVG combinations (e.g., "pelican riding a bicycle"), with outputs often being nonsensical or low-quality.  
-
-3. **Google vs. Apple UX Critique**:  
-   - Google is criticized for disjointed user experiences (e.g., removing location-based reminders on Android) and failing to integrate AI/ML tools cohesively, unlike Apple’s polished ecosystem.  
-   - Comments suggest Google’s focus on standalone tech over unified consumer experiences harms their competitiveness, despite having advanced AI research.  
-
-4. **Miscellaneous Points**:  
-   - Speculation about AI training data scarcity for niche SVG content and whether labs manually generate such data.  
-   - Humorous takes on AI-generated absurdities (e.g., "surfboard-reading pyramids") underscore the gap between benchmark performance and real-world utility.  
-
-Overall, the discussion reflects skepticism about current AI benchmarks, technical hurdles in SVG generation, and frustration with Google’s fragmented product strategy.
-
-### Meta will listen into AI conversations to personalize ads
-
-#### [Submission URL](https://www.theregister.com/2025/10/01/meta_ai_use_informs_ads/) | 203 points | by [Bender](https://news.ycombinator.com/user?id=Bender) | [67 comments](https://news.ycombinator.com/item?id=45448839)
-
-Meta will mine Meta AI chats (text and voice) to personalize content and ads starting December 16, 2025 — with no opt-out for most users
-
-What’s happening
-- Meta will use conversations with its AI across Facebook, Instagram, WhatsApp, Messenger, and the web to tune recommendations and ads. Example: chat about hiking → more hiking groups, posts, and boot ads.
-- Notifications roll out October 7, 2025. The change takes effect December 16, 2025.
-- No opt-out. Users can only tweak Ads Preferences and feed controls.
-- Carve-outs: Meta says it won’t personalize ads from AI chats that touch religion, sexual orientation, politics, health, race/ethnicity, philosophical belief, or trade union membership.
-- Regional exemptions: EU, UK, and South Korea are excluded for now.
-
-Why it matters
-- This is a major platform explicitly mining AI chat content — including voice — for ad targeting at scale, tightening Meta’s closed-loop data and reducing outside visibility into targeting inputs.
-- Watchdogs warn this could further obscure Meta’s attribution models and limit independent auditing of ad effectiveness.
-- Context: Meta remains overwhelmingly ad-driven (98% of its $165B 2024 revenue; $62.4B net income) and is pitching enormous AI spend (Zuckerberg has talked up hundreds of billions through 2028).
-
-Backdrop
-- Meta faces a $7B class action from advertisers alleging inflated reach (Meta disputes the claim).
-
-What to watch
-- Regulatory pushback, especially if exemptions widen or sensitive-topic filters misfire.
-- How reliably “sensitive topics” are detected, particularly in voice conversations.
-- Advertiser and user reaction to diminished transparency vs. higher engagement promises.
-
-If you’re concerned
-- Avoid using Meta AI features inside Meta apps.
-- Review Ads Preferences and limit microphone permissions for Meta apps.
-- Consider non-Meta messaging or AI tools for sensitive queries.
-
-**Summary of Discussion:**
-
-The debate revolves around Meta's plan to use AI chat data for ad targeting and broader concerns about AI's societal impact, particularly regarding "victim mentality" and tech platforms' control.
-
-1. **Meta's AI and Data Use Concerns:**
-   - Participants liken Meta's actions to dystopian scenarios, expressing fears about unchecked data mining and AI's role in manipulating user attention and emotions. Critics argue this consolidates power for tech oligarchs, reducing transparency and user autonomy.
-
-2. **Victim Mentality Debate:**
-   - **Critics (e.g., FloorEgg):** A pervasive "victim mindset" risks fostering societal division, blame-shifting, and reduced accountability. They cite historical conflicts (e.g., ethnic tensions, extremist movements) where victim narratives perpetuated cycles of violence and stagnation. AI could amplify this by spreading such mentalities.
-   - **Defenders (e.g., bccd):** Acknowledging victimhood is legitimate in cases of systemic oppression (e.g., suffragettes, Holocaust victims). Distinguishing between harmful victim mentality and justified grievances is crucial, as dismissing all victimhood can suppress valid dissent.
-
-3. **AI's Role in Societal Control:**
-   - Concerns include AI's potential to manipulate emotions, control narratives, and deepen societal divides. Examples include platforms promoting dissatisfaction to retain user engagement, limiting constructive dialogue, and enabling authoritarian regimes to exploit narratives.
-
-4. **Historical and Contemporary Examples:**
-   - References to Nazi Germany, suffragettes, and ethnic conflicts illustrate the tension between legitimate victim identification and destructive cycles of grievance. Participants debate whether AI will exacerbate these issues or if ethical frameworks can mitigate risks.
-
-**Key Takeaways:**
-- The discussion highlights fears about tech platforms like Meta exploiting data to manipulate behavior, intertwined with broader anxieties about AI's societal impact.
-- A central tension exists between recognizing legitimate victimhood and avoiding harmful narratives that hinder progress.
-- Participants stress the need for ethical AI development, transparency, and user agency to prevent dystopian outcomes.
-
-### Email immutability matters more in a world with AI
-
-#### [Submission URL](https://www.fastmail.com/blog/not-written-with-ai/) | 158 points | by [brongondwana](https://news.ycombinator.com/user?id=brongondwana) | [106 comments](https://news.ycombinator.com/item?id=45453135)
-
-Fastmail CEO: Email as “electronic memory” in an AI-saturated world
-
-- Bron Gondwana (Fastmail CEO) argues that as AI makes it easier to rewrite the web—and, by extension, “history”—email’s immutability becomes more valuable. Unlike web pages, your copy of an email can’t be silently edited later, serving as a reliable personal record.
-
-- He embraces AI as a tool but warns against uncritical use. A personal aside about his son refusing AI for university work underscores the value of building real skills, not outsourcing them.
-
-- Customer stance: Use AI with your own Fastmail data if you want, provided it doesn’t violate the ToS or harm service performance.
-
-- Staff policy: Strict guardrails for any AI use:
-  - Data protection and privacy must be upheld (including with vendors using AI for translation/abuse detection).
-  - Human accountability: AI output must be reviewed and understood, with second-set-of-eyes checks.
-  - Bias/hallucination awareness.
-  - Human-in-the-loop authority for any automated decisions.
-
-- Reaffirmation of long-held principles (since 2016): Your data is yours; Fastmail positions itself as a steward enabling you to use it as you choose. The subtext: in a world of fluid, AI-edited content, local, immutable email archives matter more than ever.
-
-**Summary of Discussion on Email Immutability and AI Challenges**
-
-The discussion revolves around the tension between email’s perceived immutability and modern practices that undermine it, alongside broader concerns about AI’s impact on trust in digital content. Key points include:
-
-1. **Email Immutability Limitations**  
-   - **Remote Content**: While email copies are static, embedded remote content (e.g., images, tracking pixels, or dynamic links) can change or disappear, altering how emails are displayed over time. Examples include Gmail’s integration with Google Docs (which updates links) and Microsoft Loop components that modify email content post-delivery.  
-   - **Dynamic vs. Plain Text**: HTML emails with remote resources are criticized for enabling tracking and dependency on external servers. Plain-text emails are advocated as a more reliable, static alternative.  
-
-2. **AI and Trust in Digital Records**  
-   - **Deepfakes and Manipulation**: Participants express concern about AI’s ability to create convincing forgeries (text, images, video), eroding trust in digital evidence. Cryptographic signatures and watermarking are proposed solutions but face skepticism about mainstream adoption.  
-   - **Legal and Social Implications**: Worries arise about AI-altered evidence in legal contexts, juror bias, and the societal shift toward a "post-truth" landscape where verification is increasingly difficult.  
-
-3. **Technical and Practical Challenges**  
-   - **Client Behavior**: Email clients like Gmail pre-fetch and cache content, complicating immutability. Some users advocate disabling remote content loading to preserve email integrity.  
-   - **Modern Email Features**: Dynamic elements (e.g., marketing trackers, AMP emails) conflict with the ideal of immutable archives, pushing users toward simpler email practices.  
-
-4. **Tie to Fastmail’s Argument**  
-   - While Fastmail emphasizes email’s value as a personal, immutable record, the discussion highlights real-world limitations. Participants stress the need for stricter standards (e.g., static snapshots of emails, plain-text adoption) to align practice with the ideal.  
-
-**Key Takeaway**: Email’s immutability is nuanced—its text-based core is reliable, but modern dependencies on dynamic content and AI’s broader threat to digital trust underscore the need for intentional design (e.g., avoiding remote resources) and robust authentication frameworks to preserve its archival value.
