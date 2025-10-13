@@ -10,6 +10,264 @@ export async function getStaticProps() {
 
 ---
 
+## AI Submissions for Sat Oct 11 2025 {{ 'date': '2025-10-11T17:13:25.031Z' }}
+
+### Anthropic's Prompt Engineering Tutorial
+
+#### [Submission URL](https://github.com/anthropics/prompt-eng-interactive-tutorial) | 291 points | by [cjbarber](https://news.ycombinator.com/user?id=cjbarber) | [75 comments](https://news.ycombinator.com/item?id=45551260)
+
+Anthropic’s Interactive Prompt Engineering Tutorial (GitHub)
+
+What it is:
+- A free, hands-on course from Anthropic on writing effective prompts for LLMs, packaged as Jupyter notebooks (also available as a Google Sheets version via Claude for Sheets).
+- Uses Claude 3 Haiku for examples, with notes on Sonnet and Opus; most techniques are model-agnostic.
+
+What’s inside:
+- 9 chapters from beginner to advanced with exercises and answer keys.
+- Core topics: prompt structure, clarity, role assignment, separating data from instructions, output formatting, guiding step-by-step reasoning, and using examples.
+- Advanced: reducing hallucinations, building complex/industry prompts (chatbots, legal, finance, coding).
+- Appendix on chaining prompts, tool use, and retrieval.
+
+Why it matters:
+- Offers concrete, reproducible templates and practice scenarios—useful for teams standardizing LLM workflows and for newcomers who want 80/20 techniques that noticeably improve output quality.
+
+Repo signals:
+- ~19.3k stars, ~1.9k forks; notebook-heavy (Jupyter ~98%).
+
+The discussion debates whether "prompt engineering" qualifies as legitimate **engineering**, with arguments centered on definitions, terminology, and professional standards:
+
+1. **Terminology Debate**:
+   - Critics (e.g., *jwr*) argue traditional engineering relies on **predictable, knowledge-based principles** (e.g., physics), whereas prompt engineering is seen as trial-and-error "throwing prompts at a wall."
+   - Proponents note "engineering" has broader dictionary definitions (e.g., "skillful maneuvering"), and disciplines like software engineering also deal with **non-deterministic systems** (*vmr*, *smnw*).
+
+2. **Professional Standards**:
+   - In Canada and other regions, "Engineer" is a **legally protected title** requiring licensure (*rr808*, *rl*), sparking tension with self-described "prompt engineers."
+   - Some argue credentials shouldn’t gatekeep the term (*dlchn*), while others emphasize legal responsibilities tied to regulated engineering roles.
+
+3. **Technical Validity**:
+   - Critics highlight the **lack of predictability** in LLM outputs and evolving models, contrasting with established engineering practices (*ndsrnm*).
+   - Supporters counter that systematic testing, metrics, and iterative refinement (*atherton33*) align with engineering rigor, even in non-deterministic contexts.
+
+4. **Comparisons to Software Engineering**:
+   - Parallels are drawn to software engineering’s acceptance despite dealing with **unpredictable systems** (e.g., distributed networks), suggesting prompt engineering could follow a similar path (*nthrbnnsr*).
+
+**Conclusion**: The debate reflects broader tensions over language, professional identity, and evolving technical fields. While critics dismiss prompt engineering as unserious, proponents frame it as a nascent discipline requiring systematic approaches akin to other engineering domains.
+
+### CamoLeak: Critical GitHub Copilot Vulnerability Leaks Private Source Code
+
+#### [Submission URL](https://www.legitsecurity.com/blog/camoleak-critical-github-copilot-vulnerability-leaks-private-source-code) | 126 points | by [greyadept](https://news.ycombinator.com/user?id=greyadept) | [17 comments](https://news.ycombinator.com/item?id=45553422)
+
+What happened
+- Security researcher Omer Mayraz disclosed a CVSS 9.6 vulnerability in GitHub Copilot Chat that allowed silent exfiltration of secrets and source code from private repos and full control over Copilot’s replies (e.g., injecting malicious code suggestions/links). Reported via HackerOne; GitHub fixed it by disabling image rendering in Copilot Chat.
+
+How it worked (high level)
+- Remote prompt injection: Hidden comments in pull request descriptions (“invisible comments,” an official GitHub feature) were used to smuggle instructions into Copilot’s context. Any user viewing the PR and using Copilot Chat could have their assistant hijacked, with Copilot operating under that user’s permissions.
+- CSP bypass using GitHub’s own infra: Although GitHub’s strict Content Security Policy blocks arbitrary external fetches, GitHub rewrites external images through its Camo proxy (camo.githubusercontent.com) with signed URLs. By creatively leveraging Camo URL generation paths, the researcher found a way to smuggle data out despite CSP.
+
+Why it matters
+- AI assistants that ingest repository context dramatically broaden the attack surface: invisible or innocuous-looking repo content can steer the model, leak sensitive data, or push malicious dependencies.
+- The combination of model prompt injection and front-end CSP edge cases creates powerful cross-layer exploits.
+
+What GitHub changed
+- Disabled image rendering in Copilot Chat to close the exfil channel tied to Markdown-rendered images/Camo.
+- Vulnerability was remediated after disclosure; details credit GitHub’s response but underscore systemic risks.
+
+Takeaways for teams
+- Treat AI assistants as privileged actors: restrict their repo/org scopes and tokens to least privilege.
+- Scrub untrusted content in repos (PR descriptions, READMEs, issues) that surfaces in AI context; consider policies for hidden/embedded content.
+- Disable or limit rich rendering in AI chats where possible; prefer link sanitization/allow-lists.
+- Maintain defense-in-depth: secrets scanning, dependency allow-lists, and mandatory human review on AI-suggested changes.
+
+The discussion surrounding the CamoLeak GitHub Copilot vulnerability highlights several key points and concerns:  
+
+### **Technical Insights**  
+1. **Fix Critique**: While GitHub addressed the issue by disabling image rendering in Copilot Chat, some users (*mnchlx*, *Thorrez*) argue this only closed one exfiltration vector. They speculate that alternative methods (e.g., base64 encoding or non-Camo URLs) might still bypass CSP if not fully mitigated.  
+2. **Exploit Mechanics**: The attack combined GitHub’s Camo proxy (to bypass CSP) and invisible PR comments (a legitimate GitHub feature) for stealthy prompt injection. Users (*chrcrct*, *PufPufPuf*) emphasize the risk of attackers leveraging contributor text (PRs, issues) to hijack AI context and permissions.  
+
+### **Broader AI Security Concerns**  
+- **Trust in AI Tools**: Participants (*rnnngmk*) question the reliability of proprietary AI solutions in cybersecurity, advocating for FOSS alternatives with greater transparency.  
+- **LLM Vulnerabilities**: Subthreads debate whether modern LLMs are inherently vulnerable to prompt injection, comparing mitigations to "ASLR for AI" but acknowledging systemic challenges (*fn-mt*, *PufPufPuf*).  
+- **Scope of Risk**: Hidden HTML/PR comments (*xstf*, *RulerOf*) and over-permissioned AI agents (*chrcrct*) are flagged as ongoing attack surfaces.  
+
+### **Mitigation Suggestions**  
+- **Local AI Agents**: A user (*nprtm*) proposes running AI tools locally to reduce exposure, though practicality is debated.  
+- **Input Sanitization**: Calls to sanitize PR templates and restrict LLM access to untrusted content (*PufPufPuf*, *djmps*).  
+
+### **Community Reaction**  
+- **Mixed Sentiment**: Some praise the disclosure (*adastra22*) and GitHub’s response, while others criticize incomplete fixes (*mnchlx*) or urge readers to review the original report (*frh*: "RTFA/RTFTLDR").  
+
+### **Key Takeaway**  
+The discussion underscores the complexity of securing AI-integrated tools, balancing prompt fixes with systemic changes to LLM permissions, input validation, and CSP enforcement. The incident highlights how "benign" platform features (like Camo proxy) can become critical vulnerabilities when combined with AI context-hijacking.
+
+### Paper2video: Automatic video generation from scientific papers
+
+#### [Submission URL](https://arxiv.org/abs/2510.05096) | 76 points | by [jinqueeny](https://news.ycombinator.com/user?id=jinqueeny) | [23 comments](https://news.ycombinator.com/item?id=45553701)
+
+TL;DR: A new benchmark + system that auto-generates academic presentation videos straight from papers—slides, subtitles, speech, cursor movements, and a talking head—claiming higher faithfulness than existing baselines. Dataset and code are linked on the arXiv page.
+
+What’s new
+- Paper2Video benchmark: 101 research papers paired with author-made presentation videos, slides, and speaker metadata to study presentation generation.
+- Four evaluation metrics, tailored for “did the video actually teach the paper?”: Meta Similarity, PresentArena, PresentQuiz, and IP Memory.
+- PaperTalker system: a multi-agent pipeline that:
+  - Generates slides and refines layout via a tree-search-based “visual choice” step
+  - Extracts and places dense multimodal content (text, figures, tables)
+  - Grounds a cursor to guide attention
+  - Produces subtitles and TTS speech
+  - Renders a talking head
+  - Parallelizes slide-wise generation for speed
+
+Why it matters
+- Academic videos are time sinks; automating 2–10 minute summaries could free researchers from slide design and recording.
+- Coordinated, multimodal alignment (slides + narration + on-screen pointer + face) is a tougher problem than generic video gen; the benchmark and metrics help standardize evaluation.
+- Accessibility and dissemination: makes papers more approachable to wider audiences.
+
+Results (per authors)
+- On the Paper2Video benchmark, generated presentations are “more faithful and informative” than prior baselines across the proposed metrics.
+- Code, dataset, and project page are available via the arXiv entry.
+
+Caveats and open questions
+- Scale: 101 papers is a solid start but still small; generalization across fields and layouts remains to be shown.
+- Metric validity: how strongly do PresentArena/PresentQuiz/etc. correlate with human comprehension?
+- IP and consent: reuse of figures, author likeness/voice, and distribution policies will matter in practice.
+- Hallucinations and factual drift: long-context, figure-heavy papers are risky; robust grounding and citation display will be key.
+
+Link: arXiv: 2510.05096 (project page and code linked from the arXiv record)
+
+The discussion around the Paper2Video submission highlights a mix of cautious optimism, practical concerns, and humorous skepticism:
+
+### **Key Points**
+1. **Potential Benefits**:
+   - **Time-saving**: Users acknowledge automating presentations could free researchers from tedious slide design and recording, especially for conferences requiring travel.
+   - **Accessibility**: Could make dense papers more approachable for broader audiences, including non-experts or students.
+   - **Baseline Improvement**: Some note existing scientific presentations often suffer from cluttered slides or poor design, which AI might mitigate.
+
+2. **Criticisms & Concerns**:
+   - **Depth & Engagement**: Skepticism about whether AI-generated videos can capture nuanced explanations, storytelling, or clarity that human presenters provide. Comments highlight risks of superficiality ("adding fluff") and missing critical details.
+   - **Presentation Quality**: Concerns about AI-generated voices, robotic delivery ("subtle parody"), and awkward visuals (e.g., cursor movements, "talking heads") feeling unnatural compared to human charisma.
+   - **Ethics & Practicality**: Questions about intellectual property (figure reuse, voice cloning), hallucination risks in technical content, and whether metrics like "PresentQuiz" truly measure comprehension.
+
+3. **Humorous Takes**:
+   - Jokes about AI presenters resembling "SteveGPT" (Steve Jobs-style) or dystopian references (*Videodrome*), highlighting unease with synthetic personas.
+   - Playful comparisons to unrelated concepts (e.g., *Lorna Shore concerts*, VR sword-fighting games) underscore concerns about engagement gimmicks.
+
+4. **Related Tools & Alternatives**:
+   - Users mention existing solutions like whiteboard explainers, Minute Papers, or improving personal presentation skills. Some share their own projects (e.g., interactive paper explainers) as alternatives.
+
+### **Notable Suggestions**
+   - **Improvements**: Incorporate feedback loops for slide layout, avoid verbatim text, and prioritize natural narrative flow over rigid content placement.
+   - **Validation**: Calls for human evaluation to complement automated metrics and ensure generated videos aid actual learning.
+
+### **Conclusion**
+While the tool is seen as a promising step, many argue that human-presented storytelling and clarity remain irreplaceable. The discussion reflects broader debates about AI’s role in academia—balancing efficiency gains with the risk of depersonalizing science communication.
+
+### Microsoft only lets you opt out of AI photo scanning 3x a year
+
+#### [Submission URL](https://hardware.slashdot.org/story/25/10/11/0238213/microsofts-onedrive-begins-testing-face-recognizing-ai-for-photos-for-some-preview-users) | 750 points | by [dmitrygr](https://news.ycombinator.com/user?id=dmitrygr) | [285 comments](https://news.ycombinator.com/item?id=45551504)
+
+Microsoft is testing face recognition in OneDrive photos — with a puzzling “3 times a year” opt-out limit
+
+- What’s happening: Some OneDrive users are seeing a new preview feature that uses AI to recognize faces in their photo libraries. The setting appears as on by default for those in the test.
+- The catch: The toggle says you can only turn the feature off three times per year. One tester couldn’t disable it at all — the switch snapped back on with an error.
+- Microsoft’s stance: The company confirmed a limited preview but wouldn’t explain the “three times” rule or give a timeline for wider release. It pointed to its privacy statement and EU compliance. A support page still claims the feature is “coming soon,” a note that’s been unchanged for nearly two years.
+- Privacy pushback: EFF’s Thorin Klosowski argues the feature should be opt-in with clear documentation, and users should be able to change privacy settings whenever they want.
+- Open questions: Is face recognition currently active for any users by default? Why restrict how often people can opt out? When will Microsoft clarify and ship this broadly?
+
+**Summary of Discussion:**
+
+The discussion reflects widespread frustration and skepticism toward Microsoft's "3 times a year" opt-out limit for OneDrive's face recognition feature. Key points include:
+
+1. **Arbitrary Opt-Out Limit**:  
+   Users question why the limit is set to three, dismissing theories about cultural symbolism (e.g., religious trinities) and instead attributing it to psychological tactics to discourage opting out. Some suggest it’s a "dark pattern" to normalize surveillance or reduce server costs from repeated scans.
+
+2. **Distrust in Microsoft’s Intentions**:  
+   Commenters cite Microsoft’s history of overriding user settings (e.g., re-enabling features after updates) as evidence of bad faith. Many suspect the feature is tied to AI training or data harvesting, with concerns that facial data could be exploited for profit or shared with governments.
+
+3. **Privacy vs. Cost-Saving**:  
+   While some argue the limit prevents excessive server costs from frequent re-scans, others counter that privacy controls should never be restricted. Critics demand opt-in defaults and unrestricted opt-out options, echoing the EFF’s stance.
+
+4. **Regulatory and Compliance Concerns**:  
+   Questions arise about HIPAA compliance and Microsoft’s ability to safeguard sensitive data. Users highlight past incidents where Microsoft mishandled health or enterprise data, fueling doubts about their reliability.
+
+5. **Technical and Legal Speculation**:  
+   Debates focus on whether the limit is technically necessary (e.g., processing large photo libraries) or a legal safeguard to avoid liability. Skeptics argue Microsoft could anonymize data or process it locally but chooses not to for control.
+
+6. **Calls for Transparency**:  
+   Participants demand clarity on whether the feature is active by default, how data is used, and when Microsoft will address these concerns. Many urge regulatory intervention to hold the company accountable.
+
+**Overall Sentiment**:  
+The community views the opt-out limit as a red flag, emblematic of broader corporate overreach and erosion of user agency. Trust in Microsoft is low, with calls for stricter privacy laws and user-centric design.
+
+### Superpowers: How I'm using coding agents in October 2025
+
+#### [Submission URL](https://blog.fsck.com/2025/10/09/superpowers/) | 378 points | by [Ch00k](https://news.ycombinator.com/user?id=Ch00k) | [209 comments](https://news.ycombinator.com/item?id=45547344)
+
+Claude Code gets plugins; “Superpowers” turns skills into a first‑class workflow
+
+- What’s new: Anthropic rolled out a plugin system for Claude Code, and the author released “Superpowers,” a marketplace plugin that teaches Claude to use explicit “skills” (markdown playbooks) to plan and execute coding tasks.
+
+- How to try: Requires Claude Code 2.0.13+. In Claude’s command palette:
+  - /plugin marketplace add obra/superpowers-marketplace
+  - /plugin install superpowers@superpowers-marketplace
+  - Restart Claude; it will bootstrap itself and point to a getting-started SKILL.md.
+
+- How it works:
+  - Adds a default brainstorm → plan → implement loop; if you’re in a git repo, it auto-creates a worktree for parallel tasks.
+  - Offers two modes: last month’s “human PM + two agents” or a new auto mode that dispatches tasks to subagents and runs code review after each step.
+  - Enforces RED/GREEN TDD: write a failing test, make it pass, iterate.
+  - Wraps up by offering to open a GitHub PR, merge the worktree, or stop.
+
+- The big idea: Skills. They’re small, readable SKILL.md guides that the agent must use when applicable. The system encourages:
+  - Discovering and invoking skills by name.
+  - Writing new skills as the agent learns (self-improvement).
+  - Extracting reusable skills from books/codebases by reading, reflecting, and documenting.
+
+- Why it matters:
+  - Moves agents from “prompt blob” to modular, auditable procedures.
+  - Encourages reproducibility, code quality (TDD + reviews), and parallel dev via worktrees.
+  - Aligns with a broader pattern (e.g., Microsoft’s Amplifier) where agents evolve by writing tools/docs for themselves.
+
+- Notable details:
+  - The author has a “How to create skills” skill; the system can expand itself by drafting new SKILL.md files.
+  - Skill quality is tested with subagents using realistic, pressure-testing scenarios—“TDD for skills.”
+  - Mentions IP gray areas when auto-extracting skills from proprietary books.
+
+- Open questions:
+  - How robust are skills across projects and teams?
+  - Governance/attribution for skill content derived from third-party materials.
+  - How well do subagent reviews catch subtle design or security flaws versus happy-path tests?
+
+Takeaway: Plugins plus skills push Claude Code toward a disciplined, self-improving dev assistant—less chatty copilot, more process-driven teammate with standardized playbooks.
+
+The discussion around AI coding tools like Claude Code's new plugin system and "Superpowers" reveals mixed experiences and perspectives:
+
+### Key Themes:
+1. **Effectiveness Varies by Task Complexity**:
+   - Users report success with **micro-tasks** (e.g., templating HTML/CSS, writing tests) and repetitive work, but note limitations in **high-level design** or complex domains (e.g., Zig development).
+   - For troubleshooting legacy codebases or dependency issues, Claude Code is praised for rapidly identifying solutions, though results can be inconsistent in extreme edge cases.
+
+2. **Human Oversight & Process**:
+   - Several users emphasize the need for **explicit instructions**, structured workflows (e.g., TDD, code reviews), and documentation to ensure quality. One user compares managing AI agents to leading a team, requiring clear planning, feedback, and quality checks.
+   - Breaking tasks into smaller, specific chunks with thorough validation is advised over delegating large, vague goals.
+
+3. **Skepticism vs. Optimism**:
+   - **Optimists** highlight AI’s utility for accelerating coding, learning, and handling "run-of-the-mill" tasks (e.g., generating test cases), likening it to a junior developer.
+   - **Skeptics** caution against over-reliance, noting AI can produce "nonsense" or overstep its domain. Some argue AI tools augment rather than revolutionize development, stressing the irreplaceable role of human design decisions.
+
+4. **Challenges & Open Questions**:
+   - **Token consumption** and context management with subagents raise concerns about efficiency.
+   - Debate exists about whether AI’s "persuasive" outputs align with true problem-solving or merely mimic rhetorical patterns.
+   - Questions linger about skill reproducibility across teams and governance for skills derived from proprietary materials.
+
+### Notable Perspectives:
+- **"kdd"** shares a [blog post](https://news.ycombinator.com/item?id=45503867) stressing the need for technical management skills when using AI agents, akin to mentoring interns.
+- **"sfn42"** advocates using AI as a "tight leash" tool for specific subtasks rather than autonomous large-scale work.
+- **"smnw"** links to a [GitHub repo](https://github.com/obra/Superpowers) and [notes](https://simonwillison.net/2025/Oct10/superpowers/) exploring skill-based workflows.
+
+### Conclusion:
+While AI coding tools show promise for productivity gains, success hinges on structured workflows, human oversight, and task specificity. The community remains divided on whether these tools represent incremental improvement or transformative change, with ongoing experimentation shaping best practices.
+
+---
+
 ## AI Submissions for Fri Oct 10 2025 {{ 'date': '2025-10-10T17:13:26.789Z' }}
 
 ### Show HN: I invented a new generative model and got accepted to ICLR
@@ -468,321 +726,3 @@ The discussion broadly aligns with the article’s thesis: runaway AI is less li
 
 ### **Tone**  
 The thread blends **nostalgia**, **skepticism**, and **amusement**, with lighthearted jabs at generational divides and market-driven fads. While some dismiss Labubu as ephemeral, others appreciate its role in modern pop culture.
-
----
-
-## AI Submissions for Wed Oct 08 2025 {{ 'date': '2025-10-08T17:15:23.031Z' }}
-
-### I played 1k hands of online poker and built a web app with Cursor AI
-
-#### [Submission URL](https://blog.rchase.com/i-played-1-000-hands-of-online-poker-and-built-a-web-app-with-cursor-ai/) | 103 points | by [reillychase](https://news.ycombinator.com/user?id=reillychase) | [151 comments](https://news.ycombinator.com/item?id=45520154)
-
-A founder’s two-week dive into low-stakes poker turned into a surprising case study in AI-assisted development. After tooling around with Python scripts to export PokerStars hands, he asked Grok—and then Cursor—to help, and in 2–3 days shipped a full Laravel poker stats web app without “writing a single line” himself. The app includes a 700+ line hand-history parser, VPIP/PFR/3-bet stats, journaling and bankroll logs, multi-file uploads and paste-import, scheduled PokerStars exports every 15 minutes, Gmail IMAP ingestion for PINs/hand histories, daily balance checks, a hand viewer, and P/L charts. Built locally with Herd and deployed to DigitalOcean, it lives at poker.rchase.com (he even shares his last 1,000 hands). The post doubles as a poker-learning reflection—emotional control, risk management, process over outcomes—and as a marker of how far AI coding agents (Grok, Cursor, Claude) have come from “vibe coding” demos to shipping integrations and refactors. Expect discussion around reliability, security, maintainability, and what “not writing any code” really means in an AI-as-developer workflow.
-
-The Hacker News discussion revolves around several key themes:
-
-1. **Online Poker Integrity**:  
-   - Many users argue that **collusion and bots** plague online poker, especially at lower stakes. Some claim regulated sites (like Michigan-based platforms) are better at verification, but skepticism remains about detecting sophisticated bots or coordinated cheating.  
-   - Others counter that **most players simply play poorly**, likening their strategies to "blackjack" or "bingo," making bot dominance overstated.  
-
-2. **Bot Realities**:  
-   - Debates erupt over whether bots are a **widespread threat** or a niche issue. Some insist bots destroyed mid-stakes games years ago, while others (like self-described winning players) downplay their current impact, emphasizing that exploiting human errors remains more profitable.  
-
-3. **Game Theory Optimal (GTO) Impact**:  
-   - GTO solvers have **raised the skill ceiling**, making games tougher. Critics argue solvers lead to robotic play and over-reliance on preflop charts, while proponents highlight their utility for studying complex postflop scenarios and adjusting to opponents.  
-
-4. **Live vs. Online Dynamics**:  
-   - Live poker (e.g., Las Vegas cash games) is seen as softer but dominated by **regulars** who exploit recreational players. Online play is viewed as more technically demanding but rife with trust issues.  
-
-5. **AI Development Claims**:  
-   - The submission’s “no code” assertion is questioned. Users debate whether AI tools like Cursor/Grok **accelerate development** versus truly replacing coding, with concerns about maintainability and security in AI-generated code.  
-
-6. **Regulation and Trust**:  
-   - Skepticism persists about online platforms’ ability to prevent collusion or verify identities, despite claims of improved regulation. Some suggest **IP tracking** and behavioral analysis as countermeasures.  
-
-**Takeaway**: The discussion reflects a mix of poker-strategy pragmatism, skepticism toward online platforms, and cautious optimism about AI’s role in coding—while underscoring that poker’s human element (and its flaws) remains central.
-
-### Show HN: FleetCode – Open-source UI for running multiple coding agents
-
-#### [Submission URL](https://github.com/built-by-as/FleetCode) | 90 points | by [asdev](https://news.ycombinator.com/user?id=asdev) | [49 comments](https://news.ycombinator.com/item?id=45518861)
-
-FleetCode: a lightweight desktop terminal that lets you run multiple CLI coding agents (Claude Code, Codex) side by side—each in its own isolated git worktree—so runs don’t step on each other and can be resumed later.
-
-Highlights
-- Parallel sessions: spin up multiple agent terminals at once, compare outputs, or split tasks across sessions.
-- Git worktree isolation: every session gets its own worktree off a chosen parent branch; cleanup on close.
-- Persistent state: sessions are saved and auto-resume (--resume <uuid>), with first-run support (--session-id <uuid>).
-- Extensible via MCP: configure Model Context Protocol servers (stdio or SSE) to give agents extra tools/context.
-- Terminal controls: preset themes (macOS Light/Dark, Solarized Dark, Dracula, One Dark, GitHub Dark), font/size, cursor blink; rename/close/delete sessions.
-- Setup commands: run shell commands before the agent starts (env, sourcing files, etc.).
-
-Getting started
-- Prereqs: Node.js 16+, Git, and the agent CLI you’ll use (e.g., @anthropic-ai/claude-cli).
-- Install: npm install
-- Dev: npm run dev
-- Build/Run: npm run build && npm start
-
-Troubleshooting
-- macOS “unidentified developer”: xattr -cr /path/to/FleetCode.app
-- Claude Code reading the wrong directory: disable “Auto connect to IDE” (claude config → set autoConnectToIde to false).
-
-Project notes
-- TypeScript-heavy codebase; ISC license.
-- Latest release: 1.0.1-beta.6 (Oct 8, 2025).
-- Repo: built-by-as/FleetCode (≈207⭐, 8 forks).
-
-Here's a concise summary of the discussion:
-
-**Key Themes**
-1. **Comparisons & Alternatives**  
-   - Users mention similar tools like GitButler, Crystal, DevSwarm, and Container (Dagger) for parallel coding workflows.  
-   - Git worktree-based isolation is compared to container-based approaches, with debates about complexity vs. safety.  
-   - Some prefer existing terminal multiplexers vs FleetCode's specialized UI.
-
-2. **Workflow Concerns**  
-   - Questions about dependency management (CLI agents modifying system environments).  
-   - Interest in IDE/Jira integrations for task tracking.  
-   - Praise for persistent sessions but concerns about UI complexity vs CLI purity.
-
-3. **Technical Implementation**  
-   - macOS theme support noted as a strength.  
-   - MCP protocol extensibility sparks discussion about agent customization.  
-   - Questions about FleetCode's differentiation from other Git worktree tools.
-
-4. **Community Feedback**  
-   - Multiple users reference DevSwarm as a comparable project focusing on "swarm" coding collaboration.  
-   - Some confusion with JetBrains Fleet IDE due to naming similarity.  
-   - Requests for demo videos/documentation to clarify workflow.
-
-**Notable Points**
-- Users highlight GitButler's branch management as a complementary/competing workflow tool.  
-- Debate about whether containers add unnecessary overhead for local dev vs Git worktree isolation.  
-- Several contributors share their own related projects (e.g., CueIt Kanban agents, prctlkm TUI implementation).  
-- Mixed reactions to terminal UI vs pure CLI approaches for AI agent management.
-
-### Now open for building: Introducing Gemini CLI extensions
-
-#### [Submission URL](https://blog.google/technology/developers/gemini-cli-extensions/) | 154 points | by [meetpateltech](https://news.ycombinator.com/user?id=meetpateltech) | [40 comments](https://news.ycombinator.com/item?id=45516426)
-
-Google is opening an extensions ecosystem for Gemini CLI, its open-source, AI agent for the terminal. Extensions are installable integrations that connect Gemini to external tools and services, aiming to cut context-switching by letting the AI operate your stack from the command line.
-
-Highlights
-- What it is: A framework for “extensions” that add capabilities to Gemini CLI via pre-packaged playbooks, so the AI knows how to use new tools immediately.
-- One-liner install: gemini extensions install <GitHub URL or local path>.
-- Ecosystem: Launch partners include Dynatrace, Elastic, Figma, Harness, Postman, Shopify, Snyk and Stripe, alongside Google-built and community extensions. A new directory lists extensions and ranks them by GitHub stars.
-- Under the hood: Extensions can bundle Model Context Protocol (MCP) servers, context files (e.g., GEMINI.md), excluded/overridden tools, and custom slash commands. The AI consults the extension’s playbook and your local context (files, git status) to decide which tool to run.
-- Google-made add-ons: Cloud Run (deploy from local to public URL), GKE management, gcloud integration, and Cloud Observability.
-- Adoption stat: Google says over 1M developers have used Gemini CLI in its first three months.
-
-Why it matters
-- Brings “agentic” workflows to the terminal in an open, extensible way, letting developers wire AI into real tooling without bespoke setup.
-- Moves beyond raw MCP hookups by packaging usage guidance and commands, which should reduce friction and produce useful results from the first run.
-
-Getting started
-- Install extensions directly from GitHub or a local path.
-- Browse the new Extensions page to discover community, partner, and Google-built options.
-
-Things to watch
-- Security and trust: Review extension source, requested permissions, and what commands it can run, especially given access to local files and git state.
-- Reliability: How well playbooks generalize across varied project setups will determine real-world utility.
-
-The Hacker News discussion on Google's Gemini CLI extensions reveals a mix of cautious interest, technical critiques, and comparisons with competitors like Claude. Key points include:
-
-1. **Technical Feedback & Comparisons**:
-   - Users reported mixed experiences with Gemini CLI, with some finding it less reliable than Claude for complex tasks (e.g., code migration). Critics highlighted issues with context handling, error-prone outputs, and a lack of depth in documentation.
-   - Claude was praised for better workflow support (e.g., subagents, nested planning) and handling of coding tasks, though Gemini was noted as cheaper and sufficient for simpler use cases.
-
-2. **Security Concerns**:
-   - Multiple comments stressed the importance of auditing extension code due to security risks, especially given CLI access to local files and systems. A community fork ([gemini-cl-security](https://github.com/QuanZhang-William/gemini-cl-security)) was mentioned as an effort to address these concerns.
-
-3. **Integration Quirks**:
-   - The Figma extension drew confusion, with users questioning how a CLI tool integrates with a design platform. Some speculated it might read design files to assist coding, but others found the implementation limited (e.g., read-only MCP, minimal utility).
-
-4. **Usability Critiques**:
-   - Critics called Gemini CLI’s interface overwhelming, citing fragmented design and poor integration with existing tools. Complaints included flashing screens, token limits, and a lack of IDE-like context awareness.
-
-5. **Pricing & Value**:
-   - Gemini’s cost-effectiveness (10x cheaper tokens) was contrasted with Claude’s higher price but superior functionality. Some users preferred Gemini for basic tasks but acknowledged Claude’s edge in complex scenarios.
-
-6. **Skepticism About AI Agents**:
-   - Doubts were raised about the practicality of AI in CLI workflows, with users noting limitations in handling nuanced tasks and reliance on rigid playbooks.
-
-Overall, the discussion reflects cautious optimism about Gemini CLI’s potential but underscores concerns around reliability, security, and integration depth compared to established alternatives.
-
-### Legal Contracts Built for AI Agents
-
-#### [Submission URL](https://paid.ai/blog/ai-agents/paid-gitlaw-introducing-legal-contracts-built-for-ai-agents) | 70 points | by [arnon](https://news.ycombinator.com/user?id=arnon) | [42 comments](https://news.ycombinator.com/item?id=45515640)
-
-Paid has teamed up with GitLaw to release an open-source “Agentic MSA” — a Master Services Agreement tailored for AI agents rather than traditional SaaS. The pitch: most AI agent startups are still using SaaS contracts built for passive tools, which breaks down when agents act autonomously, continuously, and adapt over time.
-
-What’s broken with SaaS contracts for agents
-- Agents make decisions without human approval, run 24/7, and evolve — creating gaps in liability and expectations. Think the Ford dealership chatbot “free truck” fiasco.
-- You can’t price outcomes or protect margins if your contract assumes predictable, seat-based software.
-
-What the Agentic MSA covers
-- Agent classification and responsibility: Clarifies the agent is a tool; customers set parameters and retain oversight. Section 1.2 limits vendor liability for autonomous decisions.
-- Liability and risk: Disclaimers that outputs require human verification, plus damage caps (e.g., 12 months’ fees) and AI-specific accuracy language. Sections 7 and 4.1.
-- Data and training: Customers own their data and outputs; optional, clearly-described use of de-identified, aggregated data for model improvement with opt-outs. Section 2.1 and cover-page variables.
-
-Why it matters
-- Aligns legal terms with how agents actually operate, enabling outcome-based pricing and clearer risk allocation. As Paid’s CEO puts it: you can’t bill for outcomes using seat-based SaaS terms.
-
-How to use it
-- It’s free and open source via the GitLaw Community, with an AI agent to generate customized versions. It builds on CommonPaper’s Software Licensing Agreement and AI Addendum. The teams stress it’s a starting point; work with counsel to tailor it as laws evolve.
-
-The discussion revolves around the challenges of assigning liability and responsibility when AI agents operate under traditional SaaS contracts, highlighting key debates and considerations:
-
-1. **Liability Allocation**:  
-   - Participants argue that existing SaaS contracts fail to address autonomous AI behavior, where decisions aren't human-approved. Comparisons are made to industries like construction, where liability is clearly assigned (e.g., contractors vs. suppliers).  
-   - **Examples**: If an AI deletes a production database, should the vendor (like OpenAI) or the end-user bear responsibility? Contrasts are drawn to traditional services (e.g., AWS deleting a database vs. a hosted AI agent doing so).  
-
-2. **Contract Limitations**:  
-   - Traditional contracts assume deterministic, static software, not adaptive AI. Some suggest explicit disclaimers (akin to MIT licenses) to limit liability, though others counter that vendors like OpenAI may still face accountability for harmful outputs.  
-
-3. **Data and Model Evolution**:  
-   - Concerns arise about AI models evolving post-deployment, altering behavior unpredictably. Contracts may need clauses addressing updates, frozen model versions, or user consent for changes.  
-
-4. **Legal Frameworks**:  
-   - References to the **Law of Agency** (for human agents) highlight the mismatch with AI autonomy. Participants debate whether AI agents should be treated as tools (user-liable) or independent actors (vendor-liable).  
-
-5. **Practical Challenges**:  
-   - Maintaining contracts as AI evolves is seen as impractical. Suggestions include outcome-based pricing, insurance models (like gambling/financial industries), or clear terms on component failures (e.g., faulty third-party APIs).  
-
-6. **Industry Examples**:  
-   - Incidents like Ford’s chatbot offering free trucks or Replit’s AI deleting databases illustrate real-world gaps. Participants stress the need for explicit language around human oversight and damage caps (e.g., 12 months’ fees).  
-
-**Key Takeaway**: The Agentic MSA is a starting point, but legal frameworks must evolve to address AI’s unique risks—autonomy, adaptability, and indirect control—while balancing vendor protection and user responsibility. Collaboration between legal and technical teams is critical as laws and AI capabilities advance.
-
-### OpenAI Apps SDK: The New Browser Moment
-
-#### [Submission URL](https://www.nuefunnel.com/blog/openai-apps-sdk-the-new-browser-moment) | 17 points | by [sidhusmart](https://news.ycombinator.com/user?id=sidhusmart) | [4 comments](https://news.ycombinator.com/item?id=45518778)
-
-TL;DR
-The Apps SDK frames ChatGPT as a universal action interface: instead of sending you to sites, it fulfills intents inside the chat by calling third‑party apps. That shifts the web from routing attention to executing tasks—and puts OpenAI in the platform seat.
-
-Key ideas
-- Assistant > browser: Queries like “find me a holiday apartment…” don’t return links; they trigger integrated apps (e.g., booking) to perform the task in-line. Search routes less; agents execute more.
-- Not just automation: Unlike “computer use” approaches, Apps SDK is an official integration layer—closer to a platform than a macro runner.
-- Siri, but unbounded: Apple’s App Intents hinted at this, but were siloed, brittle, and phrase-dependent. LLMs make intent parsing flexible, cross‑platform, and open to any developer—if OpenAI can solve app discovery and quality at scale.
-- Who wins: Transactional apps (commerce, travel, productivity, payments) gain a new distribution channel with retained transactions. Who loses: Attention/ads businesses (news, social, portals) risk disintermediation as summaries and answers happen in‑chat.
-- The execution economy: Value migrates from information to action. Knowledge becomes “free” (synthesized instantly), execution becomes premium (bookings, purchases), trust decides which app gets invoked.
-- Platform gravity and risk: If ChatGPT becomes the default interface, OpenAI controls discovery, economics, and data access—echoing Google Search and the App Store. Expect innovation pull and regulatory push; developers will optimize for ChatGPT rankings.
-- Competitive context: Similar ambitions from Perplexity’s Comet and The Browser Company’s Dia, but Apps SDK is a first‑party, “blessed” app layer rather than browser automation.
-
-Why it matters
-- For developers: New demand channel, but platform dependency and ranking dynamics loom. Build for intents, not pages.
-- For publishers: Summaries siphon attention; without control of the surface, ad models weaken. Monetization may hinge on paid execution or partnerships.
-- For users: Fewer tabs, more outcomes—“talk to do.” The assistant becomes the operating system for the web’s next layer.
-
-Open questions
-- Discovery and governance: How will ChatGPT rank apps, handle conflicts, and enforce quality/security?
-- Economics: Beyond pure transactions, what rev‑share or payout models emerge for non‑transactional utilities?
-- Interop and lock‑in: Will there be neutral standards for agent/app intents, or a new era of platform silos?
-
-Takeaway
-If the browser made the web clickable and the smartphone made it touchable, assistants are making it actionable. The Apps SDK is positioned as that step—shifting the web from reading to doing, and moving the center of gravity from attention to execution.
-
-**Summary of Discussion:**
-
-The discussion revolves around the potential significance of OpenAI's Apps SDK, drawing comparisons to historical tech milestones and expressing both optimism and skepticism:
-
-1. **Historical Comparisons & Skepticism:**
-   - A user compares OpenAI's current phase to pivotal moments like Steve Jobs' Apple, the App Store, and the browser revolution, suggesting the SDK could redefine app interaction. However, skepticism is raised about overhyping the technology, noting past innovations (e.g., "terminal moments" or early LLMs) that failed to meet transformative expectations.
-
-2. **Analyst Frameworks vs. Hype:**
-   - One commenter critiques the reliance on buzz, advocating instead for established analyst frameworks (Forrester, Gartner) to evaluate progress, implying that structured analysis trumps speculative hype in understanding OpenAI’s advancements.
-
-3. **New Delivery Models & the "Super App" Angle:**
-   - Another user likens the SDK’s potential to the World Wide Web (WWW), suggesting it could unlock novel service delivery principles. A cryptic reply hints at further exploration ("dd"). 
-   - A separate comment speculates about OpenAI’s strategy to position ChatGPT as a U.S.-centric "super app" (à la WeChat), aiming to survive competitive markets by consolidating multiple services.
-
-**Key Themes:**
-- **Optimism:** The SDK is framed as a paradigm shift, enabling action-oriented interfaces and new distribution models.
-- **Skepticism:** Past tech hypes (e.g., underdelivering LLMs) serve as cautionary tales.
-- **Market Strategy:** OpenAI’s move could be part of a broader play to dominate via platform control or super-app status.
-
-**Open Questions:**
-- Will the SDK truly replicate the impact of the App Store or browsers?
-- Can OpenAI avoid past pitfalls of overhyped tech while navigating platform governance and competition?
-
-### Expanding access to Opal, our no-code AI mini-app builder
-
-#### [Submission URL](https://blog.google/technology/google-labs/opal-expansion/) | 38 points | by [simonpure](https://news.ycombinator.com/user?id=simonpure) | [26 comments](https://news.ycombinator.com/item?id=45519944)
-
-Google is taking Opal, its no-code AI mini‑app builder, global—and giving it a real debugger.
-
-What’s new
-- Expansion: Rolling out beyond the U.S. to 15 countries: Canada, India, Japan, South Korea, Vietnam, Indonesia, Brazil, Singapore, Colombia, El Salvador, Costa Rica, Panamá, Honduras, Argentina, and Pakistan.
-- Advanced no‑code debugging: Step‑by‑step workflow execution in a visual editor, ability to iterate on a specific step in a console panel, and real‑time errors pinned to the exact failing step.
-- Performance boost: Faster project creation (previously could take ~5 seconds) and parallel runs so multi‑step workflows can execute simultaneously to cut wait times.
-
-Why it matters
-- Opal lets people build AI‑powered mini‑apps using natural language—no coding. Early users built more sophisticated tools than expected, so Google is shoring up reliability (debugging) and throughput (parallelism) to handle more complex, production‑like workflows.
-
-Availability
-- Access via opal.withgoogle.com; Google is also promoting a Discord builder community.
-
-Bottom line: Google is turning a neat Labs experiment into a more serious no‑code platform by adding transparent debugging and concurrency, while expanding access to a wider creator base.
-
-**Summary of Discussion on Google's Opal Expansion:**
-
-1. **Product Skepticism and Quality Concerns:**  
-   - Many users expressed doubts about Google’s track record of discontinuing products (*“shiny promotions…software retirement village”*).  
-   - Criticisms of AI-generated content quality (*“garbage AI-generated blog posts”*) and skepticism about Opal’s reliability for complex workflows.  
-
-2. **Comparisons to Competitors:**  
-   - Microsoft’s past low-code tools (e.g., Power Apps) were cited as cautionary examples.  
-   - Opal was unfavorably compared to existing platforms like **n8n**, **Node-RED**, **Zapier**, and visual tools like Unreal Engine’s Blueprints.  
-
-3. **No-Code Debate:**  
-   - Mixed opinions on no-code viability: Critics argued it struggles with complex logic (*“block-box work”*), while supporters noted success in niche domains (e.g., **Wix**, **Shopify**).  
-   - Visual programming’s limitations were highlighted (*“hard to express state machines in code-like fashion”*).  
-
-4. **Regulatory and Market Dynamics:**  
-   - EU users lamented exclusion from Opal’s rollout, sparking debates on tech regulation. Some argued regulations stifle innovation, while others blamed market dynamics (e.g., dominance of firms like Google).  
-
-5. **Meta Criticism:**  
-   - A flagged comment chain questioned the discussion’s quality, pointing to **HN guidelines** on substantive discourse.  
-
-**Key Takeaway:** The discussion reflects broader skepticism about Google’s product longevity and AI’s role in no-code tools, alongside debates on no-code’s limitations versus its niche successes. Concerns about regulatory fragmentation (e.g., EU vs. global markets) also surfaced.
-
-### AI gets more 'meh' as you get to know it better
-
-#### [Submission URL](https://www.theregister.com/2025/10/08/more_researchers_use_ai_few_confident/) | 77 points | by [rntn](https://news.ycombinator.com/user?id=rntn) | [33 comments](https://news.ycombinator.com/item?id=45519161)
-
-AI’s honeymoon with researchers may be over, says Wiley’s new “ExplanAItions 2025” survey preview
-
-- Adoption up, confidence down: 84% of 2,430 researchers now use AI (was 57% in 2024), but those who think AI already outperforms humans in tested tasks fell from 53% to under a third. Early adopters remain rosier (59% of use cases).
-- Concerns rising: worries about inaccuracies/hallucinations jumped to 64% (from 51%), security/privacy to 58% (from 47%); ethics and transparency concerns also ticked up to around/above 50%.
-- Use cases are mostly “word work”: writing assistance, documentation, and literature review dominate. Writing aid saw the biggest uptick and is the only use tried by over half of respondents.
-- Mixed impact on work: 85% say AI makes them more efficient; 77% produce more; 73% see quality gains; 70% use it for brainstorming—but only 48% say it helps them think critically.
-- Outlook and support: 83% expect AI to be widespread in research by 2027, yet many report a lack of institutional backing (57%).
-- Caveats and context: 2025’s sample was ~half the size of 2024’s (possible self-selection). Other studies cited paint a sobering picture: CMU found AI agents fail ~70% of tasks; MIT reports only ~5% of GenAI pilots show measurable ROI.
-
-Takeaway: Researchers are using AI more, but the closer they look, the more “meh” it seems—great for drafting and sifting literature, less convincing for complex, high-stakes research work.
-
-**Summary of Discussion:**
-
-The discussion reflects a nuanced and often skeptical view of AI's current capabilities and societal impact, highlighting both practical applications and significant concerns:
-
-1. **Utility vs. Overhype**:  
-   - Participants acknowledge AI's usefulness in tasks like coding assistance ("coding AI works fantastically") and content generation, but many criticize its limitations. Examples include poor code quality ("code shockingly bad"), superficial outputs, and reliance on AI leading to reduced critical thinking and ownership in software development.  
-   - Some argue AI tools encourage laziness, with developers treating generated code as "correct" without proper review, risking technical debt and quality issues.
-
-2. **Ethical and Social Concerns**:  
-   - **Sycophancy and EQ**: Non-technical users are noted to overly trust AI (e.g., ChatGPT), leading to "drowned" interactions and frustration. Some describe AI outputs as overly agreeable ("sycophantic"), mimicking high emotional intelligence (EQ) but lacking depth.  
-   - **Misinformation**: Concerns about AI amplifying social media's role in spreading "bullshit" and reducing factual accuracy ("world spell loss") are raised, with systems prioritizing engagement over truth.
-
-3. **Technical Limitations**:  
-   - **Hallucinations & Inconsistency**: Users report AI-generated nonsense in search results and documentation, complicating knowledge extraction.  
-   - **Stagnation vs. Progress**: Debate exists over whether AI advancements (e.g., image generation fidelity, reasoning) are plateauing ("stagnated class 1-12 years") or improving ("massively improved"). Skeptics doubt near-term "leaps," while others cite cheaper, faster models as progress.
-
-4. **Industry Realities**:  
-   - **Workflow Challenges**: AI coding tools are seen as double-edged—speeding up tasks but undermining code ownership and quality assurance. Some fear a future where AI-generated code dominates without proper oversight.  
-   - **Economic Barriers**: High costs of training advanced models and resource limitations ("can't afford resolution") are noted, alongside architectural trade-offs.
-
-5. **Cultural Sentiment**:  
-   - **Disillusionment**: Many express boredom or frustration with AI's current state, labeling the phase a "trough of disillusionment." Others humorously reference AI's unpredictability (e.g., "Nano Banana" randomly altering outputs).  
-   - **Human Condition**: A meta-commentary questions whether grappling with AI's flaws is simply part of the "human condition," with one user linking to a video metaphorically depicting future disillusionment.
-
-**Takeaway**: While AI is increasingly integrated into workflows, the discussion underscores a cautious pragmatism. Users recognize its potential but emphasize its current shortcomings—ethical, technical, and practical—warning against over-reliance and urging tempered expectations.
