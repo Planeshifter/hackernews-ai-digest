@@ -10,6 +10,271 @@ export async function getStaticProps() {
 
 ---
 
+## AI Submissions for Tue Nov 11 2025 {{ 'date': '2025-11-11T17:16:35.247Z' }}
+
+### We ran over 600 image generations to compare AI image models
+
+#### [Submission URL](https://latenitesoft.com/blog/evaluating-frontier-ai-image-generation-models/) | 190 points | by [kalleboo](https://news.ycombinator.com/user?id=kalleboo) | [99 comments](https://news.ycombinator.com/item?id=45890186)
+
+LateNiteSoft (makers of Camera+, Photon, REC) ran 600+ AI image edits to see which models work best for everyday photo tweaks—and to decide what to support in their new MorphAI app. Because they refuse “unlimited” AI pricing with fair‑use gotchas, they built CreditProxy, a pay‑per‑generation billing layer (and are inviting trial users).
+
+How they tested
+- Realistic use cases: pets, kids, landscapes, cars, product shots
+- Naive prompts (what typical users actually type), not prompt‑engineered
+- Tracked speed and behavior across models
+
+Latency (avg during tests)
+- OpenAI gpt-image-1: High ~80s (Medium ~36s)
+- Gemini: ~11s
+- Seedream: ~9s
+- Times were stable across prompts
+
+Findings
+- Classic/photoreal filters: Gemini best preserves original detail and resists hallucinations, but often weakens or refuses edits—especially on people. OpenAI applies stronger looks but introduces “AI slop,” notably on faces. Seedream had some odd shortcuts.
+- Long exposure: OpenAI did best when the effect made sense (landscapes, cars) but failed on cats/product and got trippy on portraits. Gemini often did nothing. Seedream leaned on generic light streaks.
+- Heat map: None showed real “heat” understanding; Seedream mostly assumed humans emit heat.
+- Creative effects (vintage, kaleidoscope, etc.): Gemini is conservative; OpenAI more creative but less faithful.
+
+Why it matters
+- Model choice should be task‑driven: Gemini for faithful edits, OpenAI for bold stylization (with risk), Seedream for speed and low cost but less grounding.
+- For consumer photo apps, predictable costs, latency, and “do no harm” edits often beat raw creativity.
+
+There’s a big, flip‑throughable comparison gallery on the post (with keyboard shortcuts).
+
+**Summary of Hacker News Discussion:**
+
+1. **Model Comparisons & Quirks:**  
+   - **Gemini** is praised for preserving details and refusing risky edits (e.g., faces), but often returns unchanged images or weakens edits.  
+   - **OpenAI** (GPT-image-1) is seen as more creative but introduces "AI slop," altering faces/objects and applying a yellow tint. Users debate whether this tint is intentional (e.g., vintage styling) or a technical flaw.  
+   - **Seedream** excels in speed and cost but sacrifices detail, using shortcuts like generic light streaks.  
+
+2. **Technical Insights:**  
+   - OpenAI’s pipeline regenerates images semantically rather than editing pixels directly, leading to unintended changes (e.g., altered faces). This is attributed to tokenization and latent space architecture.  
+   - Gemini’s conservatism, especially with people, may stem from safety filters.  
+
+3. **Practical Challenges:**  
+   - Users report frustration with models ignoring prompts (e.g., Gemini refusing edits) or altering unintended areas, necessitating manual checks.  
+   - Cost and latency matter: Seedream’s speed appeals to small creators, while OpenAI’s pricing and reliability raise concerns.  
+
+4. **Community Reactions:**  
+   - Skepticism about "AI slop" as hype vs. substance, with critiques of stock photo industry impacts.  
+   - Debate over whether OpenAI’s yellow tint is a feature (stylistic choice) or a bug.  
+   - Interest in hybrid workflows (e.g., SDXL, LoRAs) for better control, highlighting a gap in commercial SaaS offerings.  
+
+5. **Notable Quotes:**  
+   - *"Models sometimes alter objects they weren’t supposed to touch… a complete failure."*  
+   - *"Peak quality in realistic rendering might already be behind us."* (referring to DALL-E 3’s trade-offs).  
+
+**Key Takeaway:**  
+The discussion underscores the need for task-specific model selection, transparency in AI editing behavior, and tools that balance creativity with fidelity. Community sentiment leans toward cautious adoption, emphasizing manual oversight and hybrid approaches for professional use.
+
+### Scaling HNSWs
+
+#### [Submission URL](https://antirez.com/news/156) | 206 points | by [cyndunlop](https://news.ycombinator.com/user?id=cyndunlop) | [42 comments](https://news.ycombinator.com/item?id=45887466)
+
+Scaling HNSWs: antirez’s hard-won lessons from bringing HNSW to Redis
+
+- Not just another intro: After a year building an HNSW-based “Redis experience,” antirez shares advanced, practical insights—what it takes to make HNSW low-latency and production-ready, not just paper-correct.
+- HNSW isn’t the final form: The original paper is excellent but incomplete for real systems. He added true deletions (beyond tombstones), and questions how necessary the hierarchy (“H”) really is—early results suggest a flat, single-layer variant can work but with higher seek time. The sweet spot may be modified level selection rather than all-or-nothing.
+- Memory is the real enemy: HNSW is pointer-heavy and multi-level; vectors are big. Extra layers cost ~1.3x space on average (with p=0.25), so hierarchy isn’t the main bloat—vector storage is.
+- Biggest win: 8‑bit quantization by default. Per-vector max-abs scaling delivers roughly 4x faster search and ~4x smaller vectors with near-identical recall in practice. Pointers still dominate some footprint, but this is the low-hanging fruit that moves the needle in Redis.
+- Why this quantization: Using a single max-abs per vector keeps cosine similarity fast—compute a simple scale factor and do the heavy lifting in the integer domain with unrolled loops and multiple accumulators for modern CPUs. It’s faster than min/max quantization while preserving accuracy.
+- Tradeoffs he didn’t take (yet): Pointer compression could save memory (upper bytes often identical on 64-bit) but may cost latency; he hasn’t adopted it given Redis’s performance bar.
+- Direction of travel: Don’t assume “evolution” just means on-disk HNSW. There’s room for fresh data-structure ideas around hierarchy, level selection, deletions, and quantization that can beat conventional wisdom.
+
+Why it matters: If you’re building vector search in latency-sensitive systems, quantization and careful algorithmic choices can deliver big wins without killing recall—and some revered parts of HNSW may be optional with the right tweaks. Redis Vector Sets ships with 8-bit quantization on by default for exactly these reasons.
+
+**Summary of Discussion:**
+
+The discussion around antirez's insights on scaling HNSW for Redis highlights several technical challenges, trade-offs, and alternative approaches in vector search systems:
+
+### 1. **Filtered Searches & Performance**  
+   - Applying metadata filters (e.g., regional constraints) during HNSW traversal can degrade performance, as it requires checking each candidate vector against filter criteria. Solutions like **Turbopuffer** (200ms latency for 100B vectors) and **Vespa’s hybrid search** were cited as addressing this, though antirez notes Redis prioritizes low-latency by limiting graph traversal depth early if filters are restrictive.  
+   - **Lucene/Elasticsearch** shortcuts filtering by pre-determining eligible nodes, but worst-case scenarios still involve brute-force distance comparisons.  
+
+### 2. **Quantization & Efficiency**  
+   - Redis’s **8-bit per-vector quantization** (using max-abs scaling) was praised for reducing memory usage by ~4x and speeding up searches while preserving recall. Critics noted that **DiskANN** and other systems achieve similar gains via int8/binary quantization but require trade-offs in recall.  
+   - antirez clarified that Redis’s approach prioritizes CPU-friendly integer operations and avoids complex schemes like product quantization (PQ), balancing practicality with near-identical recall for most use cases.  
+
+### 3. **Hierarchy in HNSW**  
+   - Debate arose over whether HNSW’s hierarchical layers ("H") are essential. antirez’s experiments suggest a **flat, single-layer variant** could suffice with higher seek times, proposing modified level selection as a middle ground. Academic references (e.g., "Hubs in HNSW") were shared, underscoring ongoing research into hierarchical efficiency.  
+
+### 4. **Implementation Challenges**  
+   - **Memory vs. Latency**: Pointer compression was discussed but deemed risky for Redis’s strict latency goals.  
+   - **Single-Threaded Design**: Redis’s single-threaded model influenced HNSW implementation choices, favoring simplicity and deterministic performance over parallelism.  
+
+### 5. **Alternative Approaches**  
+   - **Vespa** and **SPFresh** were highlighted for hybrid search optimizations.  
+   - Broader themes emerged on **system design philosophy**: Simplicity and "good enough" solutions (e.g., 60th vs. 72nd recall percentile) often trump theoretical perfection, especially in latency-sensitive applications like RAG.  
+
+### Key Takeaway:  
+The discussion underscores that real-world vector search systems require pragmatic trade-offs—quantization, filtered search shortcuts, and hierarchy adjustments—to balance speed, memory, and recall. Redis’s choices reflect a focus on practical, low-latency solutions over algorithmic purity.
+
+### Adk-go: code-first Go toolkit for building, evaluating, and deploying AI agents
+
+#### [Submission URL](https://github.com/google/adk-go) | 80 points | by [maxloh](https://news.ycombinator.com/user?id=maxloh) | [23 comments](https://news.ycombinator.com/item?id=45891968)
+
+Google open-sources ADK for Go: a code-first toolkit for building and deploying AI agents
+
+What it is: ADK (Agent Development Kit) for Go is a modular, model-agnostic framework focused on building, evaluating, and orchestrating AI agents using idiomatic Go. It’s optimized for Gemini but works with other models and frameworks.
+
+Why it matters: Go is a natural fit for cloud-native, concurrent systems. ADK brings a strongly typed, testable, versionable approach to agent development—aimed at production-grade workloads and multi-agent orchestration—without locking you into a specific model or deployment target.
+
+Highlights
+- Code-first and idiomatic Go: define agent logic, tools, and orchestration in code for flexibility and testability.
+- Rich tool ecosystem: use prebuilt tools or wire in custom functions to extend agent capabilities.
+- Multi-agent systems: compose specialized agents into larger workflows.
+- Deploy anywhere: easy containerization; strong fit for Cloud Run and cloud-native environments.
+- Model-agnostic, Gemini-optimized: integrates with Gemini while staying portable.
+
+Quick start: go get google.golang.org/adk
+
+Details: Apache-2.0 licensed, ~2.8k GitHub stars, with companion ADKs for Python and Java plus docs and samples at google.github.io/adk-docs/.
+
+**Summary of Hacker News Discussion:**
+
+### **Key Themes**
+1. **Go’s Strengths for AI Agents**:
+   - **Concurrency & Performance**: Users highlight Go’s native concurrency (goroutines/channels) as ideal for AI agents handling parallel tasks (e.g., HTTP requests, database operations) without serialization bottlenecks. Its compiled binaries and efficiency suit cloud/serverless deployments (e.g., Cloud Run).
+   - **Type Safety & Testability**: Go’s strong typing and idiomatic design enable reliable, maintainable agent code. Some contrast this with Python’s flexibility, which can lead to runtime errors in complex systems.
+
+2. **Comparison with Python/Java**:
+   - **Python ADK**: Praised for simplicity (e.g., defining agents as objects with tools) and built-in features (debugging, session management). However, Go is seen as better for production-scale systems requiring strict concurrency and type safety.
+   - **Java**: Noted for enterprise-grade performance but seen as less agile for rapid agent development. Go strikes a balance between performance and developer ergonomics.
+
+3. **Use Cases & Skepticism**:
+   - **Production Readiness**: Users see ADK-Go as promising for multi-agent orchestration in cloud-native environments, especially with Gemini optimizations. Some question if inference latency (often model-dependent) negates Go’s runtime advantages.
+   - **Model Agnosticism**: While Gemini-optimized, the framework’s portability across models (e.g., OpenAI, Claude) is appreciated, though integration efforts vary.
+
+4. **Tooling & Ecosystem**:
+   - **Prebuilt Tools**: The ADK’s tool ecosystem (e.g., HTTP/SQLite connectors) simplifies agent development. Custom tool integration via Go functions is seen as a plus.
+   - **Debugging/Orchestration**: Features like session management and callbacks for data anonymization are highlighted as valuable for complex workflows.
+
+### **Notable Opinions**
+- **Rust vs. Go**: A user notes Rust’s popularity but argues Go’s concurrency model is more approachable for agent development.
+- **Python’s Dominance**: Some acknowledge Python’s hold on AI prototyping but see Go as better for scaling “script-like” agents into robust applications.
+- **Deployment Flexibility**: Go’s compiled binaries are praised for serverless/edge deployments, with one user sharing success in production serverless functions.
+
+### **Criticisms & Questions**
+- **Learning Curve**: A few users express surprise at Go’s type-driven agent definitions (similar to TypeScript) but find it manageable.
+- **Gemini Lock-In?**: Clarified that ADK is model-agnostic, though Gemini optimizations are a focus.
+
+### **Miscellaneous**
+- **Community Excitement**: Several users express enthusiasm for Go’s role in advancing multi-agent systems and cloud-native AI.
+- **References**: Links to prior HN posts about agents and Claude’s Python implementation are shared for comparison.
+
+**Overall Sentiment**: Positive, with developers seeing ADK-Go as a compelling option for building scalable, type-safe AI agents in production, particularly where concurrency and cloud-native deployment matter. Python remains favored for prototyping, but Go’s strengths in reliability and performance are seen as filling a critical niche.
+
+### Xortran - A PDP-11 Neural Network With Backpropagation in Fortran IV
+
+#### [Submission URL](https://github.com/dbrll/Xortran) | 46 points | by [rahen](https://news.ycombinator.com/user?id=rahen) | [10 comments](https://news.ycombinator.com/item?id=45892174)
+
+XOR Neural Network in FORTRAN IV (RT-11, PDP-11/34A) — A delightful retrocomputing crossover: a tiny multilayer perceptron that learns XOR, written in 1970s-era FORTRAN IV and run under RT-11 on a PDP‑11/34A (via the SIMH emulator). It’s a legit backprop network: 1 hidden layer (4 neurons, leaky ReLU), MSE loss, tanh output, “He-like” Gaussian init via a Box–Muller variant, and learning-rate annealing. The whole thing trains 17 parameters and converges in minutes on real hardware (or at a realistic 500K throttle in SIMH), printing loss every 100 epochs and nailing the XOR targets. It compiles with the original DEC FORTRAN IV compiler and needs just 32 KB plus an FP11 floating-point unit. Includes an RT‑11 disk image, so you can attach it in SIMH and run, or build with .FORTRAN and .LINK. A neat proof that backprop doesn’t require modern frameworks—just patience, floating point, and a 1970s minicomputer.
+
+The discussion highlights a mix of nostalgia, technical insights, and historical context around retrocomputing and early neural networks:  
+
+- **Retro Hardware & Neural Networks**: Users reminisce about professors implementing neural networks on PDP-11s in the 1980s, noting limitations like the PDP-11/34A’s modest power (roughly comparable to an IBM XT) but praising its ability to handle sustained workloads with its FPU. References are made to historical models like the Neocognitron (1980s) and the role of VAX systems in later backpropagation research.  
+
+- **FORTRAN IV Nuances**: Debate arises around FORTRAN IV’s features, including its use of FORTRAN 66 extensions, lack of modern constructs (e.g., structured `If/Then/Else`), and reliance on hardware FPUs or software emulation. The project’s compatibility with the original DEC compiler and constraints (32 KB memory, FP11 support) sparks appreciation for its efficiency.  
+
+- **Humor & Corrections**: A lighthearted thread corrects Fortran version timelines (Fortran IV in 1966 vs. Fortran 77 in 1977), jokingly referencing Charles Babbage’s Analytical Engine. Another user points out the ironic overlap between PDP-11 hardware and the “Parallel Distributed Processing” (PDP) connection in neural network literature.  
+
+- **Appreciation for Simplicity**: Commentators laud the project for demonstrating core concepts without modern frameworks, emphasizing the value of understanding fundamentals over today’s complexity.  
+
+Overall, the exchange blends technical admiration for early computing with wry humor about its historical quirks.
+
+### AI documentation you can talk to, for every repo
+
+#### [Submission URL](https://deepwiki.com/) | 161 points | by [jicea](https://news.ycombinator.com/user?id=jicea) | [118 comments](https://news.ycombinator.com/item?id=45884169)
+
+Devin DeepWiki: turn any repo into an AI‑generated code wiki
+A new tool called Devin DeepWiki promises “index your code with Devin,” letting you add a GitHub repo and get a browsable, wiki‑style view of the codebase with AI summaries and search. The demo shows a catalog of popular projects (VS Code, Transformers, Express, SQLite, React, Kubernetes, etc.) you can pick to “understand,” suggesting it pre‑indexes large OSS repos for instant exploration. The pitch is faster onboarding and code comprehension: instead of hopping across files, you get cross‑linked context and natural‑language explanations.
+
+Why it’s interesting
+- Speaks to the growing demand for AI‑first code navigation and docs, competing with tools like Sourcegraph/Cody, CodeSee, and auto‑docs generators.
+- Could be useful for due diligence, learning popular frameworks, or ramping onto large legacy codebases.
+
+What to watch
+- Accuracy and hallucinations in summaries; keeping the wiki in sync with fast‑moving repos.
+- Privacy/security for private code and indexing scope.
+- How it handles truly large monorepos and language/tooling diversity.
+
+The discussion around Devin DeepWiki highlights skepticism and critical feedback, focusing on **accuracy, documentation integrity, and practical usability**:
+
+1. **Accuracy Concerns**:  
+   - Users criticize AI-generated summaries and diagrams for being **outdated, incorrect, or misleading**. For example, the tool inaccurately claims a VS Code extension exists, but the linked repository shows it’s experimental/unreleased.  
+   - Debate arises over whether AI can reliably handle subjective or nuanced topics (e.g., React vs. functional frameworks, OOP vs. FP), with concerns that LLMs might **reinforce biases or misinterpretations** instead of clarifying them.
+
+2. **Documentation Frustrations**:  
+   - The project’s own documentation is flagged as **confusing or incomplete**, such as installation instructions for an unreleased VS Code extension. Users note that incomplete or incorrect docs waste time and erode trust, especially for contributors trying to build/use the tool.  
+   - A meta-point emerges: If AI-generated docs (like DeepWiki’s) are error-prone, they risk creating a **“hallucination spiral”** where future AI models train on flawed data, worsening accuracy over time.
+
+3. **Project Transparency**:  
+   - Critics argue the demo’s pre-indexed OSS repos (e.g., VS Code, React) mask the tool’s limitations. The maintainer admits parts are experimental but defends the approach as a calculated risk.  
+   - Some users question the ethics of promoting unfinished tools, suggesting it prioritizes hype over practicality, especially for private codebases.
+
+4. **Mixed Reactions to AI’s Role**:  
+   - While some acknowledge AI’s potential to surface high-level insights, others stress that **human-curated documentation** remains irreplaceable for precision.  
+   - A recurring theme: AI-generated docs might complement but not replace manual efforts, particularly in filling gaps for legacy/unmaintained projects.
+
+**Key Takeaway**:  
+The discussion reflects cautious interest in AI-powered code navigation tools but emphasizes the need for accuracy, transparency, and human oversight. DeepWiki’s current implementation raises red flags, but its concept sparks debate about balancing automation with reliability in developer tools.
+
+### How to Train an LLM: Part 1
+
+#### [Submission URL](https://omkaark.com/posts/llm-1b-1.html) | 15 points | by [parthsareen](https://news.ycombinator.com/user?id=parthsareen) | [3 comments](https://news.ycombinator.com/item?id=45891801)
+
+What it is
+- A hands-on series documenting the author’s attempt to build a domain-specific LLM from scratch. Part 1 sets a clean, “boring” Llama 3–style baseline and maps out the training math, memory, and token budgeting before getting fancy.
+
+Model and data
+- Architecture: ~1.24B params, Llama 3–ish
+  - 16 layers, hidden size 2048, SwiGLU (×4), 32 heads with 8 KV heads (GQA), RoPE theta 500k, vocab 2^17, tied embeddings, no attention/MLP bias, norm_eps 1e-5.
+- Context: targeting 4096 at the end, but trains mostly at 2048 (common practice: short context for 80–90% of steps, extend near the end).
+- Data: Karpathy’s fine-web-edu-shuffled.
+- No cross-document masking (for now).
+
+Compute plan
+- Hardware: 8×H100 80GB.
+- Token budget: Chinchilla-style 1:20 params:tokens → ~20B tokens for a 1B model.
+- Global batch target: 1M tokens (GPT-3 XL–style).
+  - With FP32 ballpark estimates and a 5GB “misc” reserve per GPU, each H100 fits ~7×[2048] sequences per step.
+  - Across 8 GPUs: micro-batch ≈ [56, 2048] = 114,688 tokens/step.
+  - Gradient accumulation: ceil(1,048,576 / 114,688) = 10 micro-steps per global batch.
+  - Steps: 20B / 1M = 20,000 optimizer updates; with accumulation, ≈200,000 forward/backward micro-steps.
+
+Memory insights (intuition, FP32, unfused)
+- Rough peaks by phase:
+  - Forward: Weights + Activations.
+  - Backward: Weights + Activations + Gradients (often the peak).
+  - Optimizer step: Weights + Gradients + Optimizer states (~4× params in bytes).
+- Activation memory dominates at realistic batch sizes due to unfused ops saving intermediates.
+- Empirical activation cost scales linearly with batch size; ~7.95GB per [1,2048] sequence in this setup.
+
+Immediate optimizations planned
+- torch.compile and FlashAttention to fuse ops and slash activations.
+- Gradient accumulation (already used).
+- More to come (mixed precision, custom kernels, infra upgrades).
+
+Why it matters
+- Clear, number-first walkthrough of how far 8×H100 can push a 1B Llama-style pretrain without exotic tricks.
+- Sets a reproducible baseline before exploring “BLASphemous” optimizations, longer context, inference-friendly tweaks, and a custom “token farm.”
+
+What’s next
+- Improving training infra, scaling token throughput, extending context efficiently, and architectural changes aligned with the final task. The domain target is still under wraps.
+
+The discussion touches on contrasting perspectives about LLM deployment and hardware requirements:
+
+1. **Mobile vs. Server Debate**: One user argues LLMs should prioritize optimization for mobile/portable devices (cheaper, easier maintenance) rather than expensive server infrastructure. They suggest deploying LLMs directly on phones or edge devices.
+
+2. **Counterexample with Laptops**: A reply highlights running a 70B-parameter LLM on a $300 laptop with 96GB RAM using tools like `llm.cpp`, implying powerful models can already operate on consumer-grade hardware. The user mentions purchasing the laptop for non-AI reasons, suggesting incidental compatibility with AI workloads.
+
+3. **Unclear Contribution**: A third comment ("cdcntnt nwbrrwd") appears fragmented or mistyped, offering no clear insight.
+
+**Key Takeaway**: The exchange reflects ongoing tensions in the AI community between centralized (server-based) and decentralized (edge/mobile) LLM deployment strategies, with practical examples demonstrating feasibility on modest hardware.
+
+---
+
 ## AI Submissions for Mon Nov 10 2025 {{ 'date': '2025-11-10T17:15:32.282Z' }}
 
 ### Using Generative AI in Content Production
@@ -403,251 +668,3 @@ Here's a concise summary of the Hacker News discussion:
 - Humorous engagement with the pelican/bicycle theme contrasted with serious critiques of AI’s societal impact. Some dismissed fears as overblown ("bad actors exist in any tech"), while others warned of degraded learning in younger developers.  
 
 **Key Takeaway**: The experiment showcased AI's potential to enhance coding workflows but ignited a broader debate on balancing automation with skill retention and system mastery.
-
----
-
-## AI Submissions for Sat Nov 08 2025 {{ 'date': '2025-11-08T17:12:27.233Z' }}
-
-### Study identifies weaknesses in how AI systems are evaluated
-
-#### [Submission URL](https://www.oii.ox.ac.uk/news-events/study-identifies-weaknesses-in-how-ai-systems-are-evaluated/) | 385 points | by [pseudolus](https://news.ycombinator.com/user?id=pseudolus) | [181 comments](https://news.ycombinator.com/item?id=45856804)
-
-Oxford-led review: most LLM benchmarks don’t measure what they claim
-
-- What’s new: A 42‑researcher team led by Oxford Internet Institute reviewed 445 LLM benchmarks and found widespread issues with construct validity—the basic question of whether tests measure what they say they do. The paper, Measuring What Matters, is accepted for NeurIPS 2025.
-- Key stats: Only 16% of studies used statistical methods when comparing models; ~50% tried to assess abstract traits (e.g., “reasoning,” “harmlessness”) without clear definitions.
-- Why it matters: Benchmarks drive research priorities, leaderboards, and are referenced by regulators (e.g., EU AI Act). Weak tests risk overstating progress and safety.
-- Examples of problems:
-  - Formatting confounds: models penalized for output style rather than task competence.
-  - Brittleness: small wording/number changes flip correct answers to failures.
-  - Overclaims: exam multiple-choice scores miscast as “doctor-level” ability.
-- Recommendations: Define constructs precisely and isolate them from confounders; build representative, real‑world test sets; report uncertainty and use proper statistical comparisons; perform error analysis; justify why a benchmark is valid for its intended use.
-- Tooling: A Construct Validity Checklist is available for researchers, developers, and regulators: https://oxrml.com/measuring-what-matters/
-- Who’s involved: Contributors span OII, EPFL, Stanford, TUM, UC Berkeley, UK AI Security Institute, Weizenbaum Institute, and Yale. Paper to appear at NeurIPS 2025 (San Diego, Dec 2–7).
-
-The Hacker News discussion on the Oxford-led review of LLM benchmarks reflects widespread skepticism about current evaluation practices, with several recurring themes:
-
-1. **Statistical Rigor Concerns**:  
-   Users highlighted the lack of proper statistical methods in benchmarks (e.g., only 16% of studies use statistical comparisons). Many criticized the reliance on "bullshit" metrics like p-values without context, emphasizing the need for uncertainty reporting and causal inference techniques. Some noted that even academic programs often fail to teach applied statistics effectively.
-
-2. **Economic Incentives & Corruption**:  
-   Commenters argued that hyperscale platforms and corporations prioritize marketable benchmark scores over genuine progress, leading to "contaminated" or gamed results. Examples included GPT-4o’s sycophantic outputs and companies using secret internal benchmarks to inflate perceptions of performance.
-
-3. **Brittleness & Overclaiming**:  
-   Participants pointed out that minor changes in input phrasing or numbers can cause models to fail catastrophically, exposing a lack of true understanding. Overclaims like equating multiple-choice test scores to "doctor-level" competence were widely mocked as misleading.
-
-4. **Transparency & Real-World Validity**:  
-   Many criticized the opacity of benchmarks, with companies cherryicking favorable metrics. Some argued that benchmarks rarely predict real-world performance, advocating for user-driven validation (e.g., analyzing customer query patterns) instead of abstract lab tests.
-
-5. **Proposed Solutions**:  
-   Suggestions included:  
-   - **Counterfactual benchmarking** to isolate specific capabilities.  
-   - **Terminal Bench 2.0**-style stress tests with human-crafted challenges.  
-   - Prioritizing metrics tied to user retention and engagement over artificial lab scores.  
-   - Integrating privacy-friendly, large-scale user feedback into evaluations.
-
-6. **Cynicism vs. Pragmatism**:  
-   While some dismissed benchmarks entirely as "Wild West" marketing tools, others acknowledged their necessity despite flaws. A recurring sentiment was that benchmarks must evolve alongside models, with stricter statistical rigor and alignment with practical use cases.
-
-Overall, the discussion underscores a crisis of trust in LLM evaluation, driven by methodological shortcomings and corporate incentives, but also highlights emerging efforts to create more robust, real-world-focused assessment frameworks.
-
-### Firefox Forcing LLM Features
-
-#### [Submission URL](https://equk.co.uk/2025/10/28/firefox-forcing-llm-features/) | 114 points | by [birdculture](https://news.ycombinator.com/user?id=birdculture) | [111 comments](https://news.ycombinator.com/item?id=45858959)
-
-A Firefox user argues Mozilla has been rolling out AI/LLM features by default without a clear GUI off switch, leading to privacy discomfort and reports of high CPU/RAM usage. They also point to confusing ToS wording around user data that, in their view, dovetails uncomfortably with the AI push.
-
-Key points:
-- No obvious toggle: Even with some ml prefs disabled, the user still saw “Ask an AI chatbot (z)” in the context menu.
-- Hidden behind about:config: The post shares a larger blocklist of prefs to kill AI-related features, e.g. browser.ml.enable, browser.ml.chat.enabled, browser.ml.pageAssist.enabled, browser.ml.linkPreview.enabled, browser.tabs.groups.smart.enabled, and extensions.ml.enabled.
-- Automation: They provide scripts and a default prefs.js on GitHub to apply these settings across profiles.
-- Alternatives: Suggests non-technical users may prefer Firefox forks that strip AI features.
-- Market context: Cites “September 2025” browser share figures putting Firefox around 2.17%, framing the concern that shipping AI by default could further alienate users.
-
-Takeaway: If you’re seeing unwanted AI features in Firefox, you’ll likely need to visit about:config and disable multiple ml/* and related prefs, or use a prebuilt prefs.js/script. The post’s broader critique is about consent, performance, and trust—expect a lively debate on how Mozilla should ship (and let users opt out of) AI.
-
-**Summary of Discussion:**
-
-The Hacker News discussion reflects polarized views on Mozilla’s integration of AI/LLM features in Firefox, centering on **user autonomy, performance, and trust**:
-
-1. **Criticism of Default Integration**:
-   - Many users express frustration over AI features (e.g., context-menu chatbots, tab grouping) being enabled by default without clear opt-out options. Critics argue this undermines Firefox’s reputation as a privacy-focused browser.
-   - Concerns about **resource usage** (CPU/RAM) are raised, particularly for low-end devices. Some claim disabling AI via `about:config` is cumbersome for non-technical users.
-
-2. **Debate Over AI Utility**:
-   - **Pro-AI**: Supporters highlight practical uses like translation (Mozilla’s Transformer-based Marian NMT) and summarization, arguing these enhance accessibility. 
-   - **Anti-AI**: Opponents dismiss AI as bloat, questioning its value in core browsing. Some view it as a market-driven gimmick ("AI-powered browsers") that complicates the UI.
-
-3. **Technical Nuances**:
-   - Discussions clarify distinctions between LLMs and other ML models (e.g., translation tools). Critics contest Mozilla’s labeling of features as "AI," arguing it conflates technical definitions.
-   - Workarounds like prefs.js scripts, forks (Waterfox), or alternative browsers (Ladybird, Servo) are suggested to avoid AI entirely.
-
-4. **Trust and Mozilla’s Direction**:
-   - Long-term users lament Mozilla’s shift toward "forced" features, contrasting with its earlier ethos. Pocket integration and telemetry are cited as past red flags.
-   - Defenders argue local AI (e.g., on-device translation) aligns with privacy goals, but skeptics fear data-handling ambiguities in ToS.
-
-5. **Market Realities**:
-   - Some acknowledge Mozilla’s need to compete with Chromium-based browsers adopting AI, though critics see this as pandering to trends rather than user needs.
-
-**Takeaway**: The debate underscores tension between innovation and user consent. While AI features have defenders, their opt-out complexity and perceived intrusiveness fuel distrust. Mozilla faces pressure to balance modern tooling with its privacy-centric identity.
-
-### Cerebras Code now supports GLM 4.6 at 1000 tokens/sec
-
-#### [Submission URL](https://www.cerebras.ai/code) | 181 points | by [nathabonfim59](https://news.ycombinator.com/user?id=nathabonfim59) | [123 comments](https://news.ycombinator.com/item?id=45852751)
-
-Cerebras is pitching a faster coding assistant: its Code Pro service now runs GLM‑4.6 and claims 1,000+ tokens/sec generation. The company touts the model as a top open coding model—#1 for tool calling on the Berkeley Function Calling Leaderboard and on par with Sonnet 4.5 for web-dev tasks.
-
-Highlights
-- Speed and model: GLM‑4.6, marketed for low-latency coding workflows with high throughput.
-- Integrations: Works via API key with AI-friendly editors/agents (Cline, RooCode, OpenCode, Crush, etc.), so you can “bring your own editor.”
-- Plans: Free tier (limited). Pro at $50 with up to 24M tokens/day (pitched as 3–4 hours of continuous coding). Max at $200 with up to 120M tokens/day for heavier IDE and multi‑agent use.
-- Context: The update lands alongside Cerebras’ $1.1B Series G at an $8.1B valuation.
-
-Why it matters
-- Emphasis on raw throughput and tool-calling strength targets agentic and refactoring-heavy workflows.
-- Pricing by large daily token quotas could appeal to power users who hit rate limits elsewhere.
-
-Caveats
-- Benchmarks and speed are vendor-reported; context length, per-request caps, and SLAs aren’t detailed on the page.
-
-Here's a concise summary of the Hacker News discussion about Cerebras' Code Pro and AI coding tools:
-
-### Key Discussion Points
-1. **Model Comparisons**
-   - GLM-4.6 praised for speed (1,000 tokens/sec) and web development parity with Sonnet 4.5
-   - Limitations: Lacks web search/image recognition features that Claude/Gemini offer
-   - Mixed opinions on code quality: Some find Sonnet more predictable, others prefer GLM for simplicity
-
-2. **Pricing & Workflows**
-   - $50/month Pro plan seen as competitive for power users hitting Claude/Gemini rate limits
-   - Embedded developers report using 300+ daily prompts, value Zed subscriptions
-   - Concerns about per-request caps and SLA transparency
-
-3. **Embedded Development Experiences**
-   - Effective for boilerplate code (Rust/TypeScript CRUD APIs)
-   - Struggles with low-level tasks: UEFI bindings, DMA configurations, ESP32 firmware
-   - Testing challenges: LLMs can't execute hardware-specific code, requiring manual verification
-
-4. **Testing Practices**
-   - Emphasis on static typing (Rust/TypeScript) to catch errors early
-   - Users report 25-50% productivity gains but stress need for:
-     - Comprehensive test harnesses
-     - Documentation maintenance
-     - Careful prompt engineering for complex systems
-
-5. **Terminology Debate**
-   - Skepticism about "vibing coding" (blind code generation without understanding)
-   - Defense of LLM-assisted development as iterative process requiring review
-
-6. **Skepticism**
-   - Concerns about LLMs' ability to handle novel system design combinations
-   - Historical comparison to Bell Labs' rigorous engineering methods
-   - Observations that LLMs excel at common patterns but struggle with true innovation
-
-The discussion reflects cautious optimism about coding assistants accelerating workflows, tempered by recognition of current limitations in reliability and system-level understanding.
-
-### GPT-OSS 120B Runs at 3000 tokens/sec on Cerebras
-
-#### [Submission URL](https://www.cerebras.ai/blog/openai-gpt-oss-120b-runs-fastest-on-cerebras) | 45 points | by [samspenc](https://news.ycombinator.com/user?id=samspenc) | [28 comments](https://news.ycombinator.com/item?id=45853849)
-
-OpenAI’s first open‑weight reasoning model, GPT OSS 120B, is now live on Cerebras — and the company is leaning hard into speed and cost claims.
-
-Highlights
-- Model: 120B-parameter MoE, open weights under Apache 2.0; near-parity with o4‑mini on core reasoning benchmarks, strong on chain-of-thought tasks across coding, math, and health.
-- Speed: Measured up to ~3,045 tokens/sec on OpenRouter; time to first token ~280 ms; Cerebras claims ~15–16x faster than leading/median GPU clouds and single‑second latency.
-- Price/perf: Priced at $0.25 per million input tokens and $0.69 per million output tokens with 131K context; Cerebras touts an 8.4x price‑performance advantage (tokens/sec per dollar).
-- Accuracy: Artificial Analysis reports Cerebras as equal-first on AIME 2025 accuracy among OSS 120B providers.
-- Availability: Cerebras Cloud, plus Hugging Face, OpenRouter, and Vercel; can also run on-prem on the Wafer Scale Engine.
-
-Why it matters
-- Reasoning models are often too slow for production agents and coding tools; if these latency and throughput numbers hold up, OSS 120B on Cerebras could make open-weight reasoning practical at interactive speeds.
-
-Caveat
-- Most figures are vendor/third‑party benchmarks; real‑world performance can vary with prompts, numerics, and quantization settings.
-
-The Hacker News discussion about Cerebras’s GPT OSS 120B model highlights mixed reactions, blending enthusiasm for its technical performance with skepticism about business claims and usability:
-
-### **Positive Reactions**
-- **Speed/Cost Praise**: Users like `ptsrgnt` and `snpzd` applaud the model’s speed (~3,045 tokens/sec) and affordability ($0.25/M input tokens), calling it a "lightning-fast" alternative to GPU-based providers like Groq and OpenRouter.
-- **Technical Potential**: Some see the model as a practical breakthrough for interactive coding/math tasks if latency claims hold up.
-
-### **Criticisms & Skepticism**
-- **Business Viability**: Users debate Cerebras’s financial sustainability, citing its $1.1B Series funding and $8.1B valuation as potential hype. `rajman187` notes recent $60M+ losses and a stalled IPO, questioning long-term viability.
-- **Hardware Economics**: Concerns arise about SRAM costs and scalability. `jshrd` argues Cerebras/Groq may struggle with expensive hardware bottlenecks despite speed gains.
-- **User Experience**: Frustration with sign-up processes (`freak42` compares it to "dark patterns") and skepticism about real-world performance versus benchmarks. `anonym29` mocks claims as akin to a "Ferrari dealership offering test drives for a million dollars."
-
-### **Other Notes**
-- **Geopolitical Angle**: `ptsrgnt` defends UAE investments in Cerebras as "smart money" aligned with long-term AI strategy.
-- **Comparisons**: Some users contrast Cerebras with Nvidia’s dominance, questioning if specialized hardware can disrupt GPU ecosystems.
-
-### **Summary**
-While the model’s speed and cost metrics excite developers, doubts linger about Cerebras’s business model, hardware economics, and real-world usability. The thread reflects cautious optimism tempered by scrutiny of vendor claims and financial transparency.
-
-### GPT-5-Codex-Mini – A more compact and cost-efficient version of GPT-5-Codex
-
-#### [Submission URL](https://github.com/openai/codex/releases/tag/rust-v0.56.0) | 50 points | by [wahnfrieden](https://news.ycombinator.com/user?id=wahnfrieden) | [49 comments](https://news.ycombinator.com/item?id=45861329)
-
-OpenAI’s Codex 0.56.0 lands with a new, cheaper code model and a sweep of v2 APIs and stability fixes. The headline is GPT-5-Codex-Mini, a compact, cost-efficient model aimed at faster, lower-cost coding tasks. On the platform side, the app-server gains v2 Thread and Turn APIs plus a revamped v2 login flow (start/completed/cancel), laying groundwork for cleaner session management and notifications. The TypeScript SDK adds a modelReasoningEffort option, and the runtime sees reliability boosts: better token refresh (fixing “Re-connecting”), nix/build fixes, CI flake reductions, and sandbox tweaks (including Windows warnings and broader cert ops when networking is enabled). UX touches include TUI refinements and a “model nudge” for queries, while contributor docs clarify that gpt-5-codex shouldn’t amend commits unless explicitly asked. Overall: cheaper model, API modernization, and a lot of polish aimed at smoother dev and user workflows.
-
-**Hacker News Discussion Summary:**  
-
-The release of OpenAI's GPT-5-Codex-Mini sparked mixed reactions. Supporters praised its cost-efficiency and coding improvements, with users like *RestartKernel* noting its "impressive" advancements over previous models. However, skeptics like *hnidiots3* dismissed Codex as "not a good model," though others countered that practical experience (e.g., *k4rli* using Sonnet45) showed solid results.  
-
-**Technical Debates:**  
-- A detailed exchange between *jswn* and *nwgz* highlighted challenges with TypeScript generics and runtime behavior, illustrating frustrations with GPT-5-Codex’s handling of complex code patterns (e.g., `List<User>` vs. `List_1<User>`).  
-- *lstms* shared struggles integrating GPT-5-Codex into .NET projects, citing issues with context length and architectural redesigns, though acknowledging partial success in test cases.  
-
-**Business & Pricing Concerns:**  
-- *bgwltr* criticized AI providers for unsustainable pricing models, citing Grok-4’s errors and Claude Code’s high costs. Others countered that Anthropic’s Claude Code reportedly generates $1B annually, with developers paying $20–$200/month for premium plans.  
-- *crzylggr* noted anecdotal "10x" usage costs beyond subscriptions, sparking debates about long-term viability amid competition from cheaper open-weight models (e.g., DeepSeek, Kimi).  
-
-**Humor & Meta-Comments:**  
-- Users joked about AI-generated product names ("Groq") and mocked verbose API documentation.  
-- *smnw* humorously referenced "EF Hutton" ads to highlight the hype around AI announcements.  
-
-**Takeaway:** While GPT-5-Codex-Mini’s efficiency and API updates impressed many, debates persist over its practicality for complex tasks, cost sustainability, and competition in the rapidly evolving AI landscape.
-
-### The AI Ick
-
-#### [Submission URL](https://stackoverflow.blog/2025/11/05/the-ai-ick/) | 29 points | by [Wowfunhappy](https://news.ycombinator.com/user?id=Wowfunhappy) | [3 comments](https://news.ycombinator.com/item?id=45859566)
-
-Stack Overflow blog essay: When your own writing gets mistaken for “AI slop”
-- A Stack Overflow writer recounts a colleague assuming their em-dash-heavy, neatly structured draft was ChatGPT output—triggering a broader look at why AI text often feels hollow.
-- Cites Wikipedia’s “field guide” to AI tells (overused em dashes, zhuzhed headings, rule of three, weasel words, superficial analysis), with the ironic caveat that LLMs learned many of these habits from human professional/academic prose.
-- Core argument: AI outputs are statistically plausible but uncomprehending—“just product, no struggle”—the “stochastic parrot” problem that leaves readers sensing a lack of intent, friction, and insight.
-- Visceral reaction parallels AI art’s uncanny valley: meme-y “count the fingers/teeth” vibes and a fear of something essential being borrowed or stolen.
-- Takeaway: Stylistic tells are unreliable; authenticity comes from substance, specificity, and human context—so don’t conflate house style (yes, including em dashes) with machine-made writing.
-
-The Hacker News discussion reflects skepticism and discomfort with AI-generated content:  
-1. **Skepticism Toward Normalization**: One user questions whether the growing prevalence of AI-generated content risks becoming normalized, despite its flaws, as technology improves revision and generation capabilities.  
-2. **"Stochastic Parrot" Critique**: Another commenter invokes the "stochastic parrot" concept (mimicry without comprehension), expressing disappointment that AI-generated content is being uncritically adopted. They liken it to a "digested battery" of human writing, lacking authenticity.  
-3. **Resistance to AI in Creativity**: A user reacts viscerally ("Yuck") to a friend’s request for an AI-generated character, dismissing it as inorganic and undesirable compared to human creativity (referencing *Tilly Norwood TV* as a "hard pass").  
-4. **Subcomment on Improvement**: A reply humorously critiques the idea of AI "improvement," suggesting it might result in shallow or performative outputs ("improv titled").  
-
-The thread underscores concerns about AI’s hollow mimicry and resistance to its encroachment into creative domains, echoing the submission’s themes of authenticity and intent.
-
-### Oddest ChatGPT leaks yet: Cringey chat logs found in Google Analytics tool
-
-#### [Submission URL](https://arstechnica.com/tech-policy/2025/11/oddest-chatgpt-leaks-yet-cringey-chat-logs-found-in-google-analytics-tool/) | 71 points | by [vlod](https://news.ycombinator.com/user?id=vlod) | [20 comments](https://news.ycombinator.com/item?id=45853995)
-
-ChatGPT prompts leaked into Google Search Console; OpenAI says a “glitch” is fixed, won’t confirm scraping
-
-Developers began spotting long, deeply personal ChatGPT queries showing up in Google Search Console starting in September—sometimes 300+ characters—exposing user prompts about relationships and workplace plans. Quantable’s Jason Packer and SEO consultant Slobodan Manić traced the issue to a ChatGPT URL that included a hints=search parameter, which they say forced web lookups and, due to a bug, prepended that URL to user prompts. Because the queries appeared in GSC (which wouldn’t capture API traffic), they argue this is evidence OpenAI was directly scraping Google and sending actual user prompts along—leaking them to Google and to site owners who rank for tokenized bits of that URL. OpenAI declined to confirm scraping but said it had “resolved” a routing glitch affecting “a small number” of queries; Google declined comment. The scope is unclear: Packer reviewed ~200 strange queries on one site alone and worries any prompt that triggered Google Search over the past two months may have been exposed. He calls it “weirder, if not as serious” as past ChatGPT indexing leaks—and a reminder that prompts aren’t as private as many assume.
-
-Tip: Site owners reported seeing leaked strings starting with “https://openai.com/index/chatgpt/” in GSC.
-
-**Summary of Discussion:**
-
-The Hacker News discussion highlights concerns over privacy and technical oversights after ChatGPT user prompts were leaked via Google Search Console (GSC). Key points include:
-
-1. **Exposure of Sensitive Queries**: Users shared examples of leaked prompts (e.g., personal trip planning, relationship proposals) that appeared in GSC due to a bug involving a ChatGPT URL parameter (`hints=search`). These prompts were indexed by Google, raising alarms about unintended data exposure.
-
-2. **Filter Failures**: Participants noted that GSC’s privacy filters, designed to suppress low-volume or sensitive queries, failed to block these leaks. This suggests OpenAI’s glitch bypassed standard protections, exposing raw user prompts to site owners via search analytics.
-
-3. **Scraping Speculation**: Some commenters theorized OpenAI might be scraping Google Search results directly, using user prompts as search queries. While OpenAI fixed the "routing glitch," they did not clarify whether scraping occurred, fueling skepticism about transparency.
-
-4. **Broader Privacy Implications**: The incident underscores risks of using AI tools for sensitive topics. Critics compared the leak to accidental code vulnerabilities, emphasizing that user prompts are less private than assumed. Others warned product managers to consider privacy implications when integrating AI with analytics tools.
-
-5. **Community Reaction**: Reactions ranged from shock (“wtf”) to frustration over corporate accountability. Many called for stricter safeguards, while others lamented the normalization of privacy trade-offs in AI development.
-
-Overall, the discussion reflects distrust in tech companies’ handling of user data and demands clearer safeguards for AI interactions.
