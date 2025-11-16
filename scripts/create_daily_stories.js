@@ -13,7 +13,7 @@ const CONFIG = {
   MAX_RETRIES: 3,
   RETRY_DELAY: 2000,
   MAX_COMMENT_DEPTH: 10, // Prevent infinite recursion
-  CLASSIFIER_MODEL: 'gpt-5-mini'
+  CLASSIFIER_MODEL: 'openai/gpt-5.1'
 };
 
 const API_URLS = {
