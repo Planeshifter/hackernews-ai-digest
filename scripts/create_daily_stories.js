@@ -131,7 +131,8 @@ async function isAIRelated(title) {
             content: title 
           },
         ],
-        temperature: 0,
+				temperature: 0,	
+				max_tokens: 50,
         response_format: { 
           type: "json_schema",
           json_schema: {
