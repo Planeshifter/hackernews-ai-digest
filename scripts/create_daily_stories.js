@@ -112,29 +112,53 @@ async function fetchComments(story, depth = 0) {
   delete story.kids;
 }
 
-// Check if story is AI-related
 async function isAIRelated(title) {
   try {
+    console.log(`[${new Date().toISOString()}]     Classifying: "${title}"`);
+    
     const completion = await retryWithBackoff(
       async () => openai.chat.completions.create({
         model: CONFIG.CLASSIFIER_MODEL,
         messages: [
           { 
             role: 'system', 
-            content: 'You are a classifier deciding whether a story is about AI or not solely based on its title. You return "true" if the story is about AI and "false" if it is not. You have to choose one or the other.' 
+            content: `You classify story titles as AI-related or not. 
+            AI-related includes: artificial intelligence, machine learning, deep learning, neural networks, LLMs, GPT, ChatGPT, Claude, transformers, AI tools, AI companies, AI research, computer vision, NLP, robotics with AI, AGI, AI safety, AI ethics.
+            Return JSON: {"is_ai": true} or {"is_ai": false}` 
           },
           { 
             role: 'user', 
-            content: `Story: ${title}. Result (true|false):` 
+            content: title 
           },
-        ]
+        ],
+        temperature: 0,
+        response_format: { 
+          type: "json_schema",
+          json_schema: {
+            name: "ai_classification",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: {
+                is_ai: {
+                  type: "boolean",
+                  description: "Whether the title is AI-related"
+                }
+              },
+              required: ["is_ai"],
+              additionalProperties: false
+            }
+          }
+        }
       }, { timeout: CONFIG.REQUEST_TIMEOUT }),
       CONFIG.MAX_RETRIES,
       'AI classification'
     );
     
-    const response = completion.choices[0]?.message?.content?.toLowerCase();
-    return response?.startsWith('true') || false;
+    const result = JSON.parse(completion.choices[0]?.message?.content || '{"is_ai": false}');
+    console.log(`[${new Date().toISOString()}]     AI-related: ${result.is_ai}`);
+    return result.is_ai;
+    
   } catch (error) {
     console.error(`[${new Date().toISOString()}] ERROR classifying story:`, error.message);
     return false;
