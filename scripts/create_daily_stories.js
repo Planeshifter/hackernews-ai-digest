@@ -13,7 +13,7 @@ const CONFIG = {
   MAX_RETRIES: 3,
   RETRY_DELAY: 2000,
   MAX_COMMENT_DEPTH: 10, // Prevent infinite recursion
-  CLASSIFIER_MODEL: 'openai/gpt-5.1'
+  CLASSIFIER_MODEL: 'google/gemini-3-pro-preview'
 };
 
 const API_URLS = {
@@ -131,8 +131,8 @@ async function isAIRelated(title) {
             content: title 
           },
         ],
-				temperature: 0,	
-				max_tokens: 50,
+		temperature: 0,	
+		max_tokens: 50,
         response_format: { 
           type: "json_schema",
           json_schema: {
