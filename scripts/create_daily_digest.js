@@ -13,7 +13,7 @@ const CONFIG = {
   REQUEST_DELAY: 1000,
   REQUEST_TIMEOUT: 10000,
   MODELS: {
-    SUMMARY: 'google/gemini-3-pro-preview',
+    SUMMARY: 'gpt-5',
     DISCUSSION: 'google/gemini-3-pro-preview'
   }
 };
