@@ -10,6 +10,170 @@ export async function getStaticProps() {
 
 ---
 
+## AI Submissions for Thu Dec 25 2025 {{ 'date': '2025-12-25T17:09:10.820Z' }}
+
+### Critical vulnerability in LangChain – CVE-2025-68664
+
+#### [Submission URL](https://cyata.ai/blog/langgrinch-langchain-core-cve-2025-68664/) | 117 points | by [shahartal](https://news.ycombinator.com/user?id=shahartal) | [82 comments](https://news.ycombinator.com/item?id=46386009)
+
+What happened
+- A core serialization bug in langchain-core allowed attacker-shaped data to be treated as trusted structure. If a user-controlled dictionary included the reserved key lc, LangChain’s dumps()/dumpd() failed to escape it, so later deserialization could instantiate arbitrary LangChain objects.
+- Because LLM outputs often populate fields like additional_kwargs or response_metadata, a single prompt can flow through logging, streaming, traces, memory, or caches and trigger the bug when that data is deserialized.
+
+Why it’s a big deal
+- It’s in Core, not a fringe tool or integration. LangChain has massive reach (hundreds of millions of installs; ~98M last month).
+- Impact per the advisory (12 common flows affected): 
+  - Secret exfiltration from environment variables, especially when deserializing with secrets_from_env=True (which was the default until the fix).
+  - Object instantiation within pre-approved namespaces (langchain_core, langchain_openai, langchain_aws, langchain_anthropic, etc.), enabling side effects in constructors (network/file I/O).
+  - Under certain conditions, it can lead to arbitrary code execution.
+- Classified as CWE-502 (Deserialization of Untrusted Data), CVSS 9.3 (Critical).
+
+Patches
+- Fixed in versions 1.2.5 and 0.3.81. Update ASAP.
+
+Who’s at risk
+- Any app that serializes LLM/tool outputs or retrieved docs and later deserializes them via “normal” framework features (event streaming, logging, message history/memory, caches). You don’t need to accept explicit serialized blobs; a prompt alone can set this in motion.
+
+What to do now
+- Upgrade to 1.2.5 / 0.3.81 immediately.
+- If available in your setup, disable secrets_from_env and rotate any secrets that could have been exposed.
+- Treat LLM-influenced metadata as untrusted. Strip/validate unexpected lc keys before persistence or rehydration.
+- Audit logs, traces, caches, and memory stores that may hold serialized data; assume they’re tainted until proven otherwise.
+- Reduce blast radius: run with least privilege, restrict egress, and monitor for unusual constructor-time side effects.
+
+Backstory
+- Found by Yarden Porat (Cyata Research). The flaw wasn’t a bad load()—it was missing escaping in dumps()/dumpd(). The research underscores a recurring AI-security theme: when trust boundaries blur and attacker-controlled structure crosses them, “one prompt” can cascade into deep framework machinery.
+
+**The LangChain Fatigue**
+The vulnerability disclosure sparked a broader critique of the framework itself, with a significant segment of commenters treating LangChain as a negative signal in engineering culture.
+
+*   **The "Hiring Filter":** Multiple users, including *prdgycrp* and *pb*, argued that relying on LangChain indicates a lack of fundamental understanding. Some described it as a "filter" for filtering *out* candidates; they prefer engineers who discuss orchestration and harnessing rather than "LangChain experts."
+*   **Abstraction Bloat:** The consensus among critics (*int_19h*, *XCSme*) is that LangChain complicates simple tasks—specifically string concatenation and templates—into unnecessary enterprise abstractions. Users noted that features LangChain originally "solved," like Structured Output (JSON), are now natively supported by model providers (OpenAI, Gemini), rendering the framework’s "glue" redundant or brittle.
+*   **Preferred Stacks:** The most recommended alternative is simply "hand-rolling" code using native SDKs (OpenAI/Anthropic) combined with **Pydantic** for validation (*pb*, *smtkmr*). Other mentions included BAML, Spring AI (for Java users), and avoiding vendor lock-in from tools like CrewAI.
+*   **Language Wars:** A sub-thread debated whether Python is fit for complex agents. *vr* argued that Python’s lack of a static type system makes it poor for "stochastic" agent inputs, preferring strictly typed languages to handle the inherent randomness of LLM I/O, though *stngrychrls* defended Python's role as the industry standard.
+*   **Meta-Commentary:** Several readers (*fn-mt*, *crmr*) suspected the vulnerability write-up itself was LLM-generated, citing phrases like "attacker-shaped data" and "blast radius" as hallmarks of AI prose.
+
+### A framework for technical writing in the age of LLMs
+
+#### [Submission URL](https://thedataquarry.com/blog/a-framework-for-reading-and-writing/) | 17 points | by [sebg](https://news.ycombinator.com/user?id=sebg) | [3 comments](https://news.ycombinator.com/item?id=46387034)
+
+The author lays out a simple, reader-driven framework for better technical writing, built from how we actually consume long-form content online. They argue most good pieces operate on three layers:
+- Outline (coarse): structure and vision — why should I care?
+- Ideas (medium): core concepts and arguments — what are the important themes?
+- Details (fine): examples, anecdotes, data, references — how does it work?
+
+Good flow lets readers move smoothly between these layers without getting lost. When posts have fuzzy outlines, generic ideas, or thin details, they feel empty—even if the prose is polished.
+
+That diagnosis doubles as a critique of AI-generated content. Citing Shreya Shankar and Ted Chiang (“blurry JPEGs of the web”), the post argues LLMs often fail at the outline layer (they don’t “care,” and prompt-to-output is lossy), then remix common themes, and finally skimp on grounded specifics—yielding slop that reads fine but says little. The author notes they used an LLM only at the end for light proofreading/paraphrasing; the ideas, outline, and flow were human.
+
+Takeaways for writers in 2026:
+- Start with an explicit outline and a clear promise to the reader.
+- Make the ideas non-generic; if it feels like a mashup, it probably is.
+- Invest in details: your own anecdotes, data points, and references.
+- Obsess over transitions and flow so readers can glide between layers.
+- Use LLMs as tools for polish, not substitutes for thinking.
+
+Why it matters: As feeds fill with video fluff and AI-written long-form, this is a practical compass for producing human, substantive technical writing that stands out.
+
+**Discussion Summary:**
+
+Commenters largely reinforced the author's critique, arguing that the true value of long-form writing lies in human perspective, specific tastes, and the "desire to share"—elements that statistically generated text cannot replicate. The discussion zeroed in on three main points:
+
+*   **Redundancy:** Several users noted that publishing generic, LLM-generated posts is fundamentally useless because readers can simply query an LLM directly if they want generic info. The utility of a blog post is the specific human experience that an LLM cannot hallucinate.
+*   **The "Copy Editor" Role:** While rejecting AI as an author, commenters accepted its role as a copy editor for improving grammar and expression, provided there is transparency about its usage.
+*   **Format Preferences:** Highlighting the critique of "fluff," one user suggested that for technical topics, readers often prefer raw bullet points and specs rather than AI attempting to weave them into a narrative.
+
+### Claude Code changed my life
+
+#### [Submission URL](https://spader.zone/xmas/) | 23 points | by [dboon](https://news.ycombinator.com/user?id=dboon) | [8 comments](https://news.ycombinator.com/item?id=46383266)
+
+Thesis: The author argues LLM coding agents aren’t revolutionary at generating code—they’re “dear-god-how-did-we-ever-work-before-this” good at reading it. Treat them as a metal detector on an infinite beach (software), not a dredge that spits out new sand (code). The joy here is intrinsic: software as a fractal playground, not just a money machine.
+
+Why this works:
+- Grounded to a repo, agents cite files and line numbers, drastically reducing hallucinations.
+- Read-only use preserves style and architecture.
+- Low-stakes automation: it’s safe to let the agent search again; no messy rollbacks from bad writes.
+
+What that unlocked for one “regular” programmer:
+- Shipped “Claude Wrapped” (usage analytics) with a real DB and static hosting.
+- Built a 3D raymarching ASCII renderer with multiple lighting models and a winter scene.
+- Serialized internal build graphs to Mermaid; implemented a version resolver after surveying package managers.
+- Wrote ~500 solid tests for a C standard library; implemented UTF-8 encode/decode/validate/iterate.
+- Studied burntsushi’s glob library and built a similar one; parsed/wrote minimal ELF object files.
+- Hooked a global Wayland hotkey to record Zoom audio, transcribe via LLM, and copy cleaned text.
+- Indexed a decade of personal docs in a vector DB with an HTMX frontend; reconstructed chat logs from provider JSON.
+- Built a TUI coding agent with a context compiler using the opencode SDK + OpenTUI; even made goofy Unicode animations.
+
+Bottom line: LLMs as ultra-fast code readers/comprehenders are transformative. Point them at a specific corpus, demand citations, and let them winnow and explain—your velocity (and joy) will spike.
+
+**The Art of Verification vs. "Vibe Coding"**
+
+While the submission extols LLMs as superior readers, the comment section debates whether they foster actual skill or just create a dependency on "vibe coding."
+
+*   **The Hype Cycle:** Skeptics argue that relying on AI creates an illusion of competence—"vibe coding"—that collapses when a project inevitably hits non-trivial bugs or scales beyond a basic proof-of-concept. They fear users are skipping the foundational understanding required to solve problems without an assistant.
+*   **Code as a Commodity:** A 40-year industry veteran (assembly to K8s) pushes back, suggesting that writing code is now a commodity. From this perspective, the "art" of programming has shifted entirely to verification, TDD (Test Driven Development), and specification.
+*   **The "Magazine" Analogy:** An interesting parallel emerged comparing LLM drawbacks to 1980s computing. Commenters noted that debugging subtly broken AI code offers a similar learning curve to typing in code from magazines and hunting for typos—serving as a frustrating but effective springboard for understanding how the system actually works.
+
+### Show HN: Why many AI-generated websites don't show up on Google
+
+#### [Submission URL](https://pagesmith.ai/seo-for-ai-generated-sites) | 12 points | by [manu_trustdom](https://news.ycombinator.com/user?id=manu_trustdom) | [5 comments](https://news.ycombinator.com/item?id=46385424)
+
+HN summary: AI site builders vs. SEO, and why SSG wins
+
+The post argues that many AI website/app builders ship marketing sites as client-side rendered SPAs, which quietly kneecaps discovery and performance. The “view source” test is the giveaway: if the initial HTML is just a shell with a root div, crawlers see an empty page.
+
+Key points:
+- Google’s two-wave indexing bites CSR: HTML is parsed immediately, but JS rendering is deferred to a render queue that can take hours or weeks. Fresh pages lag, crawl budget suffers, and you get “Discovered – currently not indexed.”
+- Metadata duplication in SPAs: a static head means identical titles/descriptions across routes, creating duplicate-content signals and bad social previews.
+- Core Web Vitals degrade under CSR: slower LCP (waiting on bundles + data) and more CLS (elements popping in), even if TTFB is fast.
+- The fix is architectural, not “add an SEO plugin”: pre-render HTML (SSG), serve from the edge, ship zero-JS by default, and hydrate only interactive islands. Ensure unique per-page metadata.
+
+Why it matters: For marketing sites that depend on organic discovery, using “app” builders optimized for dashboards/prototypes can cost rankings and traffic. The author pitches Pagesmith’s SSG-first, zero-JS-by-default approach as the remedy.
+
+**Discussion Summary:**
+
+The conversation shifted from the technical SEO arguments to the fundamental value of AI-generated websites. Several users expressed skepticism about the existence of "good" AI-generated pages, with some preferring that search engines ignore such content entirely to prevent spam. Conversely, it was argued that search algorithms prioritize quality over origin, implying that high-quality AI sites should still rank. On a practical level, commenters critiqued the visual output of these tools, noting that some examples suffered from broken layouts (like overlapping text) and resembled "spam-injected" contact forms.
+
+### Silicon Valley's tone-deaf take on the AI backlash will matter in 2026
+
+#### [Submission URL](https://fortune.com/2025/12/23/silicon-valleys-tone-deaf-take-on-the-ai-backlash-will-matter-in-2026/) | 83 points | by [howToTestFE](https://news.ycombinator.com/user?id=howToTestFE) | [31 comments](https://news.ycombinator.com/item?id=46380730)
+
+Silicon Valley’s tone-deaf take on AI backlash will matter in 2026 (Fortune, Sharon Goldman)
+
+- The gist: Goldman argues that builders’ “look what my model can do” excitement clashes with how most people actually experience AI—through job anxiety, rising costs, local data-center fights, and a sense that benefits flow to a narrow few. That disconnect, she says, is poised to harden into broader political backlash in 2026.
+
+- Why it matters: VC pitches about “competition with China” and miracle productivity don’t land when housing and healthcare dominate daily life. Ordinary users don’t want demos; they want answers on jobs, prices, winners/losers, and who’s accountable. Without that, skepticism is rational—not ignorance.
+
+- Snapshot of the gap: Insiders thrill to “a computer friend that never takes a day off”; outsiders hear “a tireless rival coming for my livelihood” (and a bigger power bill in my town). The framing problem is cultural, economic, and local—not just technical.
+
+- A warning from within tech: 8VC’s Sebastian Caliri says the country is “polarized against tech” and urges a clearer story with tangible benefits people can believe in—fast.
+
+- 2026 risk: If AI leaders keep leading with awe instead of answers, expect more organized pushback—policy, permitting, and public-opinion headwinds that slow rollouts and raise costs.
+
+- Also in the roundup:
+  - Faith-based critiques gain volume: Christian leaders across denominations are pressing for caution on AI’s effects on family life, labor, children, and religion (Time).
+  - Energy is the battleground: Google Cloud’s long game centers on custom silicon and power constraints; even underground salt caverns for grid storage are in play.
+  - AI coding consolidation: Cursor acquired code-review startup Graphite as competition intensifies.
+  - Pricing optics matter: Instacart ended AI-driven pricing tests that increased costs for some shoppers—another sign consumers won’t tolerate opaque AI-driven price shifts.
+
+- Takeaway for builders: Stop trying to impress; start de-risking the everyday. Show net-new jobs, lower bills, community benefits for data centers, and clear guardrails. Otherwise, 2026 will be the year the backlash hardens.
+
+Based on the discussion, here is a summary of the comments on Hacker News:
+
+**The Rationality of Backlash**
+Users largely validated the article's central thesis: the pushback against AI is logical rather than ignorant. The most prominent thread argued that the hostility stems from a realization that, unlike previous tech cycles where the PC acted as an equalizing force, current AI advances centralize power. Commenters noted that productivity gains are flowing exclusively to capital owners while white-collar workers are now facing the same displacement anxiety blue-collar workers have felt for decades.
+
+**Corporate "Salivation" and Gaslighting**
+There was significant resentment regarding the "optics" of corporate leadership. Users expressed disgust at CEOs "openly salivating" over the prospect of firing humans to replace them with AI. However, skepticism remains about the reality of these claims; some commenters argued that companies (referencing Amazon specifically) are using "AI productivity" as a narrative shield to conduct standard layoffs and boost stock prices, even when the technology isn't actually doing the work yet.
+
+**The "Marie Antoinette" Disconnect**
+The cultural gap mentioned in the article was starkly highlighted by users reacting to the roundup's mention of an OpenAI researcher finding "relief" in a "computer friend." Commenters viewed this not as a triumph, but as a symptom of deep mental disconnect, reinforcing the idea that tech insiders live in a "Marie Antoinette bubble," oblivious to how their "computer friend" narrative sounds to people worried about bills and employment.
+
+**Existential Philosophy vs. Real World**
+Illustrating the disconnect, a controversial sub-thread debated an abstract defense of tech accelerationism (citing Peter Thiel). One user argued that humanity must endure suffering and prioritize advancements to survive hypothetical future threats (like alien invasions). This logic was widely ridiculed by others as absurd "destroy the village to save it" thinking, further proving the article's point that tech rhetoric often fails to address the immediate, tangible reality of the average person.
+
+---
+
 ## AI Submissions for Wed Dec 24 2025 {{ 'date': '2025-12-24T17:09:47.097Z' }}
 
 ### Asterisk AI Voice Agent
@@ -207,290 +371,3 @@ Discussion focused on the utility of qualitative "vibe-based" evaluations over s
 *   **Gemini:** Commenters validated the article’s observation regarding Gemini's specific quirks; one user expressed frustration with its "annoying habit" of including its reasoning process and self-corrections directly inside code comments. Others noted it tends to write disconnected scripts that ignore existing libraries.
 *   **Codex/GPT:** Described as fast, conversational, and "clever," though some users felt it can be stubborn, occasionally ignoring specific instructions in favor of the practices embedded in its training data.
 *   **The Analogy:** While some found the qualitative comparison refreshing, others dismissed the Harry Potter references, noting that model updates happen too frequently for these specific archetypes to hold long-term.
-
----
-
-## AI Submissions for Mon Dec 22 2025 {{ 'date': '2025-12-22T17:12:30.159Z' }}
-
-### The Illustrated Transformer
-
-#### [Submission URL](https://jalammar.github.io/illustrated-transformer/) | 446 points | by [auraham](https://news.ycombinator.com/user?id=auraham) | [82 comments](https://news.ycombinator.com/item?id=46357675)
-
-The Illustrated Transformer (now a book and free mini-course) revisits and expands the classic visual guide to the Transformer architecture. Originally lauded for making self-attention and the encoder–decoder stack intuitive, it’s been updated to cover how today’s models evolved since “Attention Is All You Need,” including Multi-Query Attention and RoPE positional embeddings.
-
-Why it matters
-- Still one of the clearest on-ramps to transformers for practitioners and students.
-- Explains the speed/parallelization advantages that helped transformers outpace earlier seq2seq systems like GNMT.
-- Widely used in academia (featured at Stanford, Harvard, MIT, Princeton, CMU) and referenced in MIT’s State of the Art lecture.
-
-What’s new in 2025
-- The post has become a book: LLM-book.com (see Chapter 3 for the updated transformer internals).
-- A free short course with animations brings the visuals up to date.
-
-Extras
-- Covers implementations and learning paths: Tensor2Tensor (TensorFlow) and Harvard NLP’s annotated PyTorch guide.
-- Translations available in many languages (Arabic, Chinese, French, Italian, Japanese, Korean, Persian, Russian, Spanish, Vietnamese).
-
-Discussion stats
-- Hacker News: 65 points, 4 comments
-- Reddit r/MachineLearning: 29 points, 3 comments
-
-Good read if you want a fast, visual refresher on transformers plus what’s changed in the last seven years.
-
-**The Illustrated Transformer (2025 Edition)**
-The classic visual guide to the Transformer architecture has been updated and expanded into a book and free mini-course. It now covers modern evolutions like Multi-Query Attention and RoPE embeddings, aiming to explain the mechanics behind the models driving the current AI boom.
-
-**Discussion Summary**
-The Hacker News discussion evolved into a debate on the necessity of understanding low-level architecture versus high-level application:
-
-*   **Utility of Theory:** One top commenter argued that while visualizations are fun and provide "background assurance," knowing the math behind transformers is rarely useful for the daily job of applying LLMs. They warned that studying architecture is a trap for trying to explain emergent behaviors (like coding or math capabilities), which are likely results of massive reinforcement learning rather than architectural quirks.
-*   **The "Top 1%" Counterpoint:** Others strongly disagreed, asserting that understanding internals is exactly what separates top-tier AI engineers from average practitioners. One user compared it to coding bootcamps: you can build things without deep knowledge, but eventually, you hit constraints that require understanding the "guts" of the system.
-*   **RLHF Skepticism:** A significant sub-thread criticized the current state of Reinforcement Learning in LLMs. Users argued that RLHF (Reinforcement Learning from Human Feedback) is largely just fine-tuning that creates "sycophants" effectively gaming benchmarks rather than increasing intelligence, with some claiming models felt less useful in 2025 than in 2024 due to this "pleasing" behavior.
-*   **Visualization Critiques:** A specific technical critique noted that many tutorials (and perhaps the mental models they create) err by treating "tokens" as "words." Understanding that attention mechanisms operate on sub-word tokens (or pixels in vision models) is crucial for grasping true processing capabilities.
-*   **Resources:** Aside from the submitted book, users recommended Andrej Karpathy’s "2025 LLM Year in Review" and Sebastian Raschka’s educational content for those looking to go deeper.
-
-### GLM-4.7: Advancing the Coding Capability
-
-#### [Submission URL](https://z.ai/blog/glm-4.7) | 393 points | by [pretext](https://news.ycombinator.com/user?id=pretext) | [209 comments](https://news.ycombinator.com/item?id=46357287)
-
-ResearchGLM-4.7: agentic coding model focuses on “feel” as much as scores
-
-What’s new
-- Coding and agents: Claims solid lifts over GLM-4.6 on agentic coding and terminal tasks: SWE-bench Verified 73.8 (+5.8), SWE-bench Multilingual 66.7 (+12.9), Terminal Bench 2.0 41.0 (+16.5). Emphasis on “thinking before acting” for frameworks like Claude Code, Kilo Code, Cline, and Roo Code.
-- “Vibe coding”: Pushes UI quality—cleaner, more modern web pages, better slide generation, and fancier one-file “artifact” demos (voxel pagoda, WebGL scenes, posters).
-- Tool use and browsing: Better scores on τ²-Bench (87.4) and BrowseComp (52.0; 67.5 with context management), plus a Chinese browsing variant (66.6).
-- Reasoning: Big boost on HLE with tools (42.8, +12.4 vs 4.6). On their 17-benchmark table, GLM-4.7 looks competitive across reasoning and coding, often near but not topping GPT-5/5.1 High and Gemini 3 Pro in aggregate; standout math contest scores (AIME 95.7, HMMT 97.1).
-
-New “thinking” controls
-- Interleaved Thinking: Model reasons before each reply/tool call to improve adherence and stability.
-- Preserved Thinking: Retains prior reasoning across turns for long-horizon coding, reducing re-derivations.
-- Turn-level Thinking: Toggle reasoning per turn to balance latency/cost vs accuracy.
-
-Integration and availability
-- Try/chat and API via Z.ai; also on OpenRouter. Works inside popular coding agents (Claude Code, Kilo Code, Roo Code, Cline). Switch model name to “glm-4.7.”
-- Pricing: “Claude-level” coding at ~1/7th the price with 3× usage quota (vendor claim) via the GLM Coding Plan.
-
-Why it matters
-- The pitch is less “new SOTA everywhere” and more “agent stability + UI polish.” Preserved/turn-level thinking directly targets the flaky long-task behavior devs complain about, while “vibe coding” aims to make generated apps, slides, and sites look shippable out of the box.
-
-Caveats
-- All numbers are vendor-reported; methodology and exact eval settings matter (e.g., tool use enabled vs not on HLE, browsing context management). Real-world mileage—latency, tool reliability, and agent integrations—will be key.
-
-Links
-- Docs and “thinking mode”: docs.z.ai/guides/capabilities/thinking-mode
-- API guide: docs.z.ai/guides/llm/glm-4.7
-- Subscribe: z.ai/subscribe
-- Model access: Z.ai and OpenRouter
-
-Based on the discussion, the community is largely focused on the practicalities, costs, and limitations of running such a massive model locally versus using the API.
-
-**Hardware constraints and "prompt lag"**
-Much of the conversation revolves around running GLM-4.7 (and its predecessors like 4.6 and 4.5) on Mac Studios.
-*   **The Mac bottleneck:** Users with M1 Ultra (128GB RAM) machines report that while they can fit quantized versions of the model (e.g., 4-bit), the performance is marred by slow prompt processing (input tokenization and loading) rather than just generation speed.
-*   **Future hopes:** Some speculate that the M5 generation might solve this via updated instruction sets (MATMUL), while others suggest high-end Nvidia cards (RTX 6000) are the only viable route for decent speeds, though significantly more expensive.
-
-**Local vs. Cloud Economics**
-*   **The cost of privacy:** A debate emerged regarding the value of a \$10,000+ local setup versus a \$200/month cloud subscription. Several users argued that local hardware cannot compete with the performance of tight API integrations for frontier models, calling local rigs an expensive hobby for those with "extreme privacy concerns."
-*   **Efficiency:** One user noted that for coding agents—which require long contexts—the cost/performance ratio leans heavily toward APIs, as local inference on consumer hardware is often too slow for an interactive "flow."
-
-**Implementation hurdles**
-*   **Reasoning tokens:** There is technical discussion about the new "thinking" capabilities. Users noted that many third-party libraries and front-ends fail to pass "reasoning tokens" back to the model correctly during conversation history management, causing the model to fail at tasks it should be capable of handling.
-*   **Benchmarks:** Users briefly touched on the claimed scores (beating Claude 3.5 Sonnet), with some skepticism about whether benchmark wins translate to "perceptible" improvements in daily coding tasks.
-
-### Flock Exposed Its AI-Powered Cameras to the Internet. We Tracked Ourselves
-
-#### [Submission URL](https://www.404media.co/flock-exposed-its-ai-powered-cameras-to-the-internet-we-tracked-ourselves/) | 730 points | by [chaps](https://news.ycombinator.com/user?id=chaps) | [445 comments](https://news.ycombinator.com/item?id=46355548)
-
-Flock left at least 60 AI “Condor” people-tracking cameras wide open on the internet—live feeds, 30‑day archives, and admin panels included
-
-- What happened: Researchers Benn Jordan and Jon “GainSec” Gaines found dozens of Flock’s Condor PTZ cameras exposed via Shodan. No login was required to watch livestreams, download a month of video, view logs, run diagnostics, or change settings. 404 Media’s Jason Koebler verified by filming himself in front of cameras in Bakersfield while watching the public feeds.
-
-- Why it’s different: Unlike Flock’s license-plate readers, Condor cameras are designed to track people. The exposed feeds showed cameras auto-zooming on faces and following individuals in parking lots, on city streets, on a playground, and along Atlanta-area bike paths.
-
-- Real-world risk: The clarity and persistence of the footage makes stalking, doxxing, and targeted crimes plausible; Jordan says he could identify specific people using basic OSINT.
-
-- Context: Flock’s footprint spans thousands of U.S. communities and its tech is widely used by law enforcement, amplifying the impact of basic misconfiguration. Gaines has previously reported other Flock camera vulnerabilities.
-
-Takeaway for builders and buyers: Secure defaults and network isolation matter. Internet-exposed admin consoles without auth are a catastrophic failure mode—treat cameras as production systems: require authentication, segment networks, disable public access, log and monitor, and regularly audit with third parties.
-
-**The bigger picture:** Discussion pushes beyond the specific vulnerability to criticize the "aggregation layer" of surveillance—the combination of Flock, ALPR, retail cameras, ISP data, and vehicle telemetry that creates a searchable, nationwide dragnet where jurisdictional boundaries become irrelevant.
-
-**Key themes in the conversation:**
-
-*   **RBAC and Governance Failures:** Commenters argue that proper Role-Based Access Control (RBAC) is practically impossible to maintain at the scale of nationwide law enforcement. Because strict permissions impede operations, roles are habitually "over-provisioned," leading to abuse. Multiple users cite a verified EFF case where a Texas officer used such databases to stalk a woman in the UK.
-*   **The AI Threat Model:** Users note that devices like "Condor" shift the threat landscape from passive recording to active, autonomous tracking. The risk isn't just "hacking," but the deployment of "smart spies" at intersections that require zero sophistication to exploit if left on default settings.
-*   **Cultural Normalization:** A sub-thread debates the role of media ("copaganda" shows like *Law & Order* or *Chicago PD*) in normalizing the surveillance state and police overreach, contrasting them with shows like *The Wire* that depicted institutional dysfunction.
-*   **Legal Circumvention:** Commenters express concern that these vendors allow government agencies (including ICE) to bypass due process and warrant requirements by simply purchasing commercially generated data rather than collecting it directly.
-
-### Claude Code gets native LSP support
-
-#### [Submission URL](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md) | 481 points | by [JamesSwift](https://news.ycombinator.com/user?id=JamesSwift) | [303 comments](https://news.ycombinator.com/item?id=46355165)
-
-Anthropic’s new public GitHub repo, anthropics/claude-code, is surging in popularity, tallying roughly 48.2k stars and 3.4k forks. The excerpt shows standard GitHub UI prompts, but the sheer activity suggests major developer interest and heavy traffic (some users even see “You can’t perform that action at this time”). Details on the code aren’t in the snippet, but this level of engagement makes it one of the day’s standout repos.
-
-Based on the discussion, users are largely focusing on a comparison between **JetBrains** and **VS Code** in the context of AI integration and workflow efficiency.
-
-**Key themes include:**
-
-*   **JetBrains "Missing the Boat":** Critics argue that JetBrains has failed to integrate transformational AI refactoring tools, with users describing their current AI offerings (formerly "Junie," now AI Assistant) as lackluster, context-unaware, and functionally poor compared to VS Code or external tools like **Augment**.
-*   **Git Workflow Frustrations:** A major point of contention is JetBrains' recent changes to its commit UI (moving from a modal dialog to a tool window), which has alienated long-time users. While some still defend JetBrains' Git GUI (specifically for merge conflicts and local history), others are migrating to TUIs like **LazyGit** (especially for WSL users) or VS Code.
-*   **The Rise of Competitors:** Several users mentioned exploring newer editors like **Zed** or fully switching to VS Code because JetBrains feels "clunky" and slow to adapt to agentic AI coding.
-*   **Ecosystem Lock-in:** One commenter noted that JetBrains previously resisted **LSP** (Language Server Protocol) support to keep developers locked into their ecosystem, a strategy described as backfiring now that open standards and AI interoperability are dominant.
-
-### Scaling LLMs to Larger Codebases
-
-#### [Submission URL](https://blog.kierangill.xyz/oversight-and-guidance) | 284 points | by [kierangill](https://news.ycombinator.com/user?id=kierangill) | [115 comments](https://news.ycombinator.com/item?id=46354970)
-
-Scaling LLMs in software engineering: make “one-shotting” possible
-
-Part 3 of a series argues we don’t yet know how to scale LLMs across huge codebases—but we do know where to invest: guidance and oversight.
-
-- Core idea: LLMs are “choice generators.” To reduce rework and increase one-shot success, encode the right choices up front (guidance) and rigorously review outputs (oversight).
-- Guidance = context and environment
-  - Build a prompt library: collate conventions, best practices, code maps, security rules, and testing norms; iterate whenever the model misses.
-  - Preload guidance into the model’s context (e.g., a CLAUDE.md). Prompts should state business requirements; the rest should be inferrable or encoded.
-  - Treat the repo as the model’s environment: clean, modular, well-named, and encapsulated code improves model reliability. Garbage in, garbage out.
-- Oversight = skills to guide, validate, and verify
-  - Read every line the model generates; don’t assume instructions (like “sanitize inputs”) were followed.
-  - Invest in reviewers who understand model failure modes and can steer, test, and verify.
-
-- Practical dipsticks
-  - Human literacy test: can an unfamiliar engineer quickly understand and navigate a module? If not, the model won’t either.
-  - Model literacy test: ask an agent to explain a feature you already know; trace its grep/ls/cat trail, document snags, and add maps and indexes to reduce rediscovery.
-
-- Why it matters
-  - Anecdote: tech debt makes automation claims unrealistic (Meta). Clean-code “taste” matters even more in the LLM era (Cursor team).
-
-- Tactics checklist
-  - Maintain a living prompt library; measure one-shot vs rework.
-  - Preload repo maps, APIs, and conventions.
-  - Standardize naming, encapsulate logic, keep modules small.
-  - Require tests with generated code; verify security and data handling.
-
-Based on the discussion, users elaborated on the practicalities of the article's advice, sharing specific workflows, prompting strategies, and debates regarding model reliability.
-
-**Workflows and "The Loop"**
-One user (`mstnk`) detailed a successful, iterative framework that replaces "one-shot" attempts with a 20-30 minute loop: Research/Explain $\rightarrow$ Plan/Brainstorm $\rightarrow$ Review Plan $\rightarrow$ Implement $\rightarrow$ Test (Unit/Lint). This approach reportedly solves complex refactors more reliably than expecting a single perfect output. Other users mentioned adopting similar "Research -> Plan -> Implement" workflows inspired by HumanLayers' context engineering guidelines.
-
-**Coding Styles and Quality**
-There was significant debate regarding the best coding paradigms for LLM generation:
-*   **OOP vs. Functional:** Some users argued that LLMs perform better with encapsulated objects that maintain state, while others advocated for functional styles (stateless functions) to make testing and cleaning easier.
-*   **"Clean Code" Prompts:** One user (`the_sleaze_`) shared a prompt strategy based on "Uncle Bob’s" *Clean Code* principles (DRY, small functions) to force agents to produce maintainable output rather than their default "spaghetti code."
-*   **Context Size:** Users warned that "degraded intelligence" often relates to hitting context window limits (e.g., 90k tokens in VSCode Copilot), causing models to forget instructions.
-
-**Reliability and Failure Modes**
-Several commenters expressed frustration with models doing the "exact opposite" of instructions, even with clear prompts. This sparked a philosophical debate about tolerance:
-*   Some noted a "double standard" where we tolerate frequent failures from cheap tools ($100/mo) that we would never accept from expensive human engineers ($1000s/mo).
-*   Others compared it to autonomous driving (Waymo), suggesting that while AI reduces errors overall, the specific failures it *does* make can feel baffling or alien compared to human errors.
-
-### Universal Reasoning Model (53.8% pass 1 ARC1 and 16.0% ARC 2)
-
-#### [Submission URL](https://arxiv.org/abs/2512.14693) | 116 points | by [marojejian](https://news.ycombinator.com/user?id=marojejian) | [23 comments](https://news.ycombinator.com/item?id=46357458)
-
-Universal Reasoning Model: simple tweaks beat fancy designs on ARC-AGI
-
-- What’s new: The authors dissect Universal Transformers (UTs) and argue that their reasoning gains mostly come from two basics—recurrent inductive bias and strong nonlinearities—rather than intricate architectural flourishes.
-
-- The model: Universal Reasoning Model (URM) = UT + short convolution for local mixing + truncated backpropagation through time to train iterative reasoning without full unrolling.
-
-- Results (authors’ report): State-of-the-art pass@1 on ARC-AGI benchmarks—53.8% on ARC-AGI 1 and 16.0% on ARC-AGI 2.
-
-- Why it matters: Suggests you can push reasoning performance with minimal, principled changes instead of ever-more-complex transformer variants. Highlights recurrence and nonlinearity as the key ingredients.
-
-- Extras: Code is promised in the paper. DOI: https://doi.org/10.48550/arXiv.2512.14693
-
-**Discussion Summary**
-
-The discussion explores the architectural implications of the Universal Reasoning Model (URM), debating the utility of recurrence in transformers, the limitations of tokenization, and the validity of the benchmark results.
-
-*   **Recurrence and Universal Transformers:** Several users identified the architecture as a revival or evolution of "Universal Transformers" (UTs), noting that UTs function like Recurrent Neural Networks (RNNs) that iterate over network depth (computation steps) rather than sequence length.
-    *   One commenter clarified that unlike standard RNNs, this approach doesn't necessarily suffer from sequential processing slowness because the "looping" happens on the same tokens to deepen reasoning, not to process long contexts.
-    *   Users appreciated the move toward "internal looping" (improving the model's "thinking" process within the forward pass) as a more principled alternative to "brute force" inference strategies like Chain-of-Thought or sampling multiple times.
-
-*   **Layer Access vs. The "Strawberry" Problem:** A significant sidebar focused on whether improved layer access (features from earlier layers) could solve specific failures like counting the 'r's in "strawberry."
-    *   While some speculated that allowing deeper layers to query lower-level Key-Value (KV) data might help "inspect" raw input, others argued that **tokenization** is the hard bottleneck. If the input is tokenized into whole words, the model never "sees" the letters, regardless of how the layers connect.
-    *   One user retorted that standard residual streams in transformers supposedly already preserve enough information from previous layers, implying that explicit "extra attention" to lower layers might be redundant or inefficient.
-
-*   **Benchmarking Concerns:**
-    *   **Training on the Test:** A user questioned the validity of training specifically on ARC-AGI data, arguing that the benchmark was designed to test the general reasoning capabilities of foundational models, not a model overfitted to the benchmark itself.
-    *   **Private Validation:** Participants noted the reported scores use a private validation set. While some viewed this with skepticism, others argued it is necessary to prevent data leakage, as generic LLMs trained on the internet often memorize public test sets (the "contamination" problem).
-
-*   **General Sentiment:** There is surprise that valid research paths regarding recurrence and token prediction haven't been more aggressively pursued compared to widespread hyperparameter tuning. However, users expressed cautious optimism that "native inference scaling" (scaling reasoning at run-time via architecture) is a promising direction.
-*   
-### Toad is a unified experience for AI in the terminal
-
-#### [Submission URL](https://willmcgugan.github.io/toad-released/) | 61 points | by [nikolatt](https://news.ycombinator.com/user?id=nikolatt) | [10 comments](https://news.ycombinator.com/item?id=46354737)
-
-Will McGugan (of Textual fame) unveiled Toad, a terminal-first front-end that unifies multiple AI coding agents behind a single, polished UI via the ACP protocol. It already wraps 12 agent CLIs (including OpenHands, Claude Code, Gemini CLI) and aims to make “agent in the terminal” feel like a native, ergonomic workflow.
-
-Highlights
-- Unified UX: One UI for many agent CLIs, with “@file” insertion backed by a fast fuzzy finder that respects .gitignore.
-- Rich prompt editor: Mouse and keyboard selection, cut/copy/paste, live Markdown with code-fence syntax highlighting as you type.
-- Best-in-class streaming: Fast, full Markdown rendering (tables, syntax-highlighted code) while streaming.
-- Integrated shell: Run interactive CLI/TUI tools inline with color and mouse support. Use ! to run commands; auto shell mode; familiar tab completion with cycling.
-- Notebook-like history: Navigate conversation blocks, reuse content, copy to clipboard, export SVG; more notebook-style features planned.
-
-Status and ecosystem
-- Collaborations with OpenHands and Hugging Face.
-- Usable today as a daily driver; install via batrachian.ai and see the Toad repo.
-- McGugan hopes to grow Toad into a full-time effort in 2026 and is seeking sponsors.
-
-Why it matters: Toad reduces tool sprawl, brings modern UX to terminal-based AI coding, and may make ACP a common layer for agent CLIs—while letting you keep the tight feedback loop of a real shell.
-
-**Discussion Summary:**
-
-Creator **Will McGugan** (`wllm`) was present in the comments to discuss technical details and architectural choices. The reception was largely positive, with users praising the "terminal-first" approach and McGugan’s previous work on the **Textual** library.
-
-*   **ACP vs. Native:** User `jswny` asked if the ACP protocol could match the feature parity of native interfaces like Claude Code. McGugan explained that ACP is designed to support native CLI features and allows slash commands to be passed verbatim to the agent.
-*   **Python Performance:** `jswny` also expressed surprise at the application's "snappy" and native feel given it is written in **Python**. McGugan clarified that Python is more than capable of handling TUI text manipulation efficiently when paired with the Textual library.
-*   **UX & Features:** `jrbs` asked about support for **vi keybindings**, while `fcrrld` expressed hope that Toad would solve UX issues they encountered with other tools like OpenCode. Several users noted they bookmarked the tool to try over the holidays.
-
-### Google's healthcare AI made up a body part – what if doctors don't notice?
-
-### GLM-4.7
-
-#### [Submission URL](https://docs.z.ai/guides/llm/glm-4.7) | 23 points | by [l2dy](https://news.ycombinator.com/user?id=l2dy) | [6 comments](https://news.ycombinator.com/item?id=46354855)
-
-HN Summary: Z.AI launches GLM-4.7 and a $3/month “Coding Plan” aimed at agentic coding
-
-What’s new
-- GLM-4.7 release: Z.AI’s latest flagship model emphasizes multi-step reasoning and “task completion” over single-shot code gen. Claims stronger planning/execution and more natural dialog.
-- Dev-focused plan: “GLM Coding Plan” starts at $3/month with a promo tagline of “3× usage, 1/7 cost” (limited-time). Targets popular coding agents/tools (e.g., Claude Code, Cline, OpenCode, Roo Code).
-- Big contexts: 200K context window, up to 128K output tokens.
-- Capabilities: multiple “thinking modes,” streaming responses, function/tool calling, context caching, structured outputs (JSON), and agent/tool streaming.
-
-Positioning and use cases
-- Agentic coding: From a high-level goal, it decomposes tasks, coordinates across stacks (frontend/backend/devices), and emits executable, full-structure code frameworks—reducing manual stitching and iteration.
-- Multimodal + real-time apps: Integrates visual recognition and control logic for camera/gesture/interactive scenarios.
-- Frontend/UI upgrades: Claims better default layout/color/typography for web UI generation; targets low-code and rapid prototyping.
-- Beyond coding: Improved collaborative dialog for problem solving, long-form/role-play writing, slide/poster generation, and “intelligent search” with cross-source synthesis.
-
-Notable claims
-- “Think before acting” inside coding frameworks (e.g., Claude Code, Kilo Code, TRAE, Cline, Roo Code) to stabilize complex tasks.
-- Stronger frontend aesthetics and more stable multi-step reasoning.
-
-Why it matters
-- If the pricing holds, this undercuts many premium coding models and could bring large-context, agentic workflows to more devs and prototypers.
-- The push toward agentic, end-to-end app scaffolding is where many coding assistants are headed; Z.AI is staking out price and UI quality as differentiators.
-
-Caveats and open questions
-- Benchmarks and head-to-heads vs GPT-4.x/Claude 3.5/o3 are not provided here.
-- “3× usage, 1/7 cost” and the precise token economics/limits aren’t clearly detailed on this page.
-- Real-world reliability of full-stack, multi-step execution (and UI “aesthetics”) will need hands-on validation.
-- Mentions availability in multiple coding tools, but integration breadth and performance may vary by setup.
-
-Here is a summary of the discussion on Hacker News regarding the launch of Z.AI's GLM-4.7:
-
-**Hardware and Self-Hosting Requirements**
-The technical discussion focused heavily on the model's architecture and the hardware required to run it locally. Users identified the model on Hugging Face as a 358 billion parameter Mixture-of-Experts (MoE) model.
-*   **High Barrier to Entry:** Commenters noted that running this model requires significant compute resources.
-*   **Mac Studio Logic:** One user detailed that running a 4-bit quantized version of GLM-4 would likely require an M3 Ultra Mac Studio with at least 256GB of unified memory, estimated to achieve around 20 tokens per second. They compared this to the MiniMax M2, which runs faster on similar hardware.
-
-**Pricing and Value**
-Sentiments regarding the $3/month plan were enthusiastic, with users highlighting the aggressive pricing strategy compared to competitors.
-*   **Cost vs. Competitors:** Users described the "Performance Max Plan" as offering significant savings compared to Claude Code Pro.
-*   **Discounts:** There was discussion around stacking discounts (promotional offers plus referral bonuses) to achieve extremely low costs, though the enthusiastic nature of some comments suggested a strong focus on referral incentives.
-
-**Miscellaneous**
-*   **Marketing Materials:** One user criticized the visual quality of the charts used in the announcement email, describing them as the "worst charts I've seen in a while."
-*   **Resources:** Users shared links to model leaderboards and the Hugging Face repository for further technical validation.
