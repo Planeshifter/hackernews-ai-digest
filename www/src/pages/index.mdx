@@ -10,6 +10,112 @@ export async function getStaticProps() {
 
 ---
 
+## AI Submissions for Fri Jan 02 2026 {{ 'date': '2026-01-02T17:08:25.564Z' }}
+
+### TinyTinyTPU: 2×2 systolic-array TPU-style matrix-multiply unit deployed on FPGA
+
+#### [Submission URL](https://github.com/Alanma23/tinytinyTPU-co) | 122 points | by [Xenograph](https://news.ycombinator.com/user?id=Xenograph) | [50 comments](https://news.ycombinator.com/item?id=46468237)
+
+TinyTinyTPU: a bite-size, working TPU you can simulate and run on a Basys3 FPGA. It implements a full TPU-style pipeline around a 2×2 systolic array, making TPU internals tangible for learning and experimentation.
+
+Highlights
+- End-to-end design: 2×2 systolic array (4 PEs) plus accumulator, activation (ReLU), normalization, and quantization stages
+- Works today on a low-cost Basys3 (Artix-7) board via a simple UART host interface and Python driver
+- Multi-layer MLP inference with double-buffered activations; includes demos (e.g., a mouse-gesture classifier)
+- Thorough test suite with cocotb + Verilator and optional waveforms; module and top-level coverage
+- Open-source flow supported (Yosys + nextpnr) in addition to Xilinx Vivado
+
+Architecture notes
+- Systolic dataflow: activations move horizontally; partial sums vertically
+- Diagonal wavefront weight loading to align systolic timing
+- Weight FIFO → MMU → Accumulator → Activation → Normalization → Quantization pipeline
+- UART protocol for commands/results; 115200 8N1
+
+Resource footprint on Basys3 (XC7A35T)
+- ~1k LUTs (≈5%), ~1k FFs (≈3%), 8 DSP48E1 slices, 10–15 BRAMs, ~25k gates
+- 100 MHz clock; reset on BTNC; RX/TX on B18/A18
+
+Developer experience
+- Sim: Verilator 5.x, cocotb, GTKWave/Surfer; make targets for unit and integration tests with waveforms
+- FPGA: Vivado or Yosys/nextpnr build; Python host scripts for loading weights/activations and reading results
+- Clear, modular repo with DEBUGGING_GUIDE and per-module tests (PE, MMU, accumulator, activation pipeline, UART, full system)
+
+Why it’s interesting
+- A minimal yet complete TPU you can read, simulate, and tinker with—ideal for understanding systolic arrays, post-MAC pipelines, and hardware-software co-design
+- Demonstrates how a TPU scales: this 2×2 version is educational; the same concepts underpin larger arrays like TPU v1’s 256×256
+
+Try it
+- Run all sims from sim/ with make test (WAVES=1 for traces)
+- Flash to Basys3 and use the provided Python driver to push weights/activations and execute inference
+- Optional gesture demo trains a 2-layer MLP and performs real-time classification on the FPGA
+
+While the submission focuses on an educational TPU implementation, the discussion broadens into a debate on the future of AI hardware, specifically comparing FPGAs, GPUs, and ASICs in the context of large-scale inference.
+
+**The Evolution of AI Hardware**
+*   **The Crypto Analogy:** User **mrntrwb** likens the trajectory of AI inference to Bitcoin mining: moving from CPUs to GPUs, briefly to FPGAs, and finally to ASICs. They predict that GPU-based inference will soon become obsolete due to inefficiency compared to purpose-built chips (like Google's TPU or Groq).
+*   **The Counter-Argument:** Others, including **fblstr** and **ssvrk**, argue that modern Data Center GPUs are already effectively ASICs given the amount of die area dedicated to fixed-function matrix multiplication (Tensor Cores) rather than graphics. **NitpickLawyer** notes that high-end accelerators are much closer to ASICs than traditional video cards.
+
+**FPGAs vs. GPUs for Inference**
+*   **Performance Claims:** A heated debate emerged regarding whether FPGAs can compete with top-tier GPUs (H200/B200). User **dntcs** claims to have worked on FPGA systems that outperform H200s on Llama3-class models, largely by bypassing memory bottlenecks.
+*   **Skepticism:** **fblstr** challenges this, noting that while memory bandwidth is the bottleneck, the sheer compute density (PetaOPS) of chips like the Blackwell B200 is difficult for general-purpose FPGA fabric to match.
+*   **Bandwidth is King:** Multiple users (**tcnk**, **bee_rider**) agree that the real constraint for inference is memory fabric and bandwidth. **tcnk** highlights modern platforms like the Alveo V80 with PCIe 5.0 and 200G NICs as the current state-of-the-art for programmable in-network compute.
+
+**Market Dynamics**
+*   **Hyperscaler Custom Silicon:** The discussion notes that major tech companies (Google, Amazon, Meta, Microsoft) effectively already use custom silicon (TPUs, Inferentia, Maia) for their internal workloads, reducing reliance on Nvidia for inference.
+*   **Edge Hardware:** **Narew** and **mffklst** briefly discuss older "stick" format TPUs (Google Coral, Intel compute sticks), noting they are now dated and struggle to compete with low-power GPU/SOC options like Jetson.
+
+**Other Technical Notes**
+*   **0-_-0** and **hnkly** drew parallels between neural networks and CPU branch predictors, discussing the potential for AI to handle heuristic tasks (like speculative execution) to skip expensive deterministic computations.
+*   **zhm** clarified that while TPUs are often associated with Transformers, architectures like the TPUv5 (Ironwood) were designed specifically for efficient LLM training, whereas other chips (like Etched's Sohu) are true Transformer-specific ASICs.
+
+### AB316: No AI Scapegoating Allowed
+
+#### [Submission URL](https://shub.club/writings/2026/january/ab316/) | 36 points | by [forthwall](https://news.ycombinator.com/user?id=forthwall) | [19 comments](https://news.ycombinator.com/item?id=46461347)
+
+California’s AB316, as described by the poster, adds Civil Code 1714.46 and bars “the AI did it” as a liability defense: if an AI system causes harm, developers or users can’t claim autonomy as a shield. The law broadly defines AI as systems that infer from inputs to generate outputs affecting physical or virtual environments.
+
+The author (not a lawyer) thinks this is reasonable but vague, and raises thorny questions about who’s on the hook when things go wrong:
+- Where does liability sit between model makers (e.g., OpenAI), app builders, and deployers?
+- How does this play with open-source models used in critical contexts (e.g., an aircraft system)?
+- Will claims hinge on marketing representations or integration choices?
+
+Expected knock-on effects: more investment in guardrails and safety layers, tighter operational controls, stronger contracts and indemnities, and a budding market for AI liability insurance. The takeaway: unpredictability won’t excuse harm; if your system can cause damage—like a chatbot giving dangerous advice—you’re responsible for preventing it.
+
+**Discussion Summary:**
+
+Commenters grappled with the boundaries of liability, using analogies ranging from food safety to science fiction to explore whether unpredictability should absolve developers of blame.
+
+*   **The "Eggshell Skull" Doctrine:** The discussion opened with a grim hypothetical: if a chatbot encourages a user to commit suicide, is the developer liable? While some users felt a bot shouldn't be held to the same standard as a human, others cited the "eggshell skull" legal rule. This doctrine suggests a defendant is liable for the resulting harm even if the victim had a pre-existing vulnerability (like suicidal ideation), implying developers cannot use a user's mental state to shield themselves from the consequences of a bot's "persuasive" errors.
+*   **The Zoo Analogy:** One user reframed the AB316 logic using a zoo comparison. The law essentially states that "the AI is a wild animal" is not a valid defense. Just as a zoo is responsible for containment regardless of a tiger's natural instincts, an AI deployer is responsible for the system's output, regardless of its inherent unpredictability.
+*   **Product Liability Parallels:** Participants drew comparisons to the Jack in the Box E. coli outbreaks and faulty car parts. The consensus leaned toward treating AI as a commercial product: if a company sells "sausages made from unsanitary sources" (or a model trained on toxic data), they face strict liability for the outcomes.
+*   **Redundancy vs. Clarity:** A debate emerged over whether this law is redundant, given that product liability laws already exist. However, proponents argued the legislation is necessary to specifically close the "autonomy loophole," preventing defendants from claiming a system's "black box" nature puts its actions outside their legal control.
+*   **The "Catbox" Sophistry:** In a philosophical turn, a user cited the "Schrödinger's Catbox" from the novel *Endymion*—a device where a death is triggered by random radioactive decay, purportedly absolving the user of murder. The commenter argued that corporate reliance on AI stochasticity is a similar moral sophistry, attempting to use randomness to dilute ethical responsibility.
+
+### Everyone's Watching Stocks. The Real Bubble Is AI Debt
+
+#### [Submission URL](https://www.bloomberg.com/news/newsletters/2025-12-31/everyone-s-watching-stocks-the-real-bubble-is-ai-debt) | 48 points | by [zerosizedweasle](https://news.ycombinator.com/user?id=zerosizedweasle) | [27 comments](https://news.ycombinator.com/item?id=46468579)
+
+Howard Marks flags rising leverage behind the AI boom as a late‑cycle warning sign
+
+- The Oaktree co-founder says the AI trade has shifted from being funded by Big Tech’s cash piles to being increasingly financed with debt, a change he finds worrisome.
+- He argues the AI rally looks further along than earlier in the year, with growing leverage a classic sign of maturing (and potentially bubbly) markets.
+- Why it matters: Debt magnifies both gains and losses. If AI-driven revenues don’t arrive fast enough to cover swelling capex and financing costs, the pain could spread from equity to credit markets.
+- What to watch: Hyperscalers’ capex and borrowing trends, off-balance-sheet commitments (long-term purchase and leasing deals), and credit spreads tied to the AI supply chain and data-center buildout.
+- Context: Marks’ latest memo (“Is It a Bubble?”) doesn’t call a top outright but underscores that the risk profile of the AI trade has changed as leverage enters the picture.
+
+**Daily Digest: Hacker News Discussion**
+
+**Investment Strategy Amidst "Doom" Signals**
+The thread opened with users questioning where to allocate capital given the economic warnings (bubbles, debt, and inflation). Responses ranged from adhering to standard long-term strategies (such as Vanguard's 80/20 split) to fleeing to safety. While some advocated for holding cash to avoid potential market crashes of 15%+, others argued that cash is a poor hedge during inflationary periods driven by potential government "money printing." There was also a brief, contentious suggestion to pivot toward specific foreign indices (like Spain) or gold as safety plays.
+
+**Historical Parallels and Timing**
+Highlighting the difficulty of acting on macro warnings, one commenter pointed to the Dot-com era: Alan Greenspan famously warned of "irrational exuberance" in 1996, yet the bubble did not burst for several more years. The consensus suggested that while valuations may be unsupported, timing the exact top remains notorious difficult.
+
+**Validating the Leverage Shift**
+Validating the article's core thesis, a user shared their own analysis of Big Tech balance sheets (specifically Meta, Microsoft, and Amazon). They noted a distinct shift starting around the release of ChatGPT in late 2022: these previously cash-rich "fangs" have significantly increased their debt loads to finance the AI buildout, a fundamental change in risk profile that led the user to exit a 10-year position in the sector.
+
+---
+
 ## AI Submissions for Thu Jan 01 2026 {{ 'date': '2026-01-01T17:09:10.570Z' }}
 
 ### Build a Deep Learning Library
@@ -317,44 +423,3 @@ The consensus is that the tool itself isn't the problem; the lack of understandi
 
 **Corporate vs. Open Source Dynamics**
 Some discussion diverged into how this applies to employment. While LLVM’s policy applies to volunteers/contributors, some noted that in corporate settings, developers are sometimes forced by management to use AI to "cut corners." In those specific cases, some argued the "it’s the AI’s fault" defense might genuinely reflect a failure of management metrics rather than individual laziness.
-
----
-
-## AI Submissions for Tue Dec 30 2025 {{ 'date': '2025-12-30T17:10:09.151Z' }}
-
-### Show HN: Replacing my OS process scheduler with an LLM
-
-#### [Submission URL](https://github.com/mprajyothreddy/brainkernel) | 19 points | by [ImPrajyoth](https://news.ycombinator.com/user?id=ImPrajyoth) | [11 comments](https://news.ycombinator.com/item?id=46435142)
-
-BrainKernel: a snarky, LLM-powered process manager that “judges” what to kill
-
-What it is: A Python/Textual TUI that uses an LLM to analyze running processes by context (parentage, disk I/O, behavior history) and decide whether they’re harmless (e.g., a browser on a video call) or bloatware worth killing. It roasts offenders before acting and logs them in a “Hall of Shame.”
-
-What’s new in v3.4 “The Silent Guardian”:
-- Diplomatic Immunity: Hardcoded protection for browsers, chat apps, IDEs; it may scold them but won’t kill them.
-- Stealth Mode: Tuned to work smoothly with Groq’s cloud API.
-- <1% CPU overhead: “Delta Caching” to monitor 300+ processes without lag.
-
-Features:
-- Cloud or local LLM: Groq (free/fast) or Ollama.
-- Focus Mode: Set a “focus app” (e.g., VS Code); background distractions >5% CPU get suspended.
-- Quick controls: Protect a PID, ban a process name for auto-kill, force a roast, resume all, view shame log.
-- Safety rails: PID creation-time checks to avoid recycled-PID mishaps, debouncing decisions for 5 minutes, protected app categories.
-
-Why it’s interesting: It’s a playful but thought-provoking experiment in LLM-driven OS heuristics—less “replacing the scheduler” and more a context-aware, user-space task manager with attitude.
-
-Getting started:
-- pip install psutil textual
-- python main.py
-- Add a Groq API key in-app (or point to Ollama)
-
-License: MIT
-Repo: https://github.com/mprajyothreddy/brainkernel (18★ at write time)
-
-**BrainKernel: A snarky, LLM-powered process manager that “judges” what to kill**
-This Python TUI uses an LLM (via Groq or locally with Ollama) to analyze process metadata—like parentage and disk I/O—to decide if apps are harmless tools or "bloatware" worth killing. It features a "Hall of Shame" for roasted processes and a "Focus Mode" that suspends distractions consuming too much CPU.
-
-**Discussion:**
-*   **The "Cursed" Efficiency:** The author frames the project as an experiment in "cursed" computing, acknowledging the irony of burning datacenter power (or local GPU watts) just to optimize a laptop. Commenters joked about the trade-off of "burning a coal plant to decide to close Discord," which the author dubbed "peak 2025 energy."
-*   **Technical Semantics:** Users pointed out that this doesn't actually replace the Windows (NTOS) scheduler in the kernel (Ring 0). The author clarified that it acts as a "High-Level Governor" in userspace that overrides the OS's fairness logic by suspending processes entirely.
-*   **Neurotic Management:** One commenter noted the tool essentially outsources the "neurotic" habit of staring at task managers to kill resource hogs (like Dropbox), describing it not as a scheduler, but as a "scheduler's manager."
