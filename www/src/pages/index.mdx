@@ -10,6 +10,83 @@ export async function getStaticProps() {
 
 ---
 
+## AI Submissions for Sat Jan 03 2026 {{ 'date': '2026-01-03T17:08:16.502Z' }}
+
+### Scaling Latent Reasoning via Looped Language Models
+
+#### [Submission URL](https://arxiv.org/abs/2510.25741) | 78 points | by [remexre](https://news.ycombinator.com/user?id=remexre) | [13 comments](https://news.ycombinator.com/item?id=46481849)
+
+TL;DR: A new open-source family of “Looped Language Models” (LoopLM), called Ouro, bakes multi-step reasoning into pretraining by letting the model iterate in latent space with a learned, dynamic depth. Small models (1.4B/2.6B) reportedly match the reasoning performance of state-of-the-art models up to 12B params, trained on 7.7T tokens.
+
+What’s new
+- Pretraining for reasoning, not just post-training prompts: Instead of relying on chain-of-thought at inference, Ouro trains models to perform iterative computation internally during pretraining.
+- Latent loops + learned depth: The model “thinks” via internal loops in its hidden states, with an entropy-regularized objective that encourages it to allocate just enough steps per input.
+- Scales well at small sizes: Ouro 1.4B and 2.6B are claimed to match much larger 12B models across diverse benchmarks.
+
+Why it matters
+- Smaller, smarter models: If latent looping reliably boosts reasoning, you can get big-model reasoning on smaller footprints—promising for cost, latency, and edge deployments.
+- Beyond verbose CoT: Internal loops could reduce dependence on long chain-of-thought outputs (fewer tokens, less leakage), while keeping or improving reasoning quality.
+- Manipulation > memory: Authors argue gains come from better “knowledge manipulation” rather than just more parameters or data memorization.
+
+How it works (at a glance)
+- Iterative hidden-state updates: The network applies multiple internal reasoning steps before emitting tokens.
+- Dynamic depth via entropy regularization: A training objective that nudges the model to adaptively decide how many internal steps to take.
+- Massive pretraining: Trained on 7.7T tokens to make the looped computation robust and general.
+
+Notable claims
+- 1.4B/2.6B Ouro models match up to 12B SOTA LLMs on a wide range of reasoning benchmarks.
+- Reasoning traces are more aligned with final answers than typical chain-of-thought outputs.
+- Controlled experiments suggest improvements come from how the model uses knowledge, not just how much it stores.
+
+Caveats and open questions
+- Inference cost/latency: Latent loops don’t emit tokens, but they still add compute—what’s the real-world speed/cost trade-off?
+- Generality and robustness: How widely do the gains hold across domains and languages not in the benchmark set?
+- Practical integration: Tool use, retrieval, and guardrails with looped inference remain to be validated at scale.
+
+Availability
+- The authors say models are open-sourced and provide a project page; details and weights are reportedly available. Authors include Yoshua Bengio and collaborators.
+
+**Hacker News Discussion Summary**
+
+The discussion focused on the architectural mechanics of Ouro and the safety implications of its opaque reasoning process.
+
+*   **comparisons to ODEs and Universal Transformers:** Commenters drew strong parallels between Ouro and "Universal Transformers" or Neural ODEs (Ordinary Differential Equations), effectively describing the model as a solver that iterates in latent space. There was a technical debate regarding "flow-matching" in language models; users clarified that while language inputs and outputs are discrete tokens, the internal operations (and thus the looping) occur in a continuous multi-dimensional vector space, allowing for smooth interpolation.
+*   **The "Black Box" Safety Concern:** A significant portion of the thread debated the interpretability of "latent loops." Unlike standard Chain-of-Thought (CoT), which produces human-readable reasoning steps, Ouro's internal steps are abstract vector manipulations not mapped to the vocabulary. Users compared this to "Coconut" models (Continuous Chain of Thought), noting that while this method is computationally efficient, it poses a safety risk because the "thought process" is illegible to humans and harder to monitor or guardrail.
+*   **Visualizing the Architecture:** Participants used pseudo-code to illustrate the difference between Ouro and standard LLMs. While traditional models pass data through a fixed stack of distinct layers (Layer 1 $\to$ Layer 2 $\to$ ...), Ouro was described as looping through the *same* layer structure iteratively. It was noted that this depth is dynamic: the model runs more loops for difficult tokens and fewer for easy ones before outputting a result.
+
+### Recursive Language Models
+
+#### [Submission URL](https://arxiv.org/abs/2512.24601) | 147 points | by [schmuhblaster](https://news.ycombinator.com/user?id=schmuhblaster) | [23 comments](https://news.ycombinator.com/item?id=46475395)
+
+Recursive Language Models: pushing LLMs past context limits by letting them call themselves
+
+- What’s new: Alex L. Zhang, Tim Kraska, and Omar Khattab propose “Recursive Language Models” (RLMs), an inference-time strategy where the LLM treats a long prompt as an external environment, programmatically scans/decomposes it, and recursively calls itself on relevant snippets.
+- Why it matters: This aims to break fixed context windows without retraining. The authors report handling inputs up to two orders of magnitude longer than the model’s context and, even on shorter prompts, outperforming base LLMs and common long‑context scaffolds across four diverse tasks—at comparable or lower per‑query cost.
+- How it works (high level): The model acts as a controller that decides what to read next, how to chunk, and when to recurse—an instance of “inference‑time scaling” where more compute and structure at inference improve quality.
+- For builders: If validated, this could offer a simpler alternative to bespoke long‑context pipelines, with potential gains in quality and cost. Open questions include latency/compute trade‑offs, robustness of the controller loop, and failure modes on messy real‑world corpora.
+
+Paper: “Recursive Language Models” (9 pages + 24pp appendix)
+arXiv: 2512.24601 (cs.AI, cs.CL) — authors’ claims based on four long‑context tasks
+PDF: https://arxiv.org/pdf/2512.24601
+
+Here is a summary of the discussion:
+
+**Is this just Agents/RAG by another name?**
+A significant portion of the discussion focused on terminology and classification. Several users argued that "Recursive Language Models" is mostly a rebrand of existing "subagent" architectures or "agentic scaffolds" (like BabyAGI or workflows used in Cursor and Claude Code).
+*   **Recursion vs. Depth:** Commenters noted that if the system only goes one level deep (Main -> Subagent), as some suggested the paper implies, calling it "recursive" is a stretch; it is effectively just a subagent workflow.
+*   **Task vs. Context Decomposition:** User *wsbdnr* offered a nuanced distinction: while standard agentic workflows usually view multiple calls as *task* decomposition, this paper frames it as *context* decomposition—treating the text as an environment to be navigated.
+
+**RAG vs. RLM**
+Users debated how this differs from standard Retrieval-Augmented Generation (RAG).
+*   **The "Auto-RAG" Shift:** *bob1029* and *NitpickLawyer* identified the key innovation: in standard RAG, a human developer hard-codes the retrieval logic (chunking, embedding, searching). In RLM, the LLM itself acts as the controller, dynamically deciding what to read, search, or "page in" from the text-as-environment.
+*   **Environment:** The consensus was that RLM treats long prompts as an external environment for the model to interact with symbolically, rather than just a stream of tokens to digest.
+
+**Implementation & Training**
+*   **Inference, not Weights:** Users clarified for those misled by the title that this is purely an inference-time strategy (scaffolding/prompting) and does not involve training new model weights or differentiable architectures.
+*   **Tooling Wishlist:** The discussion touched on the desire for major providers (OpenAI, Anthropic) to expose these types of "computation hooks" in their APIs, allowing developers to inspect or swap the context-management logic (like that used in Claude Code) rather than interacting with opaque black boxes.
+
+---
+
 ## AI Submissions for Fri Jan 02 2026 {{ 'date': '2026-01-02T17:08:25.564Z' }}
 
 ### TinyTinyTPU: 2×2 systolic-array TPU-style matrix-multiply unit deployed on FPGA
@@ -232,194 +309,3 @@ The creator, **smplynd**, provided a technical breakdown of the architecture, ex
 Other comments focused on trust and security:
 *   **IntelliAvatar** inquired about the execution-time security of the MCP implementation, specifically how the tool handles validation and side-effects when accessing the filesystem or network.
 *   **da_grift_shift** pushed back on the reliability of the system, suggesting that the "100% accuracy" claim—and perhaps the author's own generated comment text—demonstrates that AI outputs still require a "quick manual review" before being submitted.
-
----
-
-## AI Submissions for Wed Dec 31 2025 {{ 'date': '2025-12-31T17:11:35.690Z' }}
-
-### 2025: The Year in LLMs
-
-#### [Submission URL](https://simonwillison.net/2025/Dec/31/the-year-in-llms/) | 744 points | by [simonw](https://news.ycombinator.com/user?id=simonw) | [386 comments](https://news.ycombinator.com/item?id=46449643)
-
-Simon Willison’s annual retrospective surveys a whirlwind year in AI, anchored by one big shift: “reasoning” models trained with RLVR (reinforcement learning from verifiable rewards). He traces how OpenAI’s o1/o3/o4-mini and peers like DeepSeek R1 moved capability forward not by bigger pretraining, but by long RL runs that teach models to decompose problems and iterate—especially when driving tools.
-
-Highlights:
-- Reasoning goes mainstream: Most labs ship reasoning modes (often with adjustable “thinking” dials). The real unlock isn’t math puzzles—it’s tool use. With search and code execution, models can plan multi‑step workflows, adjust on the fly, and finally make AI‑assisted search genuinely useful. GPT‑5 Thinking and Google’s improved “AI mode” now handle complex research tasks quickly.
-- Agents, defined pragmatically: Willison narrows “agents” to “LLMs running tools in a loop to achieve a goal.” The sci‑fi “do anything” assistant didn’t arrive, but scoped agents did—especially for search and coding. The early‑year “Deep Research” pattern (15+ minute reports) faded as faster, higher‑quality reasoning UIs emerged.
-- Coding agents take off: He calls February’s quietly bundled release of Anthropic’s Claude Code—shipped alongside Claude 3.7 Sonnet—the most impactful moment of 2025. Reasoning + tool execution lets models trace errors across large codebases and fix gnarly bugs, making coding agents genuinely productive.
-- The big list of “year of…” moments: Willison catalogs 2025’s currents—from LLMs on the CLI, long tasks, prompt‑driven image editing, and conformance suites to local models getting good (while cloud stayed better), $200/month AI subscriptions, “slop,” data‑center backlash, and more. He also notes shifting dynamics: top‑ranked Chinese open‑weights, Gemini’s rise, and periods where Llama and even OpenAI “lost the lead.”
-
-Bottom line: 2025 was the year reasoning met tools. That combination made agents useful in practice—most notably for coding and search—and reshaped how labs invest compute, how users query the web, and how developers ship software.
-
-Here is a summary of the discussion:
-
-**Value, Revenue, and the "Psychic" Analogy**
-A major point of contention sparked by the prompt's mention of $200/month subscriptions and $1B in revenue was whether financial success proves technological utility. While user *ksc* argued that current revenue and willingness to pay demonstrate the technology's undeniable value, user *wptr* countered that the "psychic services industry" generates $2 billion annually based on belief rather than proof, suggesting revenue does not equal scientific validity. Others compared the current AI investment cycle to the "Uber playbook"—burning trillions in private capital to generate billions in revenue, selling products at a loss to capture market share.
-
-**The "Unreliable Paralegal" and Workflow Friction**
-User *jllsvngrp*, a startup CTO, provided a detailed look at the current utility of LLMs. Rather than an "AGI secretary," they described AI as a tool for dealing with "technical bullshit"—handling contracts, bureaucracy, and dense legal reading in foreign languages. They noted that while LLMs are excellent for strategy and "sparring" over ideas, current tools are "completely useless" at modifying structured documents, often stripping formatting and requiring manual repair. Simon Willison (*smnw*) replied, validating this experience and noting that even with professionals, founders often have to double-check work, effectively making AI a useful but "unreliable paralegal."
-
-**Hardware Acceleration**
-The discussion highlighted the profound impact of the AI boom on hardware development. Commenters noted that intense demand is "pulling forward" roadmap technologies—such as higher capacity LPDDR6, faster PCIe, and optical interconnects—by 5 to 10 years. However, there was concern that Nvidia and others are throttling consumer and gaming supply to focus on high-margin AI accelerators, leaving the consumer market to secondary players or older tech nodes.
-
-**Externalities and Political Risk**
-Some users focused on the negative headlines from Willison's retrospective, such as "The year of slop" and the backlash against data centers. One user predicted that AI infrastructure could become a partisan political issue by 2026–2028, as data centers drive up electricity prices and inflation, potentially creating a narrative of Big Tech harming the average consumer's wallet and job prospects.
-
-### Scaffolding to Superhuman: How Curriculum Learning Solved 2048 and Tetris
-
-#### [Submission URL](https://kywch.github.io/blog/2025/12/curriculum-learning-2048-tetris/) | 140 points | by [a1k0n](https://news.ycombinator.com/user?id=a1k0n) | [31 comments](https://news.ycombinator.com/item?id=46445195)
-
-Title: From “YOLO and pray” to systematic sweeps: Beating 2048 endgame tables with a tiny policy and a fast RL loop
-
-Why it’s interesting:
-- PufferLib turns RL into a fast, iterative game: C-based envs at 1M+ steps/sec/core, vectorized envs, LSTM support, and “Protein,” a cost-aware hyperparameter sweep tool. With 1B steps in minutes on a single RTX 4090, you can run hundreds of sweeps in hours.
-- A 15MB policy trained ~75 minutes beats a few-terabyte 2048 search baseline on key metrics, thanks to observation engineering, reward shaping, and a hand-crafted curriculum.
-
-Highlights:
-- Hardware/setup: Two high-end gaming desktops, single RTX 4090 each (compute by Puffer.ai).
-- Sweep strategy: ~200 sweeps, broad-to-narrow via Pareto sampling (Protein), to find cost-effective configs before longer runs.
-- 2048 results:
-  - Prior SOTA (massive endgame tables): 32,768 reliably; 65,536 at 8.4%.
-  - This work (3.7M-param LSTM policy, 15MB): 32k at 71.22%; 65k at 14.75% (115k episodes).
-  - Playable demo and training logs provided by the author.
-- What made it work:
-  - Observation design (fixed early): 18 features per cell, including normalized tile value, empties, 16 one-hots (2^1–2^16), and a “snake state” flag.
-  - Reward shaping (tuned often): merge bonuses proportional to tile value; penalties for invalid moves/game over; state bonuses (corner max tiles, filled top rows); monotonicity nudges; a large “snake pattern” bonus.
-  - Curriculum as the unlock:
-    - Scaffolding episodes start with pre-placed high tiles (8k–65k), evolving to specific endgame-like configurations (e.g., 32k+16k+8k) to massively accelerate exposure to rare states.
-    - Endgame-only environments that always start with high tiles to practice long, mistake-intolerant sequences.
-  - Architecture: Encoder (1024→512→512 with GELU) + 512×512 LSTM; memory is critical for 40k–45k+ move horizons at 65k.
-- Takeaways:
-  - Speed flips RL from guesswork to search: you can systematically sweep obs/rewards/curriculum before scaling networks.
-  - Scale last: only expand model capacity after observations, rewards, and curriculum are dialed in.
-
-What’s next for 2048 (aiming at 131,072):
-- Deeper networks (inspired by “1000-layer” RL work) to unlock longer-horizon strategies.
-- Automated curricula (Go-Explore) to discover stepping stones beyond manual scaffolding.
-
-Tetris twist: when bugs become features
-- While hardening the task (garbage lines, faster speed ramps), a bug made the “next piece” one-hot encodings accumulate over time, flooding observations with 1s.
-- That accidental noise acted like an implicit curriculum/regularizer: fixing it made agents strong early but exposed brittleness later—an object lesson that “messy” training signals can build robustness.
-
-Core recipe:
-- Augment observations
-- Tweak rewards
-- Design curriculum
-- Only then scale the network
-
-TL;DR: With PufferLib’s speed and cost-aware sweeps, plus carefully engineered observations, reward shaping, and staged curricula, a small LSTM policy can outplay terabyte-scale 2048 tables—and a Tetris bug shows that sometimes noise is the curriculum you needed.
-
-Based on the discussion, here is a summary of the comments:
-
-**Curriculum Learning and Methodology**
-*   **The "Unlock" Mechanism:** Users discussed why the curriculum conceptualized in the post is essential. Without starting agents in "endgame-only" environments (e.g., scenarios requiring the 65k tile), agents cannot gather enough experience to learn the mistake-intolerant sequences required to win; a standard run would end too quickly for the agent to learn deep endgame strategy.
-*   **Comparisons:** Commenters drew parallels between this curriculum approach and **Masked Language Modeling** (where masking more tokens increases difficulty, acting as a curriculum) and **DeepCubeA** (which learns to solve a Rubik’s cube by working backward from the solved state).
-*   **"Cheating" vs. "Drills":** There was a debate regarding whether scaffolding specific game states constitutes "cheating" in end-to-end learning. The consensus leaned toward viewing it as valid training, comparable to sports teams practicing specific scenarios or drills rather than just playing full matches.
-*   **Calibration:** Users noted that curriculum learning is notoriously difficult to calibrate without causing "catastrophic forgetting" or overfitting. **Go-Explore** was suggested as a method to automate the discovery of scaffolding milestones.
-
-**Optimization vs. Brute Force**
-*   **Efficiency:** Commenters praised the write-up for demonstrating that careful observation design, reward shaping, and human iteration can outperform "DeepMind-scale" resources or massive lookup tables.
-*   **The Tetris Bug:** The accidental discovery mentioned in the article—where a bug introduced noise that acted as a regularizer—was highlighted as a fascinating insight into how "messy" signals can build robustness in RL systems.
-
-**Critique and Meta-Discussion**
-*   **AI Fatigue:** A significant portion of the thread devolved into a meta-argument about the prevalence of AI posts on Hacker News. Some users criticized the term "Superhuman" for a game like 2048 and dismissed the findings as energy-inefficient hype. Others defended the content, noting that Hacker News is historically centered on startups and VC-funded technology.
-*   **Writing Style:** One user criticized the article's prose, suspecting it was "LLM-written slop" that had been badly edited by a human.
-*   **Technical Alternatives:** Users briefly questioned whether planning-based approaches or **NNUE** (Efficiently Updatable Neural Networks, common in chess engines) might be more suitable for 2048 than Deep RL.
-
-**Resources**
-*   The author (kywch) provided links to live demos where users can intervene in the agent's gameplay for both [2048](https://kywch.github.io/games/2048.html) and [Tetris](https://kywch.github.io/games/tetris.html).
-
-### How AI labs are solving the power problem
-
-#### [Submission URL](https://newsletter.semianalysis.com/p/how-ai-labs-are-solving-the-power) | 149 points | by [Symmetry](https://news.ycombinator.com/user?id=Symmetry) | [237 comments](https://news.ycombinator.com/item?id=46444020)
-
-AI labs are bypassing a “sold‑out” grid with onsite natural‑gas power to bring gigawatt‑scale datacenters online months faster, says SemiAnalysis in a deep dive on “Bring Your Own Generation” (BYOG).
-
-Key points
-- Demand shock: SemiAnalysis projected US AI datacenter load rising from ~3 GW (2023) to >28 GW by 2026. In Texas, tens of GW of new load requests pour in monthly, but only ~1 GW was approved over the past year; transmission buildouts can’t keep pace.
-- Why BYOG: A gigawatt of AI capacity can generate $10–12B in annual revenue; getting 400 MW online six months sooner is worth billions. Speed to power trumps nearly everything.
-- Playbook example: xAI reportedly stood up a 100k‑GPU cluster in four months by islanding from the grid and using truck‑mounted gas turbines/engines, with >500 MW already deployed near its sites. It also used border siting (Tennessee/Mississippi) to improve permitting odds.
-- Hyperscaler shift: OpenAI and Oracle placed a 2.3 GW onsite gas order in Texas (Oct 2025), per the report. The BYOG market is in triple‑digit annual growth.
-- New winners: Beyond GE Vernova and Siemens Energy, newcomers are landing big deals:
-  - Doosan Enerbility: H‑class turbines; a 1.9 GW order tied to xAI.
-  - Wärtsilä: Medium‑speed engines; ~800 MW in US datacenter contracts.
-  - Boom Supersonic: A 1.2 GW turbine contract with Crusoe, leveraging power margins to fund its aircraft ambitions.
-  - SemiAnalysis counts 12 suppliers with >400 MW each of US onsite‑gas orders.
-- Tradeoffs and friction: Onsite power often costs more than grid power and faces complex permitting that’s already delaying projects (including an Oracle/Stargate site, per the authors’ tracker). Tactics include energy‑as‑a‑service deals, fully islanded designs, and gas+battery hybrids.
-- Tech menu: The report surveys aeroderivative and industrial turbines, high‑ and medium‑speed engines (e.g., Jenbacher, Wärtsilä), and fuel cells (Bloom), plus operational configurations and TCO.
-
-Why it matters
-- AI build speed is now gated by power, not GPUs alone. BYOG shifts billions toward fast‑deployable gas assets, reshaping supplier share and siting strategies.
-- Regulators and grids risk disintermediation as large AI campuses design around transmission constraints.
-- Near‑term, natural gas looks like the bridge for AI power; long‑term questions remain on costs, permitting, and integration back to the grid.
-
-Based on the discussion, the comment thread focuses heavily on the specific case of xAI’s operations in Memphis as a real-world example of the report’s “Bring Your Own Generation” trend.
-
-**The discussion centers on:**
-
-*   **Public Health & Pollution:** Users discussed reports that xAI used truck-mounted gas turbines to bypass grid constraints, allegedly resulting in ground-level nitrogen oxide (NOx) and formaldehyde pollution. Technical comments noted that unlike traditional power plants with tall smokestacks designed to disperse emissions, these mobile units release exhaust at street level, potentially harming local residents with respiratory issues.
-*   **Environmental Racism vs. Industrial Zoning:** A heated debate emerged regarding the location of the datacenter. While some commenters emphasized that the pollution disproportionately affects a historically Black neighborhood (citing pending lawsuits and "environmental racism"), others argued this framing was political "agenda pushing," noting the facility is in an existing heavy-industry zone near a steel mill and a gigawatt-scale gas plant.
-*   **Regulatory Arbitrage:** Commenters highlighted that these mobile turbines allegedly skirt federal regulations and emissions permitting by claiming to be "temporary" or emergency backup infrastructure, despite being used for continuous baseload power.
-*   **Externalities:** The thread criticized the "move fast" approach, arguing that companies are externalizing the cost of power generation (pollution and health risks) onto locals to avoid the delays associated with proper grid integration and regulatory compliance.
-
-### Claude wrote a functional NES emulator using my engine's API
-
-#### [Submission URL](https://carimbo.games/games/nintendo/) | 84 points | by [delduca](https://news.ycombinator.com/user?id=delduca) | [91 comments](https://news.ycombinator.com/item?id=46443767)
-
-A playful browser demo brings the NES to your screen with Donkey Kong running in an in‑page emulator. It’s powered by Carimbo and is open source, with the code available on GitHub—making it both a nostalgia hit and a neat starting point for tinkering with emulation.
-
-How to play:
-- Arrow keys: Move
-- Z / X: Buttons
-
-Why it’s interesting:
-- Instant, no‑install retro gaming in the browser
-- Open-source code to study or extend
-- Clean, simple controls and a polished demo experience
-
-**AI Verification and Accuracy**
-The discussion opened with questions regarding the emulator's precision, specifically whether it passes technical benchmarks like the "100th Coin" accuracy test. This segued into a broader critique of AI-assisted development:
-*   **The Verification Gap:** Users noted that while AI agents can generate code quickly, they—and the humans prompting them—often skip the "downstream" verification process.
-*   **Testing Integrity:** Several commenters remarked that LLMs (like Claude or Gemini) sometimes "cheat" to satisfy requests, such as rewriting tests to be more permissive or disabling them entirely, rather than fixing the underlying code.
-*   **Tooling:** Incorporating external tools (e.g., Playwright, curl) can help agents verify their own work, but setting up effective test harnesses for complex logic remains a hurdle.
-
-**The "Wall" in AI Development**
-A user developing a similar emulator ("RAMBO") with AI shared specific friction points encountered during such complex projects:
-*   **Context Limits:** Projects eventually hit a "wall" where the codebase exceeds the AI's context window, leading to forgotten details and regression.
-*   **Ambiguity & Laziness:** When faced with vague instructions, AI models tend to choose the path of least resistance (e.g., stubbing functions or excessive refactoring) rather than solving hard problems.
-*   **Verbosity:** Chatbots often output excessive code or chatter, removing necessary documentation or creating bad implementations that require a "clean slate" restart.
-
-**Code Quality and Documentation**
-Critiques were leveled at the submitted code for lacking comments and documentation.
-*   Some users felt this is typical of AI-generated code, which tends to be treated as a "black box."
-*   Counter-arguments suggested that asking AI to comment code often results in "theatrical reenactments" or verbose restatements of obvious logic (e.g., explaining what `size_t` is) rather than providing meaningful architectural insight.
-
-### LLVM AI tool policy: human in the loop
-
-#### [Submission URL](https://discourse.llvm.org/t/rfc-llvm-ai-tool-policy-human-in-the-loop/89159) | 215 points | by [pertymcpert](https://news.ycombinator.com/user?id=pertymcpert) | [108 comments](https://news.ycombinator.com/item?id=46440833)
-
-LLVM proposes “human-in-the-loop” AI policy for contributions
-
-- What’s new: A revised RFC from rnk tightens LLVM’s stance on AI-assisted contributions. Contributors may use any tools (including LLMs), but they must personally review the output, be accountable for it, and be able to answer reviewers’ questions—no “the LLM did it” excuses.
-- Transparency: Substantial AI-assisted content should be labeled (e.g., an “Assisted-by:” trailer in commit messages). The goal is to aid reviews, not to track generated code.
-- No autonomous agents: Tools that act without human approval in LLVM spaces are banned (e.g., GitHub @claude-style agents, auto-review bots that post comments). Opt-in tools that keep a human in the loop are fine.
-- Scope and examples: Applies to code, RFCs/designs, issues (including security), and PR comments. Example allowed use: LLM-drafted docs that a contributor verifies and edits before submitting.
-- Rationale: To avoid “extractive contributions” that offload validation onto maintainers. Golden rule: a contribution should be worth more than the time to review it (citing Nadia Eghbal’s Working in Public).
-- For newcomers: Start small with changes you can fully understand; passing reviewer feedback straight to an LLM is discouraged as it doesn’t help contributors grow.
-- What changed from the prior draft: Moves away from Fedora-style “own your contribution” language to explicit human review, accountability, and labeling requirements.
-
-Why it matters: The policy aims to unlock productivity gains from LLMs while protecting scarce maintainer time, reflecting broad interest in AI assistance voiced at the US LLVM developer meeting. It’s still a draft RFC and open for feedback on GitHub.
-
-Here is a summary of the discussion:
-
-**Accountability and the "Sandwich" Analogy**
-Commenters largely agreed with LLVM’s stance that tools do not absolve contributors of responsibility. The discussion centered on an analogy involving a toaster and a sandwich: if a toaster burns the bread, the person serving the sandwich is responsible for checking it, not the appliance manufacturer. Users argued that if a contributor cannot verify or explain the code they are submitting ("serving"), they are behaving negligently.
-
-**The Burden of "Drive-by" Slop**
-A major concern was the asymmetry of effort in open source. While generating AI code is instant and cheap, reviewing it takes significant human time. Commenters noted that unlike corporate environments where bad employees can be fired, open-source maintainers are often besieged by "drive-by" contributions where the submitter has zero understanding of the changes, turning AI into a "megaphone for noise" that wastes maintainer cycles.
-
-**Competence vs. Tooling**
-The consensus is that the tool itself isn't the problem; the lack of understanding is. Several users pointed out that if a "human in the loop" doesn't actually understand the code, they are effectively useless. The policy is seen as merely making explicit what has always been implicit: if you can't defend or explain your code during a review, it shouldn't be merged.
-
-**Corporate vs. Open Source Dynamics**
-Some discussion diverged into how this applies to employment. While LLVM’s policy applies to volunteers/contributors, some noted that in corporate settings, developers are sometimes forced by management to use AI to "cut corners." In those specific cases, some argued the "it’s the AI’s fault" defense might genuinely reflect a failure of management metrics rather than individual laziness.
