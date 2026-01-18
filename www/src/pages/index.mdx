@@ -510,304 +510,314 @@ The discussion reflects deep cynicism regarding OpenAI's trajectory and the intr
 
 ---
 
-## AI Submissions for Tue Jan 13 2026 {{ 'date': '2026-01-13T17:17:47.770Z' }}
+## AI Submissions for Wed Jan 14 2026 {{ 'date': '2026-01-14T17:18:34.975Z' }}
 
-### vLLM large scale serving: DeepSeek 2.2k tok/s/h200 with wide-ep
+### Scaling long-running autonomous coding
 
-#### [Submission URL](https://blog.vllm.ai/2025/12/17/large-scale-serving.html) | 139 points | by [robertnishihara](https://news.ycombinator.com/user?id=robertnishihara) | [45 comments](https://news.ycombinator.com/item?id=46602737)
+#### [Submission URL](https://cursor.com/blog/scaling-agents) | 251 points | by [samwillis](https://news.ycombinator.com/user?id=samwillis) | [159 comments](https://news.ycombinator.com/item?id=46624541)
 
-vLLM v0.11 completes V1 migration, pushes MoE throughput to 2.2k tok/s per H200
+Hundreds of autonomous coding agents, one codebase: what actually worked
 
-- What’s new: vLLM fully drops the V0 engine in 0.11.0, completing the move to its V1 architecture. Backed by 1,969 contributors and 950+ commits in the past month (as of 12/18/25), it’s now featured in SemiAnalysis’ open-source InferenceMax benchmarks and is used in production by Meta, LinkedIn, Red Hat, Mistral, and Hugging Face.
+- Flat, self-coordinating swarms stalled. Letting equal-status agents “claim” tasks via a shared state file led to lock thrashing, deadlocks, and risk-averse behavior. Even optimistic concurrency reduced brittleness but not the deeper issue: no one took ownership of hard, end-to-end work.
 
-- Performance: Community runs on a CoreWeave H200 cluster (InfiniBand, ConnectX-7) report sustained 2.2k tokens/s per H200 GPU in multi-node setups, up from ~1.5k. Gains come from kernel work (silu-mul-quant fusion, Cutlass QKV, TP attention fixes) and Dual Batch Overlap (DBO) for decode—translating to fewer replicas for the same QPS and better token-per-dollar.
+- A planner/worker split unlocked scale. Persistent planner agents map the codebase and spawn sub-planners; workers focus only on execution, pushing changes without coordinating laterally. A simple judge gates iterations. This hierarchy preserved momentum and avoided tunnel vision while scaling to hundreds of concurrent workers.
 
-- DeepSeek-style serving: 
-  - Wide-EP: Expert Parallelism combined with Data Parallelism improves effective KV cache and avoids MLA pitfalls of Tensor Parallelism; enable with --enable-expert-parallel. Supports DeepEP high-throughput all-to-all, Perplexity MoE kernels, and NCCL AllGather-ReduceScatter.
-  - DBO: Overlaps collective comms with compute via microbatch worker threads and CUDA graphs; enable with --enable-dbo and tune with --dbo-decode-token-threshold.
-  - Expert load balancing: Hierarchical and global EPLB policies (--enable-eplb) smooth real-world routing skew.
+- Real-world stress tests were big. The system ran for about a week to build a web browser from scratch: >1M lines across ~1,000 files, with many workers pushing to the same branch and few conflicts. Other long runs included:
+  - In-place Solid→React migration in the Cursor codebase (3+ weeks, +266K/−193K edits), now testable and likely mergeable.
+  - A Rust rewrite that made video rendering 25× faster, with smooth zoom/pan and motion blur, headed to production.
+  - Ongoing moonshots: Java LSP (7.4K commits, 550K LoC), a Windows 7 emulator (14.6K commits, 1.2M LoC), and “Excel” (12K commits, 1.6M LoC).
 
-- Other optimizations: Async scheduling, disaggregated serving, CUDA graph mode, DeepGEMM default, integrated DeepEP kernels, SiLU kernel for DeepSeek-R1.
+- Model choice and role fit mattered. Newer GPT-5.2 variants sustained long-horizon focus and fidelity; Opus 4.5 yielded control sooner. Planners and coders benefited from different models, so they mix models by role rather than standardize on one.
 
-Why it matters: Open-source, production-grade throughput for sparse MoE and disaggregated serving makes frontier models cheaper and easier to run at scale.
+- Simpler beats clever. Removing an “integrator” bottleneck improved throughput; workers handled conflicts fine. The sweet spot is between chaos and rigidity, and prompts shaped behavior more than orchestration code.
 
-Here is a summary of the discussion:
+Bottom line: Multi-agent coding can push through multi-week, million-LOC projects, but coordination is the hard part. Lightweight hierarchy, role-specialized models, and careful prompting drove most of the wins; there’s still plenty of headroom to make planners and long runs more reliable.
 
-**Economic Implications & Pricing Sustainability**
-The most active debate focused on the economics of serving LLMs given vLLM's new throughput numbers (2,200 tokens/s per H200).
-*   **Cost Calculations:** Users crunched the numbers on hardware costs (~$750k for a 16xH200 system) versus throughput. Several commenters estimated the raw cost (hardware depreciation + electricity) to be between **$0.03 and $0.25 per million tokens**.
-*   **DeepSeek Validation:** Many noted that these efficiency gains suggest DeepSeek’s ultra-low API pricing is actually sustainable and potentially profitable, rather than just "VC money subsidizing consumption."
-*   **The "Utilization" Catch:** Skeptics pointed out that theoretical benchmarks don't match real-world serving. Factors like context length, request concurrency, and fluctuating traffic mean 100% utilization is impossible, making actual costs higher than the raw math suggests.
+Based on the discussion, users were highly skeptical of the submission's claims of success, with several commentators auditing the repository and characterizing the output as "AI slop" rather than a functional application.
 
-**Performance & Optimization**
-*   **Source of Gains:** Users discussed where the 40%+ performance jump came from. While vLLM uses Python, commenters clarified that the gains are due to low-level optimizations (kernel fusion, better scheduling, JIT compilation) rather than high-level language tweaks.
-*   **Future Headroom:** Several comments suggested this is just the beginning ("greenfield") of inference optimization, predicting further gains as engines target 4-bit quantization and Blackwell architecture, which could potentially drop costs to ~$0.11 per million tokens.
-*   **Benchmarks:** There were calls for more transparent, direct comparisons between open-source engines (vLLM, SGLang, TRT-LLM), with users noting a lack of standardized testing for different serving configurations.
+**Key points from the discussion:**
 
-**Hardware & Compatibility**
-*   **H200 vs. Cerebras:** One user noted they expected these kinds of throughput numbers from waferscale engines (Cerebras), making the H200 performance particularly impressive.
-*   **AMD Support:** Users discussed support for AMD GPUs via ROCm. While vLLM works on AMD, some noted that for single-user scenarios (like on Strix Halo), it can be slower than Ollama/llama.cpp, as vLLM is optimized for high-throughput batching rather than single-stream latency.
+*   **Codebase Quality and Maintainability:** Users describing the codebase found it nearly impossible to navigate or maintain. One critic noted the code consisted of hundreds of thousands of tiny files buried in deeply nested subdirectories, making it difficult to search or understand the architecture. The consensus was that while an agent can "compile" a codebase, the result is unmaintainable "spaghetti code" that no human could reasonably take over.
+*   **Failed Constraints and Faked Functionality:** Upon closer inspection, the "browser" implementation relied on crude shortcuts rather than actual browser logic. One user pointed out that the font rendering didn't calculate real metrics, instead using a hardcoded estimate (`0.5 * font_size`), and that basic layout engines and directionality handling were fundamentally incorrect.
+*   **Broken Build State:** Despite the article claiming a successful "judge" system, users reported that the repository was filled with errors and warnings. One user noted that the Continuous Integration (CI) pipeline was completely broken, yet Pull Requests were still being merged and "verified" as successful, casting doubt on the reliability of the autonomous evaluation process.
+*   **Complexity vs. Memorization:** Several commenters questioned whether the agents were actually solving problems or simply regurgitating training data from open-source projects like Chromium or online tutorials. They argued that building a browser requires handling thousands of edge cases and performance optimizations that this "toy" implementation ignored entirely.
+*   **Predictions vs. Reality:** The discussion referenced Simon Willison’s prediction that an AI would build a browser by 2029. While this project attempts that, users argued it failed the "functioning" part of the criteria. They suggested that without a human in the loop to correct quality spirals, completely autonomous coding agents currently produce large-scale broken software rather than functional products.
 
-### We can't have nice things because of AI scrapers
+### ChromaDB Explorer
 
-#### [Submission URL](https://blog.metabrainz.org/2025/12/11/we-cant-have-nice-things-because-of-ai-scrapers/) | 434 points | by [LorenDB](https://news.ycombinator.com/user?id=LorenDB) | [233 comments](https://news.ycombinator.com/item?id=46608840)
+#### [Submission URL](https://www.chroma-explorer.com/) | 55 points | by [arsentjev](https://news.ycombinator.com/user?id=arsentjev) | [4 comments](https://news.ycombinator.com/item?id=46624731)
 
-Anubis: a browser proof‑of‑work gate to blunt AI scrapers
+Chroma Explorer is a native macOS client for ChromaDB that gives RAG builders and LLM app developers a GUI for exploring and managing vector stores. It supports multiple connection profiles (local, remote, and Chroma Cloud) with secure API key storage, plus full collection management including custom embedding functions and HNSW tuning. You can run natural-language semantic searches, browse and edit documents, and perform batch operations for bulk updates. It integrates with 13+ embedding providers out of the box (OpenAI, Cohere, Gemini, Mistral, Jina, Voyage AI, Ollama, and more). Open-source on GitHub, designed with a slick glassmorphic UI, but macOS-only (11.0+). The pitch: less SDK/CLI wrangling, faster debugging and iteration on vector pipelines.
 
-- What it is: A lightweight, Hashcash-style proof‑of‑work (PoW) page that runs in the browser to slow down large‑scale scraping. Legitimate visitors incur a tiny, one‑off computation; mass scrapers pay a steep, cumulative cost.
-- Why it exists: The site’s admin says aggressive AI scraping has caused downtime and resource strain. Anubis is positioned as a stopgap that keeps the site usable while more targeted bot detection (e.g., fingerprinting headless browsers via font rendering and similar signals) is developed.
-- How it works: When you visit, a “Making sure you’re not a bot” page triggers a PoW challenge in JavaScript. At human scale, the added load is meant to be negligible; at scraper scale, it becomes expensive.
-- Trade‑offs called out: It’s a compromise—some friction for real users in exchange for shifting costs to scrapers. It requires modern JavaScript and can be blocked by privacy/anti‑fingerprinting tools like JShelter; users may need to disable such plugins for the domain. The goal is to eventually avoid showing challenges to visitors who look clearly legitimate.
+The discussion focused on the technical implementation of the client, specifically the use of the term "native." One user expressed hope that the application relied on OS-native code rather than a wrapper, but a respondent examined the repository and confirmed it is built using Electron. Additionally, the conversation offered praise for Chroma's broader research efforts, specifically a study highlighting how complex reasoning tasks in LLMs degrade faster than standard "needle-in-a-haystack" benchmarks suggest.
+
+### The Influentists: AI hype without proof
+
+#### [Submission URL](https://carette.xyz/posts/influentists/) | 242 points | by [LucidLynx](https://news.ycombinator.com/user?id=LucidLynx) | [165 comments](https://news.ycombinator.com/item?id=46623195)
+
+The Influentists: hype-first AI demos and the “technical debt of expectations”
+
+A widely shared tweet from Jaana “Rakyll” Dogan claimed Claude Code recreated Google’s distributed agent orchestrator work “in an hour.” After a wave of doom-posting, her follow-up thread added crucial context: the “hour” result was a proof-of-concept guided by hard-won architectural decisions from prior iterations, not a production system conjured from scratch. In other words, AI amplified expert intent; it didn’t replace it.
+
+The post uses this episode to examine a broader pattern the author dubs “The Influentists”—technically credible voices who drive hype via:
+- Trust-me-bro anecdotes framed as universal truths (e.g., “I’ve never felt this much behind as a programmer”).
+- Lack of reproducible artifacts (code, data, prompts, methodology).
+- Strategic ambiguity that allows later “clarifications.”
+
+Examples span big AI labs and platform companies: a Microsoft leader touting AI-assisted Rust rewrites of massive C/C++ codebases before dialing it back as “research,” and staff at frontier labs teasing AGI-adjacent breakthroughs ahead of more modest releases.
+
+Why it matters
+- Expectations gap: Viral demos can imply “a year of work in an hour,” discouraging juniors who don’t see the hidden scaffolding of expertise, curation, and constraints.
+- Misallocation of attention: Teams may chase vibes over verifiable results, accumulating a “technical debt of expectations.”
+- Practical takeaway: LLMs can be powerful force multipliers when steered by deep domain knowledge, but claims should be judged by reproducible evidence, not rhetoric.
+
+**The Influentists: Hype-First AI Demos and the "Technical Debt of Expectations"**
+
+**The Story:**
+A recent viral post by Jaana Dogan proposing that Claude Code recreated Google’s distributed agent orchestrator "in an hour" sparked a new debate on the gap between AI demos and engineering reality. Dogan later clarified that the result was a proof-of-concept heavily reliant on pre-existing architectural decisions, but the incident highlighted a growing trend: "The Influentists."
+
+The author argues that these "technically credible" voices drive hype through unverifiable anecdotes and strategic ambiguity, accumulating a "technical debt of expectations." By framing proof-of-concepts as production-ready breakthroughs, they discourage junior developers and mislead companies into chasing "vibes" over verifiable results. The piece concludes that while LLMs are powerful force multipliers for experts, claims must be judged by reproducible artifacts, not rhetoric.
+
+**The Discussion:**
+The discussion on Hacker News was highly skeptical, focusing on the mechanics of social media grift, the reality of "AI-assisted" coding, and the flooding of technical spaces with marketing noise.
+
+*   **The "Hype Translator":** Users humorously translated common viral AI claims into reality. "I built a brick-and-mortar business with AI" was translated to "I asked Claude to Google local lawyers." "I managed 10 Product Managers" became "I drafted some PRDs." "I launched a product in a weekend" became "I made a single HTML landing page."
+*   **The New Grift Economy:** Many commenters noted that AI hype threads have replaced previous trends like drop-shipping, crypto, and Amazon FBA as the primary method for engagement farming. The consensus is that generic "I feel so behind" posts aren't genuine reflections of the industry, but top-of-funnel marketing for courses or newsletters.
+*   **Astroturfing and Dead Internet:** Several users lamented the state of online communities (including Reddit and X), suggesting that a significant portion of "I built this with Claude" content feels like astroturfing or bot-generated marketing, making it difficult to find genuine technical discussions.
+*   **The "Last 10%" Problem:** Experienced engineers argued that while LLMs are excellent for reaching the "70% done" mark (prototypes, scripts, throwaway code), the remaining 30%—security, reliability, maintainability—takes the vast majority of the effort. They warned that relying on AI for complex architecture introduces "technical debt of the future," where subtle bugs and verbose code create maintenance nightmares.
+*   **Historical Optimism:** A counter-narrative emerged comparing the current frenzy to the Dotcom bubble. Users pointed out that while businesses like Pets.com failed (akin to today's unusable AI wrappers), the internet itself succeeded. Just because the hype is loud and often foolish doesn't mean the underlying technology won't eventually facilitate real utility, such as buying furniture online—or coding complex systems—becoming mundane.
+
+### Eigent: An open source Claude Cowork alternative
+
+#### [Submission URL](https://github.com/eigent-ai/eigent) | 23 points | by [WorldPeas](https://news.ycombinator.com/user?id=WorldPeas) | [3 comments](https://news.ycombinator.com/item?id=46618954)
+
+Eigent: open-source multi-agent “cowork” desktop app (local-first, MCP-enabled)
+
+What it is
+- A desktop app for orchestrating a team of AI agents to automate complex workflows, with privacy-friendly, fully local deployment as the default.
+- Built on CAMEL-AI; Apache-2.0 licensed.
+
+Why it matters
+- Pushes the local-first, multi-agent trend: parallel task execution, human-in-the-loop checkpoints, and deep tool integration without sending data to a third-party service.
+- MCP (Model Context Protocol) support means agents can safely use a wide ecosystem of tools (web browsing, code exec, Notion, Google suite, Slack, and custom/internal APIs).
+
+Key features
+- Multi-agent workforce: prebuilt Developer, Search, Document, and Multi-Modal agents; parallel task breakdown and coordination.
+- Local model support: vLLM, Ollama, LM Studio, and custom models.
+- Human-in-the-loop: escalates for input when uncertain or stuck.
+- Enterprise: SSO/access control, customizable deployments.
+- 100% open source.
+
+How to try it
+- Local deployment (recommended): full isolation, local backend + models; guide in repo.
+- Quick start (cloud-connected): git clone, npm install, npm run dev (requires Eigent account).
+- Also available as a hosted cloud option.
+
+Tech notes
+- Electron desktop app with a local/server backend; repo shows a modern TS/JS stack.
+- License: Apache-2.0. Stars: ~5.5k.
+
+Links
+- Repo: https://github.com/eigent-ai/eigent
+- Site: https://www.eigent.ai
+
+Take
+Eigent aims to be a “Cursor-for-agents” style desktop, but local-first and tool-rich via MCP. If you’ve been evaluating CrewAI/LangGraph/AutoGPT-style orchestration or internal agent platforms, this offers a packaged, GUI-driven path with privacy and enterprise knobs baked in.
 
 **Discussion Summary:**
 
-The discussion pivoted from the specific technical implementation of Anubis to the broader economics and ethics of AI scraping.
+Discussion focused on validating the project's "open source" label. One user was initially skeptical after noticing a pricing page and credit system, questioning if the term was being applied too loosely to a commercial wrapper. A respondent clarified that the tool supports a fully local deployment—including the backend server and integrations with local model runners like Ollama—with zero external dependencies, validating its open-source status despite the parallel existence of a hosted cloud tier. On the practical side, a tester noted that using high-end models like Claude Opus for multi-agent workflows could quickly become cost-prohibitive due to API fees.
 
-*   **The "Data Dump" Alternative:** A prevalent counter-proposal was that instead of blocking scrapers with computation tasks, sites should offer a standardized bulk download (e.g., a gzipped tarball or torrent) of their public data. Commenters argued this converts an "adversarial" relationship into a coordination problem, saving bandwidth for both the host and the scraper.
-*   **Standardization Challenges:** Users debated how to signal these bulk endpoints to bots. Suggestions included the emerging `/llms.txt` standard, specific `robots.txt` directives, or embedding instructions in HTTP 429 (Too Many Requests) headers.
-*   **Skepticism of AI Actors:** Many were skeptical that AI companies would respect "polite" standards. The consensus among several users was that scrapers often ignore `robots.txt` and copyright law already, implying they are indifferent to resource consumption on the target's end.
-*   **Impact on the Small Web:** The conversation highlighted the financial toll on hobbyist sites. Users shared anecdotes of hosting accounts being suspended or costs ballooning due to aggressive scraping, noting that individual webmasters pay the price for AI training data.
-*   **Infrastructure Implications:** Some speculated that the inability to effectively Ip-block scrapers (due to VPNs and botnets) might force a faster migration to IPv6 or drive the web toward closed, gated communities to survive.
+### Show HN: OSS AI agent that indexes and searches the Epstein files
 
-### Confer – End to end encrypted AI chat
+#### [Submission URL](https://epstein.trynia.ai/) | 204 points | by [jellyotsiro](https://news.ycombinator.com/user?id=jellyotsiro) | [95 comments](https://news.ycombinator.com/item?id=46611348)
 
-#### [Submission URL](https://confer.to/) | 100 points | by [vednig](https://news.ycombinator.com/user?id=vednig) | [75 comments](https://news.ycombinator.com/item?id=46600839)
+Nozomio Labs launches a searchable “Epstein Files” archive
+- What it is: A unified, AI-powered index of materials from the Epstein archive—emails, messages, flight logs, court documents, and related records—aimed at making primary sources easier to explore.
+- How it works: Built on Nia with Claude Sonnet 4.5 for semantic search and Q&A. You can ask natural-language queries like “Most frequently mentioned people?”, “Flight records from 2002–2005?”, or “Emails about specific locations?”, and check whether specific names appear.
+- Why it matters: Centralizes scattered, often unwieldy documents into a single interface for journalists, researchers, and the public to investigate timelines, connections, and mentions.
+- Caveats: Content is sensitive; OCR/entity extraction can mislabel names or contexts. The site encourages verifying AI answers against the original documents to avoid misinterpretation.
 
-I’m ready to summarize—could you share the Hacker News submission you want covered?
+Based on the discussion, here is the summary of the comments regarding the Nozomio Labs archive:
 
-Please provide any of the following:
-- HN link or item title + URL
-- The article text or key excerpts (helpful if paywalled)
-- Any notable HN comments you want included
+**Technical Viability and Accuracy**
+*   **LLMs vs. Traditional Search:** Users debated the best architecture for this type of archive. While some argued that LLMs often underperform compared to traditional NLP and regex for hard data extraction, the creator (*jllytsr*) clarified the site uses a hybrid approach: traditional regex for exact matches (names/dates), vector search for semantic queries, and an LLM only as an orchestration layer to ground answers.
+*   **Hallucinations:** Skepticism remains high regarding "grounding." Users questioned whether any model is truly constrained enough to distinct source documents without "hallucinating" details, with one user calling the potential for errors "spicy hallucinations."
+*   **Feature Requests:** There was interest in making search results and conversation threads shareable via unique URLs (UUIDs) to help researchers cite their findings.
 
-Preferences (optional):
-- Length: ultra-brief (50–80 words), standard (120–180), or in-depth (250–350)
-- Tone: neutral, punchy, or technical
+**Censorship and Model Bias**
+*   **Guardrails:** A significant portion of the conversation focused on whether an AI model would refuse to answer controversial questions due to safety training (censorship). Users compared "uncensored" local models against commercial models (like OpenAI’s), theorizing that commercial models might refuse to answer queries about specific political figures or provocative keywords.
+*   **Testing Limits:** Users discussed testing models with questions about election eligibility and specific politicians to gauge bias, though results were mixed regarding which models (Grok, Claude, GPT) are actually structurally "uncensored" versus simply prompted differently.
 
-I’ll return:
-- TL;DR
-- Key takeaways (3–5 bullets)
-- Why it matters
-- HN chatter highlights (if provided)
+**Content and Key Figures**
+*   **High-Profile Mentions:** Commenters discussed findings related to specific figures, including Bill Gates (emails, social interactions) and Donald Trump (flight logs, quotes from 2002 regarding their friendship).
+*   **Cynicism regarding Justice:** Despite the accessibility of the files, the prevailing sentiment was cynical. Users expressed doubt that "analyzing files" would lead to consequences for powerful figures like Clinton, Trump, or Gates, suggesting the wealthy are insulated from prosecution regardless of what the archive reveals.
 
-Based on the discussion provided, here is the summary of the Hacker News submission regarding **Confer**.
+**Ethical Concerns regarding AI Imagery**
+*   **Unblurring Images:** A distinct sub-thread emerged from a user wondering if AI could "un-blur" redacted faces of minors in the files. This sparked a debate on the ethics of AI-generated inputs; users argued that generating realistic images of children—even to reconstruct reality—is dangerous, could normalize abuse material, and creates psychological disconnects regarding consent and harm.
 
-**Submission:** **Confer – End-to-End Encrypted AI Inference**
-**Url:** `https://confer.to/blog` (Derived from context)
+### Show HN: Nori CLI, a better interface for Claude Code (no flicker)
 
-### TL;DR
-Confer has launched an AI inference platform that claims to be "end-to-end encrypted" (E2EE). Unlike standard LLM providers (like OpenAI) that can technically read user prompts, Confer processes data inside Trusted Execution Environments (TEEs). This ensures data is encrypted on the user's device and only decrypted momentarily inside a hardware-isolated "enclave" on the server, theoretically preventing even confer—or a server intruder—from seeing the content.
+#### [Submission URL](https://github.com/tilework-tech/nori-cli) | 35 points | by [csressel](https://news.ycombinator.com/user?id=csressel) | [8 comments](https://news.ycombinator.com/item?id=46616562)
 
-### Key Takeaways
-*   **The "E2EE" Claim:** The service uses TEEs (likely Intel SGX or similar) to extend the encryption boundary. Data remains encrypted until it hits the specific CPU interacting with the model.
-*   **Remote Attestation:** The security model relies on users (or their client software) verifying a cryptographic hash of the code running on the server to ensure it hasn't been tampered with before sending data.
-*   **Privacy Compromise:** The discussion highlights that while Fully Homomorphic Encryption (FHE)—processing data *while* it stays encrypted—is the privacy "holy grail," it is currently 100x too slow or expensive. TEEs are presented as the practical 5–10 year solution.
-*   **Browser Support:** The implementation leans heavily on modern browser cryptoprimitives (Passkeys/PRF), causing some compatibility issues for users on specific setups (e.g., Firefox on Linux).
+Nori CLI: one terminal UI for coding with Claude, Gemini, and OpenAI. Nori is a Rust-based, local CLI that unifies multiple AI coding agents behind a single, fast TUI. You can switch providers on the fly with /agent, chat about your codebase, and run commands directly from the interface. It piggybacks on existing logins from each vendor’s CLI (Claude Code, Gemini CLI, or OpenAI/Codex), so setup is quick if you’ve used those before.
 
-### Why It Matters
-This technology attempts to solve the biggest enterprise hurdle for AI adoption: **Data Privacy.** If companies can guarantee that cloud providers *physically cannot* access their IP during inference, the barrier to using powerful remote LLMs drops significantly. This approach mirrors Apple’s recent "Private Cloud Compute" strategy and Signal's contact discovery architecture.
+Why it’s interesting:
+- Multi-provider workflow without context-switching tools
+- Snappy terminal experience (Ratatui, incremental renders, double-buffered scrollback), built in Rust
+- Open-source (Apache-2.0), actively releasing (v0.2.7 as of Jan 14, 2026)
 
-### HN Chatter Highlights
-The comment section is technical and debating the semantics of "End-to-End":
+Roadmap highlights:
+- Sandboxed command execution
+- Model Context Protocol (MCP) integration for external tools (aligned with Zed’s agent protocol)
+- Session persistence (resume), multi-agent orchestration
 
-*   **Definition Debate:** Users like **drfr** and **Stefan-H** debated if "E2EE" is the right term. In traditional messaging (Signal), E2EE is client-to-client. Here, the "recipient" is the Server/AI. The consensus leans toward it being E2EE *if* the server operator is effectively locked out via hardware.
-*   **Hardware Trust:** **2bitencryption** and **binary132** voiced skepticism about TEEs, citing Moxie Marlinspike’s previous writing. They argue TEEs aren't magic; they are vulnerable to side-channel attacks and ultimately require trusting the chip manufacturer (e.g., Intel/AMD).
-*   **Side Channels:** **shwnz** noted that while TEEs protect against direct memory reads, a compromised host system might still infer data via side channels, meaning it isn't a silver bullet.
-*   **Comparison to TLS:** **pxys** asked how this differs from standard SSL/TLS. The answer provided was that TLS only protects data *in transit*. TEEs protect data *during execution* (in memory).
+How to try:
+- npm install -g nori-ai-cli, then run nori
+- Authenticate per provider:
+  - Claude: npx @anthropic-ai/claude-code then /login in Nori
+  - Gemini: npx @google/gemini-cli then /auth
+  - OpenAI: switch /agent to Codex, then /login in Nori
 
-### FOSS in times of war, scarcity and (adversarial) AI [video]
+Repo: github.com/tilework-tech/nori-cli (Rust-heavy codebase; credits OpenAI Codex CLI as a foundation) Note: “local” here refers to the CLI/TUI; actual model inference still happens via the cloud providers you authenticate.
 
-#### [Submission URL](https://fosdem.org/2026/schedule/event/FE7ULY-foss-in-times-of-war-scarcity-and-ai/) | 158 points | by [maelito](https://news.ycombinator.com/user?id=maelito) | [110 comments](https://news.ycombinator.com/item?id=46598991)
+**Discussion Summary:**
 
-FOSDEM 2026: FOSS in times of war, scarcity and (adversarial) AI
+In the comments, the author (`csrssl`) engages with users regarding feature requests and comparisons to existing tools:
 
-- Big idea: A FOSDEM main-track talk argues the post–Cold War conditions that helped FOSS flourish have vanished. Today, open tech sits at the center of geopolitical conflict, disinformation, and “hypercapitalist” power—raising hard questions about “any-use” freedoms and responsibility.
-- Dual-use becomes any-use: While Europe tried to regulate “dual-use” tech, libre licenses enable unrestricted use. FOSS now powers everything from social platforms that polarize to authoritarian surveillance stacks, with private capital steering policy and norms.
-- Scarcity and climate: With resource limits looming, the talk warns the current trajectory of energy and materials consumption is unsustainable—adding pressure to how FOSS is built, deployed, and maintained.
-- AI as Trojan horse: Code-writing LLMs expand the software supply chain’s attack surface. Unlike clearly labeled binary blobs, opaque models can inject subtle, hard-to-detect errors or manipulations, whether through hallucinations or adversarial interference.
-- Core question: How can the community preserve FOSS’s openness and public-good impact while hardening against wartime exploitation, political capture, and AI-driven supply-chain risks?
+*   **Feature Wishlist:** Users prioritized "must-have" features such as conversation history, the ability to rewind and restore code states, and a "dangerous mode" to skip permission prompts. Future support for MCP (Model Context Protocol) servers was also requested.
+*   **Similar Tools:** Commenters pointed to "Toad," a similar Python-based TUI. The author expressed admiration for the Python terminal ecosystem (specifically Textual) but noted Nori was built to align with the performance and style of Rust tools like `fzf` and `helix`.
+*   **Differentiation:** When asked about the downsides of using Nori versus using `Claude Code` directly, the author admitted that maintaining 1:1 feature parity with vendor CLIs is the main challenge. However, they highlighted that Nori aims to provide superior session management features, such as session resuming, rewinds, and branching.
 
-When/where: FOSDEM 2026, Main Track (Janson), Saturday, 10:00–10:50.
+### LLMs are a 400-year-long confidence trick
 
-**FOSADEM 2026: FOSS in times of war, scarcity and (adversarial) AI**
+#### [Submission URL](https://tomrenner.com/posts/400-year-confidence-trick/) | 110 points | by [Growtika](https://news.ycombinator.com/user?id=Growtika) | [173 comments](https://news.ycombinator.com/item?id=46613997)
 
-This submission outlines a main-track presentation for FOSDEM 2026 regarding the existential crisis facing Free and Open Source Software (FOSS). The speaker posits that the geopolitical conditions that allowed FOSS to thrive—the post-Cold War "End of History" era of relative peace and techno-optimism—have collapsed. The talk argues that FOSS is now central to "dual-use" technologies, fueling both democratic platforms and authoritarian surveillance states, often without the regulatory guardrails applied to hardware.
+Tom Renner: LLMs as a classic confidence game
 
-Key points include:
-*   **The Any-Use Dilemma:** Libre licenses allow unrestricted use, meaning private capital and hostile states can leverage open tools for polarization or warfare.
-*   **Material Limits:** The era of infinite growth is ending; scarcity and climate change require a shift in how resource-intensive software is built and maintained.
-*   **AI Risks:** Unlike binary blobs, AI models are "Trojan horses" capable of subtle hallucinations or injected adversarial defects that hard-code manipulation into the supply chain.
-*   **The Challenge:** The community must figure out how to preserve public-good openness while hardening the ecosystem against political capture and wartime exploitation.
+- Core thesis: The AI industry is running a playbook straight out of a con—build trust, exploit emotions, then create urgency—pushing people to over‑rely on LLMs.
+- Build trust: For 400 years, calculators and machines have trained us to see machine outputs as the gold standard. That societal habit of trusting “the machine” is now being leveraged for LLMs, despite their very different reliability profile.
+- Exploit emotions—fear: Vendors hype existential risk and job-loss narratives to make non-adoption feel dangerous, while still selling the tools they claim to fear.
+- Exploit emotions—sympathy: RLHF bakes in relentless positivity and flattery, encouraging parasocial bonds. Renner cites reports of harmful effects and even claims OpenAI over-tuned “positivity” and rolled it back in 2025—evidence, he argues, that this friendliness is a manipulation layer, not intelligence.
+- Create urgency: With constant promises that “next year” the tech will replace swaths of jobs, users and orgs are pushed into hasty decisions that suspend skepticism and due diligence.
+
+Why it matters: We’re primed to trust machines because calculators earned it; LLMs haven’t. Treat their outputs as untrusted by default, resist fear/flattery pressure, and slow down procurement and workflow changes until validation and safeguards catch up.
+
+The discussion around Renner’s thesis pits developer anecdotes of "10x productivity" against skepticism regarding the definition of productivity and the gap between marketing claims and technical reality.
+
+**The "Con" is Marketing, Not Utility**
+While user **krystf** pushed back strongly—claiming legitimate productivity gains, describing LLMs as a "Gutenberg press" moment, and citing 10x gains in reading/writing enterprise Django code—others argued this misses the article's point. **vanderZwan** and **rms** countered that the "con" isn’t that the technology doesn't work, but that it is marketed deceptively (e.g., selling "intelligence" and "existential risk" rather than a probability engine). **ltxr** offered the analogy of selling regular apples as a magical cancer cure: the product (apples/LLMs) is fine, but the sales pitch is a fraud.
+
+**Productivity: Perception vs. Reality**
+A significant debate emerged regarding actual vs. perceived efficiency:
+*   **The "Power Tool" Defense:** **ntndd** argued LLMs are "power tools," not autonomous robots; they are highly effective in the hands of a skilled carpenter but deceptively marketed as able to build a house on their own.
+*   **The "Productivity Paradox":** **stx** provided a counter-anecdote to the hype, citing internal company data where overall developer productivity *plummeted* using Claude Code, despite developers reporting they *felt* more productive.
+*   **The Cause of the Drop:** **bndrm** and **JacoboJacobi** theorized that while generating code feels fast (twiddling switches), the resulting "uncanny valley" of code requires more effort to review, debug, and understand than code written by a human.
+
+**Scope of Problem Solving**
+Users debted *where* the utility lies. **kyl** argued LLMs only truly help with "solved problems" (like standard Django patterns) rather than novel engineering. However, **dnlbln** and **jason_oster** disagreed, arguing that LLMs can handle novelty and obscure tasks (like writing compilers for custom DSLs) by synthesizing context rather than just regurgitating training data, provided the user supplies sufficient context or "specs."
+
+### Show HN: Harmony – AI notetaker for Discord
+
+#### [Submission URL](https://harmonynotetaker.ai/) | 28 points | by [SeanDorje](https://news.ycombinator.com/user?id=SeanDorje) | [8 comments](https://news.ycombinator.com/item?id=46622139)
+
+Harmony: AI notetaker for Discord calls
+
+What it is: A Discord bot that joins voice channels to record, transcribe, and auto-summarize conversations. It targets teams and communities that run meetings on Discord and miss Zoom-style transcription.
+
+Key features:
+- One-command recording (/record, /stop) with automated joining
+- AI transcripts and summaries, speaker analytics, multi-channel support
+- “AskHarmony” chat to query meeting content
+- Smart search over past calls; 57+ languages
+
+Setup: Invite the bot → start/stop recording → review summaries, analytics, and transcripts.
+
+Claims and social proof: “Trusted by 6,000 users,” with testimonials from team leads and gaming community admins; several testimonials repeat and include some generic productivity quotes.
+
+Why it matters: Discord lacks native meeting notes/transcripts; this fills a gap for standups, officer meetings, and distributed teams living in Discord.
+
+What HN will ask:
+- Consent and compliance: how it handles recording notices and Discord TOS
+- Privacy/security: data retention, encryption, access controls, SOC2/GDPR
+- Accuracy: diarization, multilingual performance, latency to summaries
+- Pricing/limits: free tier caps, storage, export options and webhooks
+- Admin controls: per-channel permissions, auto-join rules, and deletion
+
+Getting started: “Start for free” and “Book demo”; invite the bot and try it in a test channel.
+
+Here is a summary of the discussion on Hacker News:
+
+**Discord vs. Enterprise Viability**
+Much of the discussion focuses on whether Discord is a suitable platform for professional "serious" work. Several users argue that established companies prioritize privacy, security, and access control, typically opting for Slack or self-hosted solutions over Discord. Consequently, commenters question if Harmony plans to expand support to Zoom, Google Meet, or Slack to capture the enterprise market.
+
+**Open Source Alternatives**
+One user suggests a DIY approach using open-source tools—specifically connecting audio streams to the Whisper API for transcription and then feeding that into an LLM. They argue this method offers better control over security/data privacy and is more cost-effective for bulk processing than a dedicated SaaS bot.
+
+**Demographics and Use Cases**
+There is a debate regarding *who* actually uses Discord for work. While some dismiss it as a tool for "Gen Z" and early-stage startups that can't afford Slack, others defend its utility. Specifically, users in the gaming industry note that Discord’s screen-sharing controls (balancing resolution vs. frame rate) make it superior to Slack for pair programming, even if their organizations still use Slack for text communication.
+
+**Platform Uncertainty**
+Rumors of a near-term Discord IPO have sparked anxiety, with some users expressing disappointment in the current state of self-hosted alternatives and looking to migrate away from the platform entirely.
+
+### Tesla moving Full Self-Driving to a monthly subscription
+
+#### [Submission URL](https://www.cnbc.com/2026/01/14/musk-tesla-full-self-driving-subscription-fsd.html) | 53 points | by [leopoldj](https://news.ycombinator.com/user?id=leopoldj) | [35 comments](https://news.ycombinator.com/item?id=46618435)
+
+Tesla makes Full Self-Driving subscription-only, ending the $8,000 one-time purchase
+
+- What happened: Elon Musk said Tesla will stop selling Full Self-Driving (Supervised) as a flat-fee add-on after Feb 14; it will only be offered as a monthly subscription (starts at $99/month). Tesla shares closed down 1.8% on the news.
+- Context: FSD still requires an attentive human driver and does not make Teslas autonomous. CFO Vaibhav Taneja said in October that paid FSD users were about 12% of the fleet.
+- Strategy shift: Moving to subscriptions emphasizes recurring revenue and lowers the upfront barrier, but may irk owners who paid thousands upfront. It also pushes usage data collection as Tesla chases autonomy.
+- Competitive/regs: Tesla is far behind Waymo, which hit 450,000 weekly paid rides in December and operates in multiple cities (SF Bay Area, Austin, Phoenix, Atlanta, LA) with international expansion targeted for 2026. Tesla’s limited “robotaxi” in Austin still uses human safety supervisors; in California, Tesla lacks driverless testing/operating permits and recently faced a DMV false-advertising finding and a related class action on appeal.
+- Company backdrop: Tesla reported Q4 deliveries of 418,227 (down ~16% YoY) and production down 5.5% YoY, marking a second straight annual decline. Earnings are due Jan 28.
+
+Why it matters
+- Signals Tesla’s bet that autonomy is a software subscription business.
+- Could boost near-term software margins and usage, but highlights the gap with fully driverless services and ongoing regulatory hurdles.
 
 **Hacker News Discussion Summary**
 
-The discussion considers the limits of software licenses in the face of physical power and state violence.
+**Skepticism regarding naming and delivery**
+Much of the discussion centers on the perceived dishonesty of the name "Full Self-Driving" when paired with the modifier "(Supervised)." Users mock this contradiction with analogies like selling "Fully Edible Cakes (Poisonous)" and label it as deceptive marketing. Commenters also scoff at Elon Musk's history of missed timelines, joking about "LLM calendars" and noting that promises made in 2017 regarding autonomous capabilities still haven't materialized, leading to accusations that the pivot to subscriptions is simply a way to monetize "vaporware" now that the pool of buyers willing to pay a lump sum has dried up.
 
-*   **The End of Techno-Optimism:** Commenters generally agreed with the premise that the 90s "End of History" optimism is over. User **Fiveplus** argued that the current ecosystem suffers from a hangover of that era, assuming good actors by default. There is skepticism that "ethical licenses" can stop bad actors; **lcptn** noted that restrictive licenses are largely irrelevant to hostile states or AI code generators that bypass attribution entirely.
-*   **Physical Violence vs. Cryptography:** A significant portion of the debate focused on "XKCD 538" scenario (the $5 wrench attack). **cyber_kinetist** and **nathan_compton** emphasized that state actors use violence, imprisonment, and physical control over hardware, which mathematical encryption cannot prevent. **Espressosaurus** noted that "hard power" involves accessing fiber closets and jail time, rendering software defenses moot.
-*   **Technical Mitigations:** Despite the threat of violence, **wizzwizz4** and **thwbgyd** argued for technical architectures that make coercion harder. Suggestions included geographically distributed keys (so no single person can be tortured for access), Shamir’s secret sharing, and "dead man switches." The consensus was that while you cannot make a system "violence-proof," you can organize distributed systems to be resilient against local physical force.
-*   **FOSS Survival:** **FrustratedMonky** questioned if FOSS could even be invented in today's "hyper-capitalist" environment, suggesting it requires a specific historical context to flourish. Countering this, **bgyb** argued that the fundamental utility of cost-sharing and efficient distribution ensures FOSS will survive, even if it is co-opted by bad actors (e.g., North Korea using open code for missiles).
-*   **Code as Politics:** There was a philosophical debate on whether code itself is political action. **positron26** argued that while text files aren't power, open source enables social mobility and bypasses institutional gatekeepers. However, **lttlstymr** warned against the buzzword "Zero Trust," arguing that trust is never eliminated, just shifted to different commercial providers or hardware.
+**Economics and ROI**
+Users crunch the numbers on the switch from flat-fee to subscription. One commenter notes that at the peak price of $15,000, the breakeven point would have been 12.5 years of subscriptions, implying the flat fee was a poor financial decision for consumers. The consensus suggests Tesla "ran out of suckers" willing to pay the high upfront cost, necessitating a pivot to a lower barrier of entry to maintain revenue flow.
 
-### The insecure evangelism of LLM maximalists
+**Market commoditization and competition**
+A debate emerged regarding the long-term viability of charging for autonomy. Some speculate that competitors like BYD will eventually make self-driving features "table stakes" (standard inclusions), forcing Tesla to abandon the subscription model. Others argue that car manufacturers will attempt to maintain "vendor lock-in," acting like oligopolies to keep subscription revenue flowing even as hardware prices drop (likened to Smart TVs selling at a loss to monetize user data).
 
-#### [Submission URL](https://lewiscampbell.tech/blog/260114.html) | 239 points | by [todsacerdoti](https://news.ycombinator.com/user?id=todsacerdoti) | [248 comments](https://news.ycombinator.com/item?id=46609591)
+**Grandfathering and liability**
+There are open questions about how early adopters who paid the full price will be treated long-term, with sarcastic suggestions that they might eventually receive "ad-supported" versions. On the operational side, users highlighted the legal distinction between Tesla’s system (which places liability on the human driver) versus Waymo (where the system remains liable). Dark humor also surfaced regarding the subscription model, with users imagining the car demanding payment mid-drive or careening off a cliff because the monthly plan expired.
 
-The Insecure Evangelism of LLM Maximalists
+### Microsoft keeps reinstalling Copilot, so I found a way to rip it out for good
 
-A senior developer argues that while LLMs are great as “digital clerks” (research, docs, small code with tight specs), agentic “vibe coding” was a letdown: slow, error-prone, and high-overhead to babysit—leaving them feeling less effective as tokens ticked away. They push back on the trope that skeptics are just scared of change, noting they’d love a world where specs become working code, but today’s agents don’t deliver that for them. Their sharper claim: some loud evangelism may be projection—devs who find agents outperform their own skills insisting holdouts are threatened, rather than considering differences in baseline ability or workflow fit. The author stays open to being wrong (perhaps “not holding the agents properly”) while challenging evangelists to consider that they might simply not be strong programmers. A wry kicker: they’re available to clean up agent-generated code.
+#### [Submission URL](https://www.howtogeek.com/how-to-rip-out-copilot-from-windows-11/) | 37 points | by [rolph](https://news.ycombinator.com/user?id=rolph) | [16 comments](https://news.ycombinator.com/item?id=46622526)
 
-Why it matters: Captures a growing split between pragmatic LLM use and end-to-end agent workflows. Beyond hype, adoption hinges on reliability, speed, cost, and whether “agent handling” is a real, teachable skill that beats traditional workflows for experienced engineers.
+Headline: How to truly remove Windows Copilot (and keep it from coming back)
+
+The piece walks through what it actually takes to purge Copilot from Windows 11—and why a simple uninstall isn’t enough.
+
+Key points:
+- Uninstall the app: Copilot won’t appear in Control Panel, but you can remove it via Settings > Apps > Installed Apps. For multi-user systems, PowerShell can remove it for all users and from provisioned packages:
+  - Remove for all users: Get-AppxPackage -AllUsers -Name "Microsoft.Windows.Copilot" | Remove-AppxPackage -AllUsers
+  - Remove provisioned package: Get-AppxProvisionedPackage -Online | Where-Object { $_.DisplayName -like "*Microsoft.Copilot*" } | Remove-AppxProvisionedPackage -Online
+- Kill leftovers and autostart: Disable Copilot in Task Manager’s Startup tab. UI remnants (buttons in Paint, Notepad, and Microsoft 365 apps) can linger even after uninstall.
+- Edge integration: Turn off the Copilot/Sidebar button in Edge (Settings > Appearance > Copilot and Sidebar). This hides it but doesn’t fully remove the feature.
+- Block reinstalls via Registry (backup first): 
+  - HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot -> TurnOffWindowsCopilot (DWORD) = 1
+  - HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager -> SilentInstalledAppsEnabled (DWORD) = 0
+- Expect persistence: Windows updates may try to reintroduce Copilot; the policy/registry changes help, but aren’t foolproof. Windows Search may still show shortcuts.
+- Nuclear option: Third-party scripts on GitHub can strip Copilot and AI components more aggressively—use only if you understand and trust the code, and create a restore point first.
+
+Bottom line: Removing Copilot fully is possible but takes multiple steps—uninstalling, disabling autostart and Edge hooks, and setting policies to prevent it from quietly reinstalling.
 
 **Discussion Summary:**
 
-Commenters pushed back strongly against the author's theory that "evangelism" masks incompetence, citing high-profile technical leaders like Simon Willison (Django) and Antirez (Redis) who enthusiastically use LLMs despite having undeniable engineering skills. The conversation reframed the skepticism not as fear of change, but as a clash of engineering philosophies: one user argued that the "hacker drive" is fueled by understanding and fixing deterministic systems, whereas "vibe coding" feels like the drudgery of cleaning up "stochastic messes" (akin to an artist fixing extra fingers on AI images). Others suggested the hostility often stems from corporate pressure—such as managers mandating "minimum AI usage" quotas—rather than the technology itself, while acknowledging that internet culture inevitably polarizes tool usage into "cult-like" camps.
+The conversation focused on the erosion of user control within the Windows ecosystem, with commenters expressing frustration that "uninstalling" features is often temporary due to Microsoft’s aggressive update cycles and "KPI-driven" darker patterns.
 
-### Mozilla's open source AI strategy
+Key themes included:
 
-#### [Submission URL](https://blog.mozilla.org/en/mozilla/mozilla-open-source-ai-strategy/) | 187 points | by [nalinidash](https://news.ycombinator.com/user?id=nalinidash) | [196 comments](https://news.ycombinator.com/item?id=46599897)
-
-Mozilla: “Owners, not renters” — an open-source AI push
-
-Raffi Krikorian argues we’re drifting toward “rented intelligence,” where closed AI platforms mediate how we think and act — and can change the rules at will. Mozilla wants to rerun its Firefox playbook: make the “user agent” work for users again, this time at AI’s emerging “Layer 8” that will negotiate, filter, and recommend on our behalf.
-
-Key points:
-- Why closed wins today: It’s a developer experience (DX) problem, not a values problem. Big providers bundle models, GPUs, guardrails, monitoring, and billing into a single API that “just works,” while open-source tooling is powerful but fragmented.
-- The shift underway: 
-  - Small, task-tuned models (1–8B params) are now good and run on existing hardware.
-  - Economics favor self-hosting; some companies report major savings moving to open stacks.
-  - Governments want sovereign control over AI supply chains.
-  - Users expect instant, contextual AI that isn’t locked to one platform.
-- Openness will win when it’s the better deal: cheaper, more capable, and just as easy to use — not merely more principled.
-- Where cracks are forming: Mozilla sees four tipping points; first up is developer experience, because the stacks and defaults developers choose now will set the future. (The post continues from here.)
-
-The takeaway: Mozilla plans to make open AI competitive on usability and integration so people can own, not rent, the intelligence layer that will soon mediate the web.
-
-Based on the discussion, the core debate centers on whether Mozilla’s pivot to AI is a necessary survival strategy or another "distraction" from its core mission of building a competitive browser.
-
-**The "Distraction" vs. "Diversification" Debate**
-*   **Critics of the Pivot:** Many users argue that Mozilla continues to misstep by pouring resources into non-browser projects (VPNs, AI, etc.) while Firefox loses market share. They contend that if Mozilla focused solely on making Firefox the fastest, most reliable engine (addressing long-standing complaints about hardware acceleration on Linux and basic UI speeds), users would return.
-*   **The "Innovator’s Dilemma" Defense:** Defenders point out a contradiction in user sentiment: people complain that Mozilla is too reliant on Google search royalties, yet criticize any attempt Mozilla makes to diversify revenue streams (like this AI initiative).
-*   **The Threat to Search Revenue:** Several commenters note that the rise of AI threatens the search-licensing model (Google paying Mozilla). Consequently, Mozilla *must* find a new "Layer 8" application to own the user relationship, or they will go bankrupt when the search deal eventually dissolves.
-
-**Firefox Quality and Management**
-*   **Feature Velocity:** A Mozilla employee and other users noted recent shipping wins (vertical tabs, profile switchers, Rust integration), but critics feel development is too slow compared to the budget.
-*   **Budget Efficiency:** Comparisons were drawn to the **Ladybird** browser project, which is building a new engine with a tiny fraction of Mozilla’s staff/budget, leading users to question the efficiency of Mozilla’s $500M+ annual spend.
-*   **Endowment Strategy:** There was debate over Mozilla's financial endowment (estimated over $1B). Some view it as a safety net that should be hoarded to keep Firefox alive indefinitely; others see it as a "VC fund" that must be deployed to invent the future of the web (and revenue) before the current model collapses.
-
-**Hypothetical Scenarios**
-*   **A Cloudflare Acquisition?** A sub-thread discussed the idea of Cloudflare acquiring Firefox/Mozilla, citing the shared talent pool (heavy usage of Rust) and alignment against Google. However, others pointed out the irony, as Cloudflare’s bot protections/CAPTCHAs are notoriously hostile to Firefox users.
-
-**Consensus**
-While the community generally supports the *ideal* of open AI, there is deep skepticism that Mozilla can execute it successfully, given their perceived history of neglecting the core localized browser experience in favor of "moonshot" projects.
-
-### Why we don’t use AI
-
-#### [Submission URL](https://yarnspinner.dev/blog/why-we-dont-use-ai/) | 110 points | by [parisidau](https://news.ycombinator.com/user?id=parisidau) | [71 comments](https://news.ycombinator.com/item?id=46609279)
-
-Why We Don't Use AI – Yarn Spinner team says no to generative AI, on principle
-
-- The maintainers of Yarn Spinner, a widely used open‑source dialogue tool for games, lay out why they neither use nor integrate generative AI—and won’t accept AI‑generated contributions.
-- Core claim: today’s AI products are largely designed to cut headcount or extract more work without new hires; the team doesn’t want to normalize or fund that ecosystem.
-- Background: they have deep ML experience (research, books, game bots) and were once enthusiastic as tooling/GPU access improved. Around 2020, they soured as industry focus shifted to generative imagery/chatbots, mitigation work was sidelined, and critics were pushed out.
-- Beyond labor: they acknowledge many other issues (bias, opacity, etc.). Even if labor harms were solved, more hurdles would remain—but they’re arguing one major point at a time.
-- Product philosophy: reject “tool‑driven development” (“use AI or be left behind”) in favor of “does this help make better games?” They prefer fewer, polished features over hype integrations and will add/remove features based on real dev needs.
-- No “ethical DIY AI” for now: building bespoke models would be time‑intensive, and their example could nudge others toward mainstream AI platforms they object to.
-- Future stance: open to revisiting ML if the landscape changes meaningfully; until then, no generative AI in Yarn Spinner or their workflow.
-
-Why it matters: A prominent game tooling project is drawing a clear line against generative AI on ethical and practical grounds, signaling to studios and open‑source communities that “not adopting AI” can be a deliberate, product‑focused choice rather than a lagging one.
-
-Here is a summary of the discussion:
-
-**Summary of Discussion**
-
-The Yarn Spinner team's rejection of generative AI sparked a polarized debate on Hacker News, moving quickly from the specific tool to broader questions about labor, economic systems, and the utility of coding assistants.
-
-*   **Nuance and the "Indie" Defense:** Several users felt the maintainers’ stance lacked nuance, conflating "Enterprise Scale Replacement" (firing 500 support staff) with "Assistive Tooling" for solo developers. Commenters argued that for small indie teams, AI is a vital force multiplier that unblocks tricky coding problems or generates assets they couldn't otherwise afford, drawing a distinction between corporate greed and indie survival.
-*   **The Utility Debate:** A sub-thread debated whether LLMs actually help with "tricky" coding problems. Skeptics argued that LLMs fundamentally cannot solve novel architectural problems, often providing hallucinated or "junior-level" code that experienced engineers have to fix. Others pushed back, stating that regardless of perfection, the tools provide necessary efficiency for developers working alone.
-*   **Automation vs. Capitalism:** The "jobs" argument triggered a philosophical discussion on luddism and automation. While users generally agreed that eliminating toil (like tractors or dishwashers) is historically positive, they argued that the current economic system makes AI a threat. The consensus among several commenters was that the technology isn't the enemy; rather, the lack of a social safety net (like UBI) turns labor-saving technology into a livelihood-destroying crisis.
-*   **Virtue Signaling Accusations:** A segment of the discussion dismissed the post as "virtue signaling" or part of a culture war, suggesting that condemning the technology outright is a performative stance that ignores the practical realities of modern software development.
-
-### Anthropic invests $1.5M in the Python Software Foundation
-
-#### [Submission URL](https://discuss.python.org/t/anthropic-has-made-a-large-contribution-to-the-python-software-foundation-and-open-source-security/105694) | 392 points | by [ayhanfuat](https://news.ycombinator.com/user?id=ayhanfuat) | [174 comments](https://news.ycombinator.com/item?id=46601902)
-
-Anthropic is donating $1.5M over two years to the Python Software Foundation, earmarked primarily for Python ecosystem security. The PSF says the gift will accelerate its security roadmap—particularly hardening PyPI against supply‑chain attacks—and also support core operations like the CPython Developer-in-Residence program, community grants, and running infrastructure such as PyPI.
-
-HN chatter: One commenter notes the gift is tiny relative to big‑tech scale (e.g., 1.5M is ~0.005% of 30B), hinting at PR optics, while the PSF frames it as a landmark contribution with outsized impact for Python’s community and infrastructure.
-
-**Governance and Corporate Influence**
-A significant portion of the discussion focused on the PSF's leadership structure, sparked by a commenter questioning the optics of a Microsoft employee serving as the PSF Board Chair.
-*   **The Critique:** Skeptics argued that having an employee of a major tech corporation ($15B+ revenue) leading the board of a critical non-profit creates potential conflicts of interest or "unconscious bias," drawing comparisons to a government official regulating their private sector industry.
-*   **The Defense:** Community members (including PSF insiders) clarified that the Board is distinct from the **Python Steering Council** (which handles technical decisions). They noted that board positions are unpaid volunteer roles, the Chair has limited executive power compared to the Executive Director, and bylaws restrict the number of board members from any single company (max 1/3 or 2 members).
-*   **Context:** Defenders emphasized that the current Chair served the Python community long before joining Microsoft and that questioning their ethics based solely on employment is unfounded.
-
-**The value of $1.5M**
-*   **"Cheap PR":** Some users felt the donation was "tiny" relative to Anthropic's valuation and the immense value they derive from the ecosystem, labeling it an inexpensive way to buy good press.
-*   **"Better than nothing":** Counter-arguments highlighted that many massive industries (specifically Investment Banking and Finance) run entirely on Python but contribute $0. Users argued that criticizing a donation creates a perverse incentive; instead, the community should applaud the funding to normalize corporate support for open-source infrastructure.
-
-**Strategic Utility**
-*   Commenters noted that this is a pragmatic investment for Anthropic rather than pure charity. Because LLMs (like Claude) generate millions of lines of Python code and rely on the ecosystem's stability, hardening PyPI against supply-chain attacks directly reduces Anthropic's own risk vector.
-
-### Signal leaders warn agentic AI is an insecure, unreliable surveillance risk
-
-#### [Submission URL](https://coywolf.com/news/productivity/signal-president-and-vp-warn-agentic-ai-is-insecure-unreliable-and-a-surveillance-nightmare/) | 334 points | by [speckx](https://news.ycombinator.com/user?id=speckx) | [102 comments](https://news.ycombinator.com/item?id=46605553)
-
-Signal leadership warns agentic AI is a security and privacy disaster in the making
-
-At 39C3 in Hamburg, Signal’s Meredith Whittaker (President) and Udbhav Tiwari (VP of Strategy & Global Affairs) argued that agentic AI—especially when embedded at the OS level—creates a surveillance-friendly, malware-prone attack surface and remains too unreliable for autonomous tasks.
-
-What they highlighted
-- OS-level agents as “forensic dossiers”: Microsoft’s Recall was cited as a cautionary example—frequent screenshots, OCR, semantic tagging, and a timeline of user activity consolidated into a single local database. Malware or indirect prompt-injection could exfiltrate it, effectively sidestepping end-to-end encryption by capturing plaintext on-device. Signal added a “prevent screen capture” flag but says that’s only triage.
-- Reliability breaks down fast: Agents are probabilistic. Even optimistic per-step accuracy compounds poorly—at 95% per step, a 10-step task drops to ~60% success; 30 steps to ~21%. At 90% per step, a 30-step task is ~4%. They said the best agent models still fail ~70% of the time.
-- Enterprise and consumer risk: Centralized life-logs plus autonomous actions invite catastrophic data leakage, regulatory exposure, and an erosion of user trust in already overhyped tech.
-
-Their prescriptions
-- Hit pause on OS-level life-logging and plaintext, all-in-one databases that malware can grab.
-- Default to opt-out for users and require explicit developer opt-ins for integrations.
-- Provide radical transparency and granular auditability of how agents collect, store, and act on data.
-
-Bottom line: Without a course correction, they warn the agent era could implode under security failures and backlash—long before it delivers on its promises.
-
-Based on the discussion, commenters largely shifted the blame from "Agentic AI" specifically to the fundamental failures of modern Operating System (OS) security models.
-
-**The "OS Problem" vs. The "AI Problem"**
-*   **Fundamental Flaws:** Several users argued that the risks posed by Agentic AI are actually symptoms of insecure-by-design operating systems. They noted that mainstream systems (Windows, standard UNIX) were not designed to assume software is untrusted. One commenter noted that while Microsoft sells computers, they have not historically prioritized designing strict security models.
-*   **Better Models Exist:** Participants pointed to niche or mobile operating systems (Plan 9, seL4, Fuschia, Qubes OS) as examples of architectures that handle untrusted processes better. iOS was frequently cited as a mainstream success story where applications are sandboxed by default and must explicitly request capabilities (e.g., access to contacts or location), unlike desktop environments where network and file access are often open by default.
-
-**Complexity and Developer Incentives**
-*   **Security vs. Usability:** There was a debate regarding why secure OSs aren't the standard. Some argued that implementing "secure-by-default" systems is a "tedious nightmare" for developers (citing difficulties with TLS and immutable filesystems). Others countered that current security measures (firewalls, patching) are merely "security theater" required to patch bad architectural design.
-*   **Market Forces:** Commenters suggested that secure systems like Andrew Tanenbaum’s *Amoeba* existed decades ago but failed because the market prioritizes speed, backward compatibility, and developer ease-of-use (e.g., `npm run`) over strict security boundaries.
-*   **Containerization Blame:** Some criticism was directed at container ecosystems (Docker/OCI) for encouraging bad practices, such as allowing permission binds and refusing to disable privileged flags by default, effectively bypassing OS security for convenience.
-
-**The Changing Threat Model**
-*   **Adversarial Software:** One user noted that legacy security models assumed the user controlled the software. The modern era—and specifically Agentic AI—introduces an adversarial model where software runs *against* the user's interests (telemetry, surveillance), rendering old "user permission" models insufficient.
-*   **Network Assumptions:** The discussion highlighted that while UNIX was multi-user, early desktop security models did not anticipate the modern "always-connected" internet, leaving desktop clients blindly trusting local networks—a concept that Agentic AI exploits.
-
-### Games Workshop bans staff from using AI
-
-#### [Submission URL](https://www.ign.com/articles/warhammer-maker-games-workshop-bans-its-staff-from-using-ai-in-its-content-or-designs-says-none-of-its-senior-managers-are-currently-excited-about-the-tech) | 226 points | by [jsheard](https://news.ycombinator.com/user?id=jsheard) | [122 comments](https://news.ycombinator.com/item?id=46607681)
-
-Games Workshop bans AI in Warhammer content and design
-
-- CEO Kevin Rountree says staff are prohibited from using generative AI in any official content or design work, including entries to GW-run competitions. A few senior managers are allowed to explore the tech, but leadership is “not excited” about it.
-- Rationale: protect IP, preserve human-made art/writing/sculpting, and reduce data/security/compliance risks as AI features creep onto devices by default.
-- GW is doubling down on human creatives, expanding hiring across concept art, writing, and sculpting for its Warhammer Studio.
-- Context: Warhammer’s community is highly protective of its art; even the suspicion of AI in official imagery has sparked backlash (e.g., a recent Displate controversy the company denied).
-- Contrast: While publishers like EA and Square Enix tout aggressive AI adoption, GW is positioning itself as a human-first outlier in entertainment.
-
-Why it matters: For a lore- and art-driven brand, trust in authenticity may outweigh AI’s efficiency gains. Expect stricter partner guidelines, more IP enforcement, and GW marketing its “human-made” pedigree as a differentiator.
-
-Here is a summary of the discussion:
-
-**Community Alignment vs. Practical Utility**
-Commenters largely agreed that Games Workshop made a savvy business move, noting that the tabletop community zealously dislikes "tech bro" trends like NFTs and crypto. By taking a hardline anti-AI stance, GW avoids a "multi-year headache" with their core customer base. However, one user noted a contradiction: while non-technical board gamers hate AI art, many admitted to using AI to generate code for websites and apps because professional programmers remain too expensive to hire.
-
-**The Double Standard: Art vs. Code**
-A significant portion of the discussion focused on why the public views AI replacing artists as a tragedy, but AI replacing programmers as progress. Several theories emerged:
-*   **Sympathy and Class:** Artists are generally viewed as struggling creatives, garnering public protection. Conversely, software engineers are seen as high-paid, "entitled," and "arrogant." Some users suggested the non-tech world feels a sense of *schadenfreude* at the prospect of AI "spanking" the comfortable tech labor market.
-*   **Nature of the Work:** One user argued that people view programming as "assembly line work" rather than a creative endeavor. Code is often refactored, merged, and owned collectively, whereas art has a strong attachment to specific authorship and authenticity.
-*   **Training Data Ethics:** There was a debate regarding the fairness of training models. While AI art generators scraped copyrighted portfolios (like ArtStation) against artists' wishes, AI coding assistants were largely trained on open-source code. However, critics countered that "Open Source" does not mean "Public Domain," and licenses like GPL still carry legal weight that AI training ignores.
-
-**The "Revenge" of the Creatives**
-A particularly heated thread highlighted the irony of the current moment. A user identifying as both an artist and developer noted that when technology crushed the livelihoods of traditional artists and manufacturing workers, the tech industry’s response was often dismissed as "adapt or die." Now that the same technology threatens white-collar coding jobs, the sudden concern from developers feels hypocritical to those who were previously told their displacement was just "progress."
+*   **Loss of Agency:** Users lamented that Windows is increasingly behaving like a "walled garden" (comparable to iOS), where user preferences are routinely overwritten to serve Microsoft's interests. There is skepticism that any manual removal will last beyond the next system update.
+*   **The Linux Migration:** A significant portion of the discussion advocated for switching to Linux to escape "Microsoft spyware." While some users hesitated due to gaming and driver concerns, others highlighted Valve’s Proton and user-friendly distros like Pop!_OS as viable bridges for modern gaming.
+*   **Technical Blocking Limits:** Participants discussed network-level blocks, noting that modifying the `hosts` file is ineffective because Windows often bypasses it for internal Microsoft domains. External DNS solutions (like Pi-hole) were suggested as better alternatives, though they risk breaking other OS functionalities.
