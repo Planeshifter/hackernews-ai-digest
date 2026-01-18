@@ -510,314 +510,291 @@ The discussion reflects deep cynicism regarding OpenAI's trajectory and the intr
 
 ---
 
-## AI Submissions for Wed Jan 14 2026 {{ 'date': '2026-01-14T17:18:34.975Z' }}
+## AI Submissions for Thu Jan 15 2026 {{ 'date': '2026-01-15T17:14:45.567Z' }}
 
-### Scaling long-running autonomous coding
+### Tldraw pauses external contributions due to AI slop
 
-#### [Submission URL](https://cursor.com/blog/scaling-agents) | 251 points | by [samwillis](https://news.ycombinator.com/user?id=samwillis) | [159 comments](https://news.ycombinator.com/item?id=46624541)
+#### [Submission URL](https://github.com/tldraw/tldraw/issues/7695) | 161 points | by [pranav_rajs](https://news.ycombinator.com/user?id=pranav_rajs) | [87 comments](https://news.ycombinator.com/item?id=46641042)
 
-Hundreds of autonomous coding agents, one codebase: what actually worked
+tldraw will auto-close external PRs amid AI-generated contribution surge
 
-- Flat, self-coordinating swarms stalled. Letting equal-status agents “claim” tasks via a shared state file led to lock thrashing, deadlocks, and risk-averse behavior. Even optimistic concurrency reduced brittleness but not the deeper issue: no one took ownership of hard, end-to-end work.
+- What’s new: tldraw announced a temporary policy to automatically close pull requests from external contributors. Issues, bug reports, and discussions remain welcome.
+- Why: Maintainers say a wave of AI-generated PRs has increased review burden without sufficient context or follow-up. Since an open PR implies a serious review commitment, they’ll “close first” and selectively re-open PRs they’re truly considering.
+- Bigger picture: The team frames this as a short-term safeguard until GitHub ships better tooling to manage contributions—calling 2026 “a weird year” for programmers and open source.
+- Signal: The post drew strong support from the community (many 👍 and ❤️), suggesting other projects may wrestle with similar policies soon.
 
-- A planner/worker split unlocked scale. Persistent planner agents map the codebase and spawn sub-planners; workers focus only on execution, pushing changes without coordinating laterally. A simple judge gates iterations. This hierarchy preserved momentum and avoided tunnel vision while scaling to hundreds of concurrent workers.
+Based on the discussion, here is a summary of the community's reaction:
 
-- Real-world stress tests were big. The system ran for about a week to build a web browser from scratch: >1M lines across ~1,000 files, with many workers pushing to the same branch and few conflicts. Other long runs included:
-  - In-place Solid→React migration in the Cursor codebase (3+ weeks, +266K/−193K edits), now testable and likely mergeable.
-  - A Rust rewrite that made video rendering 25× faster, with smooth zoom/pan and motion blur, headed to production.
-  - Ongoing moonshots: Java LSP (7.4K commits, 550K LoC), a Windows 7 emulator (14.6K commits, 1.2M LoC), and “Excel” (12K commits, 1.6M LoC).
+**The End of Anonymous Collaboration**
+Commenters widely interpreted this move as a signal that the era of "global anonymous collaboration" is drawing to a close. Participants argued that the low-friction model of the open internet (where anyone can contribute) is breaking down because trust cannot exist without verification. The consensus is that open source is shifting from a system that trusts *platforms* (like GitHub) to one that must verify *individuals*.
 
-- Model choice and role fit mattered. Newer GPT-5.2 variants sustained long-horizon focus and fidelity; Opus 4.5 yielded control sooner. Planners and coders benefited from different models, so they mix models by role rather than standardize on one.
+**The Asymmetry of Effort**
+A core technical theme in the thread is the economic imbalance AI introduces to coding:
+*   **The Burden:** Users noted that "reading code is the real work." AI reduces the cost of writing code to near zero, but the cost of *understanding* and reviewing it remains high.
+*   **The Consequence:** This creates a denial-of-service attack on maintainers. While some argued AI is useful for "grunt work" (like writing Bazel build rules), others countered that without deep understanding, AI-generated PRs act as "slop" that degrades architectural quality and overwhelms human attention spans.
 
-- Simpler beats clever. Removing an “integrator” bottleneck improved throughput; workers handled conflicts fine. The sweet spot is between chaos and rigidity, and prompts shaped behavior more than orchestration code.
+**A Return to "Web of Trust" Models**
+The discussion leaned heavily into reviving older trust models to combat AI spam:
+*   **The Linux Model:** Several users pointed to the Linux Kernel’s hierarchical trust system (Linus trusts lieutenants, who trust subsystem maintainers) as the inevitable future for large projects.
+*   **WOT (Web of Trust):** There was enthusiasm for bringing back PGP-style "Web of Trust" networks, where reputation is transitive and bad actors face high costs for re-entry (e.g., verifying real-world identity or paying for accounts) to prevent ban evasion.
 
-Bottom line: Multi-agent coding can push through multi-week, million-LOC projects, but coordination is the hard part. Lightweight hierarchy, role-specialized models, and careful prompting drove most of the wins; there’s still plenty of headroom to make planners and long runs more reliable.
+**The "Human" Premium**
+Users discussed the increasing value of verifying human processes. One commenter shared their experience working with artists, noting that seeing "drafts" and "iterative sketches" is becoming the only way to distinguish human work from AI generation. The thread suggests that professional relationships will increasingly rely on long-term, verifiable interactions rather than drive-by contributions.
 
-Based on the discussion, users were highly skeptical of the submission's claims of success, with several commentators auditing the repository and characterizing the output as "AI slop" rather than a functional application.
+### Handy – Free open source speech-to-text app
 
-**Key points from the discussion:**
+#### [Submission URL](https://github.com/cjpais/Handy) | 227 points | by [tin7in](https://news.ycombinator.com/user?id=tin7in) | [104 comments](https://news.ycombinator.com/item?id=46628397)
 
-*   **Codebase Quality and Maintainability:** Users describing the codebase found it nearly impossible to navigate or maintain. One critic noted the code consisted of hundreds of thousands of tiny files buried in deeply nested subdirectories, making it difficult to search or understand the architecture. The consensus was that while an agent can "compile" a codebase, the result is unmaintainable "spaghetti code" that no human could reasonably take over.
-*   **Failed Constraints and Faked Functionality:** Upon closer inspection, the "browser" implementation relied on crude shortcuts rather than actual browser logic. One user pointed out that the font rendering didn't calculate real metrics, instead using a hardcoded estimate (`0.5 * font_size`), and that basic layout engines and directionality handling were fundamentally incorrect.
-*   **Broken Build State:** Despite the article claiming a successful "judge" system, users reported that the repository was filled with errors and warnings. One user noted that the Continuous Integration (CI) pipeline was completely broken, yet Pull Requests were still being merged and "verified" as successful, casting doubt on the reliability of the autonomous evaluation process.
-*   **Complexity vs. Memorization:** Several commenters questioned whether the agents were actually solving problems or simply regurgitating training data from open-source projects like Chromium or online tutorials. They argued that building a browser requires handling thousands of edge cases and performance optimizations that this "toy" implementation ignored entirely.
-*   **Predictions vs. Reality:** The discussion referenced Simon Willison’s prediction that an AI would build a browser by 2029. While this project attempts that, users argued it failed the "functioning" part of the criteria. They suggested that without a human in the loop to correct quality spirals, completely autonomous coding agents currently produce large-scale broken software rather than functional products.
-
-### ChromaDB Explorer
-
-#### [Submission URL](https://www.chroma-explorer.com/) | 55 points | by [arsentjev](https://news.ycombinator.com/user?id=arsentjev) | [4 comments](https://news.ycombinator.com/item?id=46624731)
-
-Chroma Explorer is a native macOS client for ChromaDB that gives RAG builders and LLM app developers a GUI for exploring and managing vector stores. It supports multiple connection profiles (local, remote, and Chroma Cloud) with secure API key storage, plus full collection management including custom embedding functions and HNSW tuning. You can run natural-language semantic searches, browse and edit documents, and perform batch operations for bulk updates. It integrates with 13+ embedding providers out of the box (OpenAI, Cohere, Gemini, Mistral, Jina, Voyage AI, Ollama, and more). Open-source on GitHub, designed with a slick glassmorphic UI, but macOS-only (11.0+). The pitch: less SDK/CLI wrangling, faster debugging and iteration on vector pipelines.
-
-The discussion focused on the technical implementation of the client, specifically the use of the term "native." One user expressed hope that the application relied on OS-native code rather than a wrapper, but a respondent examined the repository and confirmed it is built using Electron. Additionally, the conversation offered praise for Chroma's broader research efforts, specifically a study highlighting how complex reasoning tasks in LLMs degrade faster than standard "needle-in-a-haystack" benchmarks suggest.
-
-### The Influentists: AI hype without proof
-
-#### [Submission URL](https://carette.xyz/posts/influentists/) | 242 points | by [LucidLynx](https://news.ycombinator.com/user?id=LucidLynx) | [165 comments](https://news.ycombinator.com/item?id=46623195)
-
-The Influentists: hype-first AI demos and the “technical debt of expectations”
-
-A widely shared tweet from Jaana “Rakyll” Dogan claimed Claude Code recreated Google’s distributed agent orchestrator work “in an hour.” After a wave of doom-posting, her follow-up thread added crucial context: the “hour” result was a proof-of-concept guided by hard-won architectural decisions from prior iterations, not a production system conjured from scratch. In other words, AI amplified expert intent; it didn’t replace it.
-
-The post uses this episode to examine a broader pattern the author dubs “The Influentists”—technically credible voices who drive hype via:
-- Trust-me-bro anecdotes framed as universal truths (e.g., “I’ve never felt this much behind as a programmer”).
-- Lack of reproducible artifacts (code, data, prompts, methodology).
-- Strategic ambiguity that allows later “clarifications.”
-
-Examples span big AI labs and platform companies: a Microsoft leader touting AI-assisted Rust rewrites of massive C/C++ codebases before dialing it back as “research,” and staff at frontier labs teasing AGI-adjacent breakthroughs ahead of more modest releases.
-
-Why it matters
-- Expectations gap: Viral demos can imply “a year of work in an hour,” discouraging juniors who don’t see the hidden scaffolding of expertise, curation, and constraints.
-- Misallocation of attention: Teams may chase vibes over verifiable results, accumulating a “technical debt of expectations.”
-- Practical takeaway: LLMs can be powerful force multipliers when steered by deep domain knowledge, but claims should be judged by reproducible evidence, not rhetoric.
-
-**The Influentists: Hype-First AI Demos and the "Technical Debt of Expectations"**
-
-**The Story:**
-A recent viral post by Jaana Dogan proposing that Claude Code recreated Google’s distributed agent orchestrator "in an hour" sparked a new debate on the gap between AI demos and engineering reality. Dogan later clarified that the result was a proof-of-concept heavily reliant on pre-existing architectural decisions, but the incident highlighted a growing trend: "The Influentists."
-
-The author argues that these "technically credible" voices drive hype through unverifiable anecdotes and strategic ambiguity, accumulating a "technical debt of expectations." By framing proof-of-concepts as production-ready breakthroughs, they discourage junior developers and mislead companies into chasing "vibes" over verifiable results. The piece concludes that while LLMs are powerful force multipliers for experts, claims must be judged by reproducible artifacts, not rhetoric.
-
-**The Discussion:**
-The discussion on Hacker News was highly skeptical, focusing on the mechanics of social media grift, the reality of "AI-assisted" coding, and the flooding of technical spaces with marketing noise.
-
-*   **The "Hype Translator":** Users humorously translated common viral AI claims into reality. "I built a brick-and-mortar business with AI" was translated to "I asked Claude to Google local lawyers." "I managed 10 Product Managers" became "I drafted some PRDs." "I launched a product in a weekend" became "I made a single HTML landing page."
-*   **The New Grift Economy:** Many commenters noted that AI hype threads have replaced previous trends like drop-shipping, crypto, and Amazon FBA as the primary method for engagement farming. The consensus is that generic "I feel so behind" posts aren't genuine reflections of the industry, but top-of-funnel marketing for courses or newsletters.
-*   **Astroturfing and Dead Internet:** Several users lamented the state of online communities (including Reddit and X), suggesting that a significant portion of "I built this with Claude" content feels like astroturfing or bot-generated marketing, making it difficult to find genuine technical discussions.
-*   **The "Last 10%" Problem:** Experienced engineers argued that while LLMs are excellent for reaching the "70% done" mark (prototypes, scripts, throwaway code), the remaining 30%—security, reliability, maintainability—takes the vast majority of the effort. They warned that relying on AI for complex architecture introduces "technical debt of the future," where subtle bugs and verbose code create maintenance nightmares.
-*   **Historical Optimism:** A counter-narrative emerged comparing the current frenzy to the Dotcom bubble. Users pointed out that while businesses like Pets.com failed (akin to today's unusable AI wrappers), the internet itself succeeded. Just because the hype is loud and often foolish doesn't mean the underlying technology won't eventually facilitate real utility, such as buying furniture online—or coding complex systems—becoming mundane.
-
-### Eigent: An open source Claude Cowork alternative
-
-#### [Submission URL](https://github.com/eigent-ai/eigent) | 23 points | by [WorldPeas](https://news.ycombinator.com/user?id=WorldPeas) | [3 comments](https://news.ycombinator.com/item?id=46618954)
-
-Eigent: open-source multi-agent “cowork” desktop app (local-first, MCP-enabled)
+Handy: an offline, open-source, cross‑platform speech‑to‑text app that types into any field
 
 What it is
-- A desktop app for orchestrating a team of AI agents to automate complex workflows, with privacy-friendly, fully local deployment as the default.
-- Built on CAMEL-AI; Apache-2.0 licensed.
+- A free, MIT‑licensed desktop app (Tauri: Rust + React/TS) that transcribes speech entirely on-device. Press a shortcut, talk, release, and Handy pastes the text into whatever app is focused. Positioned to be “the most forkable” STT tool rather than the most feature‑packed.
 
 Why it matters
-- Pushes the local-first, multi-agent trend: parallel task execution, human-in-the-loop checkpoints, and deep tool integration without sending data to a third-party service.
-- MCP (Model Context Protocol) support means agents can safely use a wide ecosystem of tools (web browsing, code exec, Notion, Google suite, Slack, and custom/internal APIs).
+- Privacy by default: no audio leaves your machine.
+- Zero setup cloud keys or services.
+- Extensible and hackable: built from familiar OSS components and designed to be forked.
 
-Key features
-- Multi-agent workforce: prebuilt Developer, Search, Document, and Multi-Modal agents; parallel task breakdown and coordination.
-- Local model support: vLLM, Ollama, LM Studio, and custom models.
-- Human-in-the-loop: escalates for input when uncertain or stuck.
-- Enterprise: SSO/access control, customizable deployments.
-- 100% open source.
+How it works
+- Push‑to‑talk or toggle recording via global shortcut.
+- Local VAD (Silero) filters silence.
+- Choose models:
+  - Whisper (Small/Medium/Turbo/Large) with GPU acceleration when available via whisper‑rs
+  - Parakeet V3 for fast, CPU‑optimized transcription with automatic language detection
+- Pastes the result directly into the active app (Windows, macOS, Linux).
 
-How to try it
-- Local deployment (recommended): full isolation, local backend + models; guide in repo.
-- Quick start (cloud-connected): git clone, npm install, npm run dev (requires Eigent account).
-- Also available as a hosted cloud option.
+Tech and ecosystem
+- Core libs: whisper‑rs, transcription‑rs (Parakeet), cpal (audio I/O), vad‑rs, rdev (shortcuts), rubato (resampling).
+- Debug mode: Cmd+Shift+D (macOS) / Ctrl+Shift+D (Win/Linux).
+- MIT license; 11.7k GitHub stars, 778 forks.
 
-Tech notes
-- Electron desktop app with a local/server backend; repo shows a modern TS/JS stack.
-- License: Apache-2.0. Stars: ~5.5k.
+Gotchas and Linux notes
+- Whisper can crash on some Windows/Linux configs (help wanted with logs).
+- Wayland support is limited; install wtype (preferred) or dotool for reliable text input. On X11, use xdotool.
+- Overlay is disabled by default on Linux to avoid focus issues. If you enable it, pasting may misroute.
+- If you hit rendering issues on Linux, try WEBKIT_DISABLE_DMABUF_RENDERER=1.
+
+Getting started
+- Download the latest release and grant mic/accessibility permissions, set your shortcut, pick a model, and talk.
 
 Links
-- Repo: https://github.com/eigent-ai/eigent
-- Site: https://www.eigent.ai
+- Repo: https://github.com/cjpais/Handy
+- Site: https://handy.computer/
 
-Take
-Eigent aims to be a “Cursor-for-agents” style desktop, but local-first and tool-rich via MCP. If you’ve been evaluating CrewAI/LangGraph/AutoGPT-style orchestration or internal agent platforms, this offers a packaged, GUI-driven path with privacy and enterprise knobs baked in.
+Here is a summary of the discussion:
 
-**Discussion Summary:**
+**Speed, Models, and Alternatives**
+Users were highly enthusiastic about Handy as a free, local alternative to paid subscription tools like **Superwhisper** and **VoiceInk**. The integration of the **Parakeet V3** model was a standout topic; users described it as "stunningly fast" and "near-instant" compared to Whisper, which some noted struggles with programming jargon. While some preferred the real-time text streaming of **Fluid Voice** or the polish of **Hex**, Handy was praised for being lightweight and strictly local.
 
-Discussion focused on validating the project's "open source" label. One user was initially skeptical after noticing a pricing page and credit system, questioning if the term was being applied too loosely to a commercial wrapper. A respondent clarified that the tool supports a fully local deployment—including the backend server and integrations with local model runners like Ollama—with zero external dependencies, validating its open-source status despite the parallel existence of a hosted cloud tier. On the practical side, a tester noted that using high-end models like Claude Opus for multi-agent workflows could quickly become cost-prohibitive due to API fees.
+**Coding Agents and Context**
+A significant portion of the conversation revolved around using Speech-to-Text (STT) to drive **LLMs and coding agents**. Users with physical constraints (e.g., dystonia) and power users alike expressed a desire for STT tools that understand context—such as the active IDE or screen content—rather than just verbatim transcription. In response, the creator (`spjc`) noted that Handy was built with this in mind and revealed a **hidden debug menu** (`Cmd+Shift+D`) that already allows for LLM-based post-processing.
 
-### Show HN: OSS AI agent that indexes and searches the Epstein files
+**Technical Feedback & Wishlist**
+*   **Dictionaries:** Users requested "custom words" features to handle company names and technical terms. It was noted that basic text replacement is being added, and LLM post-processing can also handle this.
+*   **Bugs:** Linux users reported specific issues with hotkeys (Ctrl+Space) inserting control characters on X11/xdotool setups.
+*   **Requests:** There was demand for an iOS companion app and features for transcribing full meetings rather than just short bursts of text.
 
-#### [Submission URL](https://epstein.trynia.ai/) | 204 points | by [jellyotsiro](https://news.ycombinator.com/user?id=jellyotsiro) | [95 comments](https://news.ycombinator.com/item?id=46611348)
+### Raspberry Pi's New AI Hat Adds 8GB of RAM for Local LLMs
 
-Nozomio Labs launches a searchable “Epstein Files” archive
-- What it is: A unified, AI-powered index of materials from the Epstein archive—emails, messages, flight logs, court documents, and related records—aimed at making primary sources easier to explore.
-- How it works: Built on Nia with Claude Sonnet 4.5 for semantic search and Q&A. You can ask natural-language queries like “Most frequently mentioned people?”, “Flight records from 2002–2005?”, or “Emails about specific locations?”, and check whether specific names appear.
-- Why it matters: Centralizes scattered, often unwieldy documents into a single interface for journalists, researchers, and the public to investigate timelines, connections, and mentions.
-- Caveats: Content is sensitive; OCR/entity extraction can mislabel names or contexts. The site encourages verifying AI answers against the original documents to avoid misinterpretation.
+#### [Submission URL](https://www.jeffgeerling.com/blog/2026/raspberry-pi-ai-hat-2/) | 246 points | by [ingve](https://news.ycombinator.com/user?id=ingve) | [205 comments](https://news.ycombinator.com/item?id=46629682)
 
-Based on the discussion, here is the summary of the comments regarding the Nozomio Labs archive:
+Raspberry Pi’s $130 AI HAT+ 2 lands with a Hailo-10H NPU and its own 8 GB LPDDR4X, promising standalone LLM inference that won’t steal your Pi’s CPU cycles or system RAM. On paper: 40 INT8 TOPS at up to 3W, and a step up from the original HAT’s Hailo-8 (26 INT4 TOPS).
 
-**Technical Viability and Accuracy**
-*   **LLMs vs. Traditional Search:** Users debated the best architecture for this type of archive. While some argued that LLMs often underperform compared to traditional NLP and regex for hard data extraction, the creator (*jllytsr*) clarified the site uses a hybrid approach: traditional regex for exact matches (names/dates), vector search for semantic queries, and an LLM only as an orchestration layer to ground answers.
-*   **Hallucinations:** Skepticism remains high regarding "grounding." Users questioned whether any model is truly constrained enough to distinct source documents without "hallucinating" details, with one user calling the potential for errors "spicy hallucinations."
-*   **Feature Requests:** There was interest in making search results and conversation threads shareable via unique URLs (UUIDs) to help researchers cite their findings.
+In practice, the reviewer found:
+- For LLMs, the Pi 5’s CPU often beats the Hailo-10H. The NPU’s 3W power cap makes it hard to keep up with the Pi SoC’s ~10W ceiling. The only close contest was Qwen2.5 Coder 1.5B.
+- The HAT’s 8 GB cap is a real limiter for LLMs. Many quantized “useful” models want 10–12 GB plus context. A 16 GB Pi 5 can now even run a compressed Qwen3 30B variant via llama.cpp—slow, but functional—underscoring that RAM, not just TOPS, is king for local LLMs.
+- Vision is where it shines: object detection ran ~10x faster than on the Pi CPU and worked smoothly with Raspberry Pi’s models. But you can already get most of that from the cheaper original AI HAT ($110) or the $70 AI Camera.
+- The headline “mixed mode” (vision + LLM/TTS simultaneously) wasn’t ready: attempts led to segfaults and “device not ready,” and Hailo’s RPi5 examples hadn’t been updated for the new board.
 
-**Censorship and Model Bias**
-*   **Guardrails:** A significant portion of the conversation focused on whether an AI model would refuse to answer controversial questions due to safety training (censorship). Users compared "uncensored" local models against commercial models (like OpenAI’s), theorizing that commercial models might refuse to answer queries about specific political figures or provocative keywords.
-*   **Testing Limits:** Users discussed testing models with questions about election eligibility and specific politicians to gauge bias, though results were mixed regarding which models (Grok, Claude, GPT) are actually structurally "uncensored" versus simply prompted differently.
+Why it matters:
+- The add-on’s local RAM is a smart architectural move—offloading memory pressure from the Pi—yet 8 GB isn’t enough to make it a compelling LLM box versus a 16 GB Pi 5.
+- For makers needing efficient, low-power vision on a Pi, Hailo remains strong. For hobbyist LLMs, you’ll likely do better on the Pi CPU with more RAM, or wait for better software and mixed-mode support.
 
-**Content and Key Figures**
-*   **High-Profile Mentions:** Commenters discussed findings related to specific figures, including Bill Gates (emails, social interactions) and Donald Trump (flight logs, quotes from 2002 regarding their friendship).
-*   **Cynicism regarding Justice:** Despite the accessibility of the files, the prevailing sentiment was cynical. Users expressed doubt that "analyzing files" would lead to consequences for powerful figures like Clinton, Trump, or Gates, suggesting the wealthy are insulated from prosecution regardless of what the archive reveals.
+Bottom line:
+- Great for computer vision; overpromised for LLMs (today). The AI HAT+ 2 feels like a dev platform for those planning to embed Hailo-10H elsewhere more than a must-have for typical Pi owners. Software maturity will determine if the “mixed” vision + language pitch ever becomes a killer feature.
 
-**Ethical Concerns regarding AI Imagery**
-*   **Unblurring Images:** A distinct sub-thread emerged from a user wondering if AI could "un-blur" redacted faces of minors in the files. This sparked a debate on the ethics of AI-generated inputs; users argued that generating realistic images of children—even to reconstruct reality—is dangerous, could normalize abuse material, and creates psychological disconnects regarding consent and harm.
+**Raspberry Pi’s $130 AI HAT+ 2 lands with a Hailo-10H NPU**
+The $130 add-on features a Hailo-10H NPU and 8 GB of dedicated LPDDR4X RAM, designed to run local AI inference without taxing the Raspberry Pi 5’s system resources. While the hardware excels at computer vision—performing object detection roughly 10x faster than the Pi’s CPU—reviewers found it largely underwhelming for LLMs. The 8 GB RAM cap restricts users to smaller, less capable models, and the NPU's 3W power limit allows the Pi 5's own CPU to outperform it in many text-generation benchmarks. Additionally, the promised "mixed mode" (simultaneous vision and language processing) is currently hindered by immature software.
 
-### Show HN: Nori CLI, a better interface for Claude Code (no flicker)
+**Discussion Summary**
+The discussion reveals a growing skepticism regarding the Raspberry Pi's current value proposition, sparked by the AI HAT's limitations. Commenters argue that 8 GB of RAM is insufficient for serious local LLM work, reducing the device to a niche curiosity rather than a viable alternative to MacBooks or dedicated GPUs.
 
-#### [Submission URL](https://github.com/tilework-tech/nori-cli) | 35 points | by [csressel](https://news.ycombinator.com/user?id=csressel) | [8 comments](https://news.ycombinator.com/item?id=46616562)
+The conversation shifts to a broader debate on price-to-performance ratios. Many users contend that the cost of a Raspberry Pi 5 combined with necessary accessories (power supply, case, AI HAT) now rivals that of used enterprise laptops or Mini PCs (like NUCs). Critics point out that used laptops offer superior x86 performance, built-in screens, and UPS capabilities (batteries) for the same price. However, defenders maintain that the Pi remains superior for specific embedded applications requiring GPIO access, compact form factors, and ARM64 testing. Ultimately, users feel the Raspberry Pi is being squeezed from both ends: ESP32s now dominate low-power tasks, while cheap x86 hardware is taking over the home server and heavy-lifting segments.
 
-Nori CLI: one terminal UI for coding with Claude, Gemini, and OpenAI. Nori is a Rust-based, local CLI that unifies multiple AI coding agents behind a single, fast TUI. You can switch providers on the fly with /agent, chat about your codebase, and run commands directly from the interface. It piggybacks on existing logins from each vendor’s CLI (Claude Code, Gemini CLI, or OpenAI/Codex), so setup is quick if you’ve used those before.
+### To those who fired or didn't hire tech writers because of AI
 
-Why it’s interesting:
-- Multi-provider workflow without context-switching tools
-- Snappy terminal experience (Ratatui, incremental renders, double-buffered scrollback), built in Rust
-- Open-source (Apache-2.0), actively releasing (v0.2.7 as of Jan 14, 2026)
+#### [Submission URL](https://passo.uno/letter-those-who-fired-tech-writers-ai/) | 337 points | by [theletterf](https://news.ycombinator.com/user?id=theletterf) | [257 comments](https://news.ycombinator.com/item?id=46629474)
 
-Roadmap highlights:
-- Sandboxed command execution
-- Model Context Protocol (MCP) integration for external tools (aligned with Zed’s agent protocol)
-- Session persistence (resume), multi-agent orchestration
+TL;DR: Don’t replace technical writers with AI—augment them. Docs aren’t just output; they’re the product’s truth, created through reporting, prioritization, empathy, and judgment that LLMs can’t replicate.
 
-How to try:
-- npm install -g nori-ai-cli, then run nori
-- Authenticate per provider:
-  - Claude: npx @anthropic-ai/claude-code then /login in Nori
-  - Gemini: npx @google/gemini-cli then /auth
-  - OpenAI: switch /agent to Codex, then /login in Nori
+What the post argues:
+- AI docs break in subtle, costly ways: they lack vision, miss edge cases, and can’t feel user pain. Empathy and context are non-negotiable for great help content.
+- Liability sticks to you, not the model. Wrong AI-written instructions can cause real harm—there’s no deposing an LLM.
+- Your AI still has to RTFM. RAG, “skills,” and prompt scaffolding all depend on high-quality, human-made context. Firing writers degraded the very supply chain your AI relies on.
 
-Repo: github.com/tilework-tech/nori-cli (Rust-heavy codebase; credits OpenAI Codex CLI as a foundation) Note: “local” here refers to the CLI/TUI; actual model inference still happens via the cloud providers you authenticate.
+The alternative:
+- Keep (or rehire) tech writers and arm them with AI. With clear AI policies and time to experiment, writers can orchestrate, edit, and publish faster while guarding quality.
+- Productivity gains are real when AI augments, not replaces—an approach even AWS CEO Matt Garman has endorsed.
+- Follow practitioners pioneering this hybrid model; invest in strategy with writers at the table.
 
-**Discussion Summary:**
+Why it matters:
+- Shipping without strong docs is shipping a product that can’t speak—or worse, that lies.
+- Devs shouldn’t carry docs theater; users, support costs, and adoption suffer.
+- Bottom line: AI generates infinite noise. Technical writers create the signal. Reconsider the cuts and build with them.
 
-In the comments, the author (`csrssl`) engages with users regarding feature requests and comparisons to existing tools:
+**The Value of Empathy vs. The Cost of Output**
+The discussion debates the economic and qualitative impact of replacing technical writers with AI, centering on whether "cheaper" production inevitably leads to "enshittification."
 
-*   **Feature Wishlist:** Users prioritized "must-have" features such as conversation history, the ability to rewind and restore code states, and a "dangerous mode" to skip permission prompts. Future support for MCP (Model Context Protocol) servers was also requested.
-*   **Similar Tools:** Commenters pointed to "Toad," a similar Python-based TUI. The author expressed admiration for the Python terminal ecosystem (specifically Textual) but noted Nori was built to align with the performance and style of Rust tools like `fzf` and `helix`.
-*   **Differentiation:** When asked about the downsides of using Nori versus using `Claude Code` directly, the author admitted that maintaining 1:1 feature parity with vendor CLIs is the main challenge. However, they highlighted that Nori aims to provide superior session management features, such as session resuming, rewinds, and branching.
+*   **Docs as Empathy:** User `ncb` argues that technical writing is fundamentally about understanding user pain, confusion, and context—an "empathy engine" that AI cannot replicate. They contend that while AI can generate text, it lacks the "listening" component required to build trust. Good documentation is framed as a cost-saving mechanism for customer support (citing Berlin public transit as an example); replacing it with low-quality AI output simply shifts the cost to support queues.
+*   **The "Landfill" Economy:** `smv` and others draw parallels to fast fashion and manufacturing, arguing that whenever production costs hit zero, the market drowns in low-quality "trash" (or "content landfill") while quality becomes a luxury. They caution that AI risks creating an ecosystem where "wealthy people afford the cheapest crap" because high-quality alternatives are drowned out by noise.
+*   **Democratization and Access:** Countering the gloom, `thptp` and `Telemakhos` suggest that while average quality might drop (comparing the shift to the invention of the printing press), AI lowers barriers for hobbyists and small teams. This allows open-source projects or solo developers to produce functionally acceptable documentation and compete with larger entities, viewing the increased volume as a necessary friction for progress rather than just waste.
 
-### LLMs are a 400-year-long confidence trick
+### Show HN: The Hessian of tall-skinny networks is easy to invert
 
-#### [Submission URL](https://tomrenner.com/posts/400-year-confidence-trick/) | 110 points | by [Growtika](https://news.ycombinator.com/user?id=Growtika) | [173 comments](https://news.ycombinator.com/item?id=46613997)
+#### [Submission URL](https://github.com/a-rahimi/hessian) | 28 points | by [rahimiali](https://news.ycombinator.com/user?id=rahimiali) | [23 comments](https://news.ycombinator.com/item?id=46638894)
 
-Tom Renner: LLMs as a classic confidence game
+The Hessian of tall-skinny networks is easy to invert (GitHub: a-rahimi/hessian)
+- What it is: A method and reference implementation to compute inverse-Hessian vector products for deep nets—i.e., solve Hx = v to get x = H^{-1}v. Whereas Pearlmutter’s trick efficiently computes Hv, this tackles the harder H^{-1}v directly.
+- How it works: Augments the system with auxiliary variables, pivots it into a block tri-diagonal form, factors it, then solves via passes that resemble propagation on an augmented network. This avoids the naive cubic-in-parameters cost and makes the operation tractable for “tall-skinny” architectures.
+- Why it matters: Enables practical second-order information for deep learning—useful as a preconditioner to speed up SGD and for tasks like curvature-aware optimization.
+- What’s in the repo: 
+  - demo_hessian.ipynb (demo)
+  - hessian_inverse_product (core implementation)
+  - A small library for hierarchical block-partitioned matrices (block_partitioned_matrices.py) with a tutorial
+  - Paper describing the full approach
+- Snapshot: Python/Jupyter-focused repo; ~13 stars, 1 fork, 5 contributors.
 
-- Core thesis: The AI industry is running a playbook straight out of a con—build trust, exploit emotions, then create urgency—pushing people to over‑rely on LLMs.
-- Build trust: For 400 years, calculators and machines have trained us to see machine outputs as the gold standard. That societal habit of trusting “the machine” is now being leveraged for LLMs, despite their very different reliability profile.
-- Exploit emotions—fear: Vendors hype existential risk and job-loss narratives to make non-adoption feel dangerous, while still selling the tools they claim to fear.
-- Exploit emotions—sympathy: RLHF bakes in relentless positivity and flattery, encouraging parasocial bonds. Renner cites reports of harmful effects and even claims OpenAI over-tuned “positivity” and rolled it back in 2025—evidence, he argues, that this friendliness is a manipulation layer, not intelligence.
-- Create urgency: With constant promises that “next year” the tech will replace swaths of jobs, users and orgs are pushed into hasty decisions that suspend skepticism and due diligence.
+The discussion revolves around the classification of the algorithm, comparisons with existing optimization methods, and definitions of limit-theory mathematical concepts used in deep learning.
 
-Why it matters: We’re primed to trust machines because calculators earned it; LLMs haven’t. Treat their outputs as untrusted by default, resist fear/flattery pressure, and slow down procurement and workflow changes until validation and safeguards catch up.
+**Methodology and Comparisons**
+*   **Stochastic Newton:** `MontyCarloHall` and `hodgehog11` classified the author's approach as a "Stochastic Newton method" (applying Newton's method on batches). The author (`rhml`) accepted this nomenclature, noting they originally framed it simply as seeking preconditioners for deep nets.
+*   **Comparison to CG/BFGS:** Users discussed how this compares to inverting the Hessian using Conjugate Gradient (CG) or BFGS methods. While `throwaway198846` argued BFGS often outperforms CG, `hodgehog11` noted that neural network training is highly context-dependent; optimizers like SGD impose implicit regularization, so second-order methods must be evaluated on how they scale and utilize resources compared to standard techniques.
+*   **Physics Solvers:** Participants noted similar "Jacobian-free Newton-Krylov" combinations are successfully used in solving physics equations (e.g., GMRES).
 
-The discussion around Renner’s thesis pits developer anecdotes of "10x productivity" against skepticism regarding the definition of productivity and the gap between marketing claims and technical reality.
+**Matrix Structure & definitions**
+*   **Semiseparable Matrices:** `jffjffbr` suggested that the inverse of block bi-diagonal matrices typically results in "semiseparable" structures. The author (`rhml`) clarified their specific use case involves a block diagonal plus a "tall skinny" structure ($A + C^TC$) requiring dummy variables, but acknowledged the terminology might be relevant for future theoretical work.
+*   **Term Definitions:** `Lerc`, a mathematician unfamiliar with ML-specific usage, asked for intuition on the terminology. `Nevermark` provided a breakdown:
+    *   **Gradient:** The 1st derivative (direction to move to minimize error).
+    *   **Hessian:** The 2nd derivative (curvature/slope of the slope). This allows for larger steps but is computationally expensive ($N \times N$).
+    *   **Jacobian:** Derivatives of output vectors with respect to input parameters, usually resulting in massive matrices for deep learning models. `mxwsn` clarified that the Gradient is essentially a Jacobian for a function mapping to a single dimension (loss).
 
-**The "Con" is Marketing, Not Utility**
-While user **krystf** pushed back strongly—claiming legitimate productivity gains, describing LLMs as a "Gutenberg press" moment, and citing 10x gains in reading/writing enterprise Django code—others argued this misses the article's point. **vanderZwan** and **rms** countered that the "con" isn’t that the technology doesn't work, but that it is marketed deceptively (e.g., selling "intelligence" and "existential risk" rather than a probability engine). **ltxr** offered the analogy of selling regular apples as a magical cancer cure: the product (apples/LLMs) is fine, but the sales pitch is a fraud.
+**General Sentiment**
+*   The community reacted positively (`hlg`, `pttrs`) to the contribution, specifically praising the achievement of making Hessian calculations linear in depth, which constitutes a solid step toward practical second-order optimization.
 
-**Productivity: Perception vs. Reality**
-A significant debate emerged regarding actual vs. perceived efficiency:
-*   **The "Power Tool" Defense:** **ntndd** argued LLMs are "power tools," not autonomous robots; they are highly effective in the hands of a skilled carpenter but deceptively marketed as able to build a house on their own.
-*   **The "Productivity Paradox":** **stx** provided a counter-anecdote to the hype, citing internal company data where overall developer productivity *plummeted* using Claude Code, despite developers reporting they *felt* more productive.
-*   **The Cause of the Drop:** **bndrm** and **JacoboJacobi** theorized that while generating code feels fast (twiddling switches), the resulting "uncanny valley" of code requires more effort to review, debug, and understand than code written by a human.
+### Show HN: Control Claude permissions using a cloud-based decision table UI
 
-**Scope of Problem Solving**
-Users debted *where* the utility lies. **kyl** argued LLMs only truly help with "solved problems" (like standard Django patterns) rather than novel engineering. However, **dnlbln** and **jason_oster** disagreed, arguing that LLMs can handle novelty and obscure tasks (like writing compilers for custom DSLs) by synthesizing context rather than just regurgitating training data, provided the user supplies sufficient context or "specs."
+#### [Submission URL](https://github.com/rulebricks/claude-code-guardrails) | 13 points | by [sidgarimella](https://news.ycombinator.com/user?id=sidgarimella) | [10 comments](https://news.ycombinator.com/item?id=46636786)
 
-### Show HN: Harmony – AI notetaker for Discord
+Rulebricks launches real-time guardrails for Claude Code tool calls
 
-#### [Submission URL](https://harmonynotetaker.ai/) | 28 points | by [SeanDorje](https://news.ycombinator.com/user?id=SeanDorje) | [8 comments](https://news.ycombinator.com/item?id=46622139)
-
-Harmony: AI notetaker for Discord calls
-
-What it is: A Discord bot that joins voice channels to record, transcribe, and auto-summarize conversations. It targets teams and communities that run meetings on Discord and miss Zoom-style transcription.
-
-Key features:
-- One-command recording (/record, /stop) with automated joining
-- AI transcripts and summaries, speaker analytics, multi-channel support
-- “AskHarmony” chat to query meeting content
-- Smart search over past calls; 57+ languages
-
-Setup: Invite the bot → start/stop recording → review summaries, analytics, and transcripts.
-
-Claims and social proof: “Trusted by 6,000 users,” with testimonials from team leads and gaming community admins; several testimonials repeat and include some generic productivity quotes.
-
-Why it matters: Discord lacks native meeting notes/transcripts; this fills a gap for standups, officer meetings, and distributed teams living in Discord.
-
-What HN will ask:
-- Consent and compliance: how it handles recording notices and Discord TOS
-- Privacy/security: data retention, encryption, access controls, SOC2/GDPR
-- Accuracy: diarization, multilingual performance, latency to summaries
-- Pricing/limits: free tier caps, storage, export options and webhooks
-- Admin controls: per-channel permissions, auto-join rules, and deletion
-
-Getting started: “Start for free” and “Book demo”; invite the bot and try it in a test channel.
-
-Here is a summary of the discussion on Hacker News:
-
-**Discord vs. Enterprise Viability**
-Much of the discussion focuses on whether Discord is a suitable platform for professional "serious" work. Several users argue that established companies prioritize privacy, security, and access control, typically opting for Slack or self-hosted solutions over Discord. Consequently, commenters question if Harmony plans to expand support to Zoom, Google Meet, or Slack to capture the enterprise market.
-
-**Open Source Alternatives**
-One user suggests a DIY approach using open-source tools—specifically connecting audio streams to the Whisper API for transcription and then feeding that into an LLM. They argue this method offers better control over security/data privacy and is more cost-effective for bulk processing than a dedicated SaaS bot.
-
-**Demographics and Use Cases**
-There is a debate regarding *who* actually uses Discord for work. While some dismiss it as a tool for "Gen Z" and early-stage startups that can't afford Slack, others defend its utility. Specifically, users in the gaming industry note that Discord’s screen-sharing controls (balancing resolution vs. frame rate) make it superior to Slack for pair programming, even if their organizations still use Slack for text communication.
-
-**Platform Uncertainty**
-Rumors of a near-term Discord IPO have sparked anxiety, with some users expressing disappointment in the current state of self-hosted alternatives and looking to migrate away from the platform entirely.
-
-### Tesla moving Full Self-Driving to a monthly subscription
-
-#### [Submission URL](https://www.cnbc.com/2026/01/14/musk-tesla-full-self-driving-subscription-fsd.html) | 53 points | by [leopoldj](https://news.ycombinator.com/user?id=leopoldj) | [35 comments](https://news.ycombinator.com/item?id=46618435)
-
-Tesla makes Full Self-Driving subscription-only, ending the $8,000 one-time purchase
-
-- What happened: Elon Musk said Tesla will stop selling Full Self-Driving (Supervised) as a flat-fee add-on after Feb 14; it will only be offered as a monthly subscription (starts at $99/month). Tesla shares closed down 1.8% on the news.
-- Context: FSD still requires an attentive human driver and does not make Teslas autonomous. CFO Vaibhav Taneja said in October that paid FSD users were about 12% of the fleet.
-- Strategy shift: Moving to subscriptions emphasizes recurring revenue and lowers the upfront barrier, but may irk owners who paid thousands upfront. It also pushes usage data collection as Tesla chases autonomy.
-- Competitive/regs: Tesla is far behind Waymo, which hit 450,000 weekly paid rides in December and operates in multiple cities (SF Bay Area, Austin, Phoenix, Atlanta, LA) with international expansion targeted for 2026. Tesla’s limited “robotaxi” in Austin still uses human safety supervisors; in California, Tesla lacks driverless testing/operating permits and recently faced a DMV false-advertising finding and a related class action on appeal.
-- Company backdrop: Tesla reported Q4 deliveries of 418,227 (down ~16% YoY) and production down 5.5% YoY, marking a second straight annual decline. Earnings are due Jan 28.
+What it is
+- A lightweight hook that intercepts Claude Code’s tool calls (shell commands, file ops, MCP server calls) and routes them to Rulebricks for an allow/deny/ask decision—before execution.
+- Aimed at teams that need instant policy changes, conditional logic, and an audit trail—beyond what ~/.claude/settings.json offers.
 
 Why it matters
-- Signals Tesla’s bet that autonomy is a software subscription business.
-- Could boost near-term software margins and usage, but highlights the gap with fully driverless services and ongoing regulatory hurdles.
+- Built-in Claude settings require JSON edits, restarts, and offer limited pattern matching with no centralized audit.
+- Rulebricks adds:
+  - Instant policy updates across a team (no restarts, no git pulls)
+  - Detailed logs of blocked/approved actions for compliance
+  - Conditional rules (e.g., allow “rm -rf node_modules”, deny elsewhere)
+  - Non-engineer-friendly rule editing via a web UI
 
-**Hacker News Discussion Summary**
+How it works
+- Claude Code → PreToolUse hook → Rulebricks API → decision (allow/deny/ask)
+- Templates included for:
+  - Bash command guardrails
+  - File read/write/edit policies
+  - MCP tool governance (mcp__*)
+- Verbose mode logs decisions to stderr; histories visible in the Rulebricks Logs tab.
 
-**Skepticism regarding naming and delivery**
-Much of the discussion centers on the perceived dishonesty of the name "Full Self-Driving" when paired with the modifier "(Supervised)." Users mock this contradiction with analogies like selling "Fully Edible Cakes (Poisonous)" and label it as deceptive marketing. Commenters also scoff at Elon Musk's history of missed timelines, joking about "LLM calendars" and noting that promises made in 2017 regarding autonomous capabilities still haven't materialized, leading to accusations that the pivot to subscriptions is simply a way to monetize "vaporware" now that the pool of buyers willing to pay a lump sum has dried up.
+Setup (about 5 minutes)
+- Create an account on rulebricks.com, fork a template, customize, publish, copy API key.
+- git clone https://github.com/rulebricks/claude-code-guardrails && ./install.sh
+- Add env vars to ~/.claude/settings.json (RULEBRICKS_API_KEY, optional RULEBRICKS_VERBOSE), then restart Claude Code.
+- Uninstall is a single command to remove the hook and clean settings.
 
-**Economics and ROI**
-Users crunch the numbers on the switch from flat-fee to subscription. One commenter notes that at the peak price of $15,000, the breakeven point would have been 12.5 years of subscriptions, implying the flat fee was a poor financial decision for consumers. The consensus suggests Tesla "ran out of suckers" willing to pay the high upfront cost, necessitating a pivot to a lower barrier of entry to maintain revenue flow.
+Privacy/hosting
+- You can redact sensitive data before it’s sent; private/self-hosted options are supported if you can’t use the cloud.
 
-**Market commoditization and competition**
-A debate emerged regarding the long-term viability of charging for autonomy. Some speculate that competitors like BYD will eventually make self-driving features "table stakes" (standard inclusions), forcing Tesla to abandon the subscription model. Others argue that car manufacturers will attempt to maintain "vendor lock-in," acting like oligopolies to keep subscription revenue flowing even as hardware prices drop (likened to Smart TVs selling at a loss to monetize user data).
+Project stats
+- MIT-licensed; Python/Shell
+- Stars: 26, Forks: 1 (at posting)
 
-**Grandfathering and liability**
-There are open questions about how early adopters who paid the full price will be treated long-term, with sarcastic suggestions that they might eventually receive "ad-supported" versions. On the operational side, users highlighted the legal distinction between Tesla’s system (which places liability on the human driver) versus Waymo (where the system remains liable). Dark humor also surfaced regarding the subscription model, with users imagining the car demanding payment mid-drive or careening off a cliff because the monthly plan expired.
+Links
+- Repo: https://github.com/rulebricks/claude-code-guardrails
+- Service: https://rulebricks.com
 
-### Microsoft keeps reinstalling Copilot, so I found a way to rip it out for good
+Who should care
+- Teams running Claude Code in regulated or security-conscious environments that need centralized, auditable, instantly updatable guardrails.
 
-#### [Submission URL](https://www.howtogeek.com/how-to-rip-out-copilot-from-windows-11/) | 37 points | by [rolph](https://news.ycombinator.com/user?id=rolph) | [16 comments](https://news.ycombinator.com/item?id=46622526)
+**Rulebricks launches real-time guardrails for Claude Code tool calls**
+A lightweight hook that intercepts and governs Claude Code’s shell commands and file operations via a centralized Rulebricks dashboard.
 
-Headline: How to truly remove Windows Copilot (and keep it from coming back)
+Discussion Summary:
+The discussion sparked immediate scrutiny regarding trust and presentation; users criticized the project's landing page for employing "dark patterns" in cookie notices and utilizing numerous tracking scripts, arguing such practices erode trust in a security-focused tool. The creator acknowledged this feedback and promised revisions. Others found the tool promising for corporate compliance, noting that native Claude permission checks are often frustrating enough that teams bypass them entirely (via `dangerously-skip-permissions`). Technical feedback included observations that default templates missed critical commands like `shutdown` and `passwd`; the author clarified that decision tables can be extended to cover these cases.
 
-The piece walks through what it actually takes to purge Copilot from Windows 11—and why a simple uninstall isn’t enough.
+### 2026: This is AGI
 
-Key points:
-- Uninstall the app: Copilot won’t appear in Control Panel, but you can remove it via Settings > Apps > Installed Apps. For multi-user systems, PowerShell can remove it for all users and from provisioned packages:
-  - Remove for all users: Get-AppxPackage -AllUsers -Name "Microsoft.Windows.Copilot" | Remove-AppxPackage -AllUsers
-  - Remove provisioned package: Get-AppxProvisionedPackage -Online | Where-Object { $_.DisplayName -like "*Microsoft.Copilot*" } | Remove-AppxProvisionedPackage -Online
-- Kill leftovers and autostart: Disable Copilot in Task Manager’s Startup tab. UI remnants (buttons in Paint, Notepad, and Microsoft 365 apps) can linger even after uninstall.
-- Edge integration: Turn off the Copilot/Sidebar button in Edge (Settings > Appearance > Copilot and Sidebar). This hides it but doesn’t fully remove the feature.
-- Block reinstalls via Registry (backup first): 
-  - HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot -> TurnOffWindowsCopilot (DWORD) = 1
-  - HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager -> SilentInstalledAppsEnabled (DWORD) = 0
-- Expect persistence: Windows updates may try to reintroduce Copilot; the policy/registry changes help, but aren’t foolproof. Windows Search may still show shortcuts.
-- Nuclear option: Third-party scripts on GitHub can strip Copilot and AI components more aggressively—use only if you understand and trust the code, and create a restore point first.
+#### [Submission URL](https://sequoiacap.com/article/2026-this-is-agi/) | 13 points | by [tfincannon](https://news.ycombinator.com/user?id=tfincannon) | [15 comments](https://news.ycombinator.com/item?id=46640796)
 
-Bottom line: Removing Copilot fully is possible but takes multiple steps—uninstalling, disabling autostart and Edge hooks, and setting policies to prevent it from quietly reinstalling.
+2026: This is AGI — investors argue long‑horizon agents have arrived
+Authors: Pat Grady and Sonya Huang (Sequoia) • Published Jan 14, 2026
 
-**Discussion Summary:**
+The take
+- Thesis: AGI is here in a practical sense. Define it functionally as “the ability to figure things out,” not by a strict technical rubric.
+- Why now: A three‑step arc—pretraining for knowledge (ChatGPT, 2022) → inference‑time reasoning (OpenAI o1, 2024) → long‑horizon, iterative agents (e.g., Claude Code, late 2025/early 2026).
 
-The conversation focused on the erosion of user control within the Windows ecosystem, with commenters expressing frustration that "uninstalling" features is often temporary due to Microsoft’s aggressive update cycles and "KPI-driven" darker patterns.
+What “figuring things out” looks like
+- Example: An autonomous agent sources a DevRel hire in 31 minutes by iterating across LinkedIn, conference talks on YouTube, and Twitter activity; it forms hypotheses, filters for real influence, spots disengagement signals, and drafts a tailored outreach—no explicit step‑by‑step prompt.
 
-Key themes included:
+How we got here
+- Two complementary paths:
+  - Reinforcement learning: teaches models to stay on task and use tools reliably over longer spans (research‑lab domain).
+  - Agent harnesses: scaffolding around model limits (memory handoffs, compaction, planning loops) to sustain multi‑hour workflows (application‑layer domain).
 
-*   **Loss of Agency:** Users lamented that Windows is increasingly behaving like a "walled garden" (comparable to iOS), where user preferences are routinely overwritten to serve Microsoft's interests. There is skepticism that any manual removal will last beyond the next system update.
-*   **The Linux Migration:** A significant portion of the discussion advocated for switching to Linux to escape "Microsoft spyware." While some users hesitated due to gaming and driver concerns, others highlighted Valve’s Proton and user-friendly distros like Pop!_OS as viable bridges for modern gaming.
-*   **Technical Blocking Limits:** Participants discussed network-level blocks, noting that modifying the `hosts` file is ineffective because Windows often bypasses it for internal Microsoft domains. External DNS solutions (like Pi-hole) were suggested as better alternatives, though they risk breaking other OS functionalities.
+Why it matters
+- Coding agents are the beachhead; similar long‑horizon autonomy will spill into recruiting, ops, sales, customer support, and more—work that involves ambiguity, hypothesis testing, and iteration.
+- The claim reframes AGI from a philosophical milestone to a business capability: autonomous software that gets complex, messy tasks done.
+
+Caveats
+- Agents still fail—hallucinations, context loss, wrong turns—but the authors argue the failure modes are increasingly fixable and the trajectory is clear.
+
+Bottom line
+- 2026 is the “year of the long‑horizon agent.” If AGI means software that can independently figure things out over hours, the authors say it’s already here.
+
+Here is the summary of the Hacker News discussion regarding Sequoia's "2026 is AGI" thesis:
+
+**The Hyped Investor Agenda**
+The dominant reaction to the article was deep cynicism regarding Sequoia’s unexpected pivot to defining AGI. Multiple commenters viewed the piece not as technical analysis, but as "transparently self-serving" marketing designed to pump portfolio valuations and sustain the hype cycle before eventual IPOs. Users attacked Sequoia's credibility, referencing past due diligence failures (referencing Valeant or FTX) as reasons to doubt their "moral authority" or technical foresight.
+
+**Redefining Terms Effect**
+Readers were particularly frustrated by the authors' attempt to redefine AGI as merely "the ability to figure things out" rather than adhering to technical rigor. Several users claimed they "stopped reading" the moment the authors dismissed technical definitions, arguing that VCs are "hijacking the narrative" by creating gray areas to justify funding rounds. The sentiment was that the article showcased "technical incompetence" masquerading as visionary insight.
+
+**Consequences: Layoffs and "Slop"**
+Beyond the semantics, the discussion touched on the practical output of these "long-horizon agents." While the authors predict business autonomy, commenters fear the reality will be massive increases in generated spam ("10x Slop") and a focus on labor reduction. Some users argued the true definition of this "corporate AGI" translates simply to workforce reduction and layoffs by 2030, rather than a philosophical breakthrough in intelligence.
+
+### Simpler than Photoshop but for free AI Landscaping
+
+#### [Submission URL](https://hadaa.pro/) | 9 points | by [Fh_](https://news.ycombinator.com/user?id=Fh_) | [8 comments](https://news.ycombinator.com/item?id=46630372)
+
+Hadaa is pitching itself as “Midjourney for your yard”: upload a photo of your outdoor space, brush the areas you want changed, pick a style (Mediterranean, modern, cottage, Zen, etc.), and its AI generates photorealistic garden makeovers. It then suggests climate‑appropriate plants based on your location and produces a shopping list plus planting guide. You can refine results with plain‑text edits (e.g., “add a Zen garden,” “change the deck to pavers”), and the tool claims to understand depth, lighting, and perspective for realistic renders.
+
+Highlights
+- Workflow: upload photo → mask areas → choose a style → AI render → guided shopping/planting → iterate with text prompts.
+- Free plan: 60 credits, no credit card required; afterward, pay‑as‑you‑go ($10 for 200 credits).
+- Extras: live preview, photorealistic examples, and plant recommendations tuned to your climate zone.
+- Pitch: “turn inspiration into buildable plans” with a complete materials list; claims 10,000+ users.
+
+What’s not clear from the page: export formats, cost estimates, data/privacy policies, and how well designs account for real‑world constraints (grading/drainage, local codes).
+
+**Hadaa: Midjourney for your Yard**
+
+The tool’s creator (**Fh_**) joined the thread to discuss the dashboard mechanics, highlighting features like an "Auto Fix" tool that automatically detects potential design improvements in a given space.
+
+The conversation focused on utility compared to general-purpose generative tools:
+*   **Existing Alternatives:** User **tsmn** shared their current workflow using Photoshop Generative Fill to remove fallen trees or visualize gazebos but acknowledged a specialized tool could better serve professional landscapers. **srd** also questioned if existing LLMs with image editing capabilities were sufficient for this use case.
+*   **UX & Control:** User **gvmr** specifically requested a closer look at the "brushing" interface, noting that controlling highlighter/masking tools is often difficult in other apps. **Fh_** responded with screenshots and descriptions of the tool's three main editing modes:
+    1.  **Presets:** Supports manual masking and style application.
+    2.  **Smart Fix:** Allows for prompt-based edits (text-to-image interpretation).
+    3.  **Auto Fix:** Automatically detects yard constraints and applies solutions with one click.
+*   **Future Scope:** In response to **R_D_Olivaw**, who asked about general home renovation and construction features, the creator indicated that while the focus is currently on outdoor spaces and planting guides, extending into broader renovations is a possibility.
