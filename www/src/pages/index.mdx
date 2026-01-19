@@ -10,6 +10,250 @@ export async function getStaticProps() {
 
 ---
 
+## AI Submissions for Sun Jan 18 2026 {{ 'date': '2026-01-18T17:13:41.528Z' }}
+
+### Predicting OpenAI's ad strategy
+
+#### [Submission URL](https://ossa-ma.github.io/blog/openads) | 561 points | by [calcifer](https://news.ycombinator.com/user?id=calcifer) | [512 comments](https://news.ycombinator.com/item?id=46668021)
+
+What’s new
+- The post pushes back on “OpenAI is doomed” narratives and frames OpenAI’s next act as an ads business.
+- OpenAI reportedly began rolling out ads on Jan 16, 2026 to Free and Go tiers: clearly labeled units at the bottom of answers, with controls to see “why this ad” or dismiss.
+- Stated principles: ads won’t influence answers, conversations aren’t shared/sold, users can turn off personalization. Plus/Pro/Business/Enterprise remain ad‑free.
+
+Rollout the author expects
+- Q1 2026: limited beta with select advertisers.
+- Q2–Q3: expansion into ChatGPT Search for free users.
+- Q4: sidebar sponsored content + affiliate/checkout features.
+- 2027: international expansion and a self‑serve ads platform.
+- Possible “conversational ads” where you can ask follow‑ups about products.
+
+By the numbers (author’s cites/estimates)
+- 2025: $10B ARR by June; first $1B revenue month in July; aiming for $20B ARR; burn $8–12B.
+- Usage: ~800M WAU, ~190M DAU, 35M paying subs, 1M business customers; approaching 1B WAU in 2026; ~2.5B prompts/day.
+- Ads revenue targets reported elsewhere: $1B in 2026, scaling to $25B by 2029 (OpenAI hasn’t confirmed).
+
+Positioning vs incumbents
+- Google: high intent + full adtech stack → ~$296B ads run rate; implied ARPU ≈ $59/user/yr.
+- Meta: low intent + full stack → ~$50 global ARPU.
+- X: engagement + limited stack → ~$5.5 ARPU.
+- ChatGPT: high intent, massive scale, but no vertical ad stack yet. The author places its ARPU potential closer to Search than Social—somewhere between X and Meta initially, with upside if it builds the stack (auction, targeting, commerce/affiliate, checkout).
+
+Why it matters
+- Assistants are converging with search: both Google (Gemini + AI Overviews ads) and OpenAI are racing to monetize “answer engines.”
+- Trust will hinge on whether “answer independence” holds up, how clearly ads are labeled, and regulatory scrutiny.
+- For marketers: a new, high‑intent channel; expect self‑serve auctions, affiliate hooks, and conversational product flows.
+- For developers/publishers: more zero‑click answers and shifting discovery dynamics as assistant surfaces become ad inventory.
+
+Author’s stance: OpenAI isn’t dying or angling for acquisition; it’s gearing toward a giant IPO and building the next big ad platform disguised as AGI.
+
+**Discussion Summary**
+
+While the original post focused on OpenAI's pivot to advertising, the comments veered into a broader debate on the macroeconomic friction of advertising costs and their relationship to wages.
+
+*   **The Cost of Customer Acquisition:** The discussion sparked when a founder lamented that their robotic pharmacy startup spends $40M annually on advertising against only $5M on software and facilities. They argued that tech platforms (Google, Meta) function as rent-extractors, taking up to 50% margins and forcing businesses to act as pass-through entities for ad revenue.
+*   **Ad Spend vs. Wages:** A commenter proposed that high advertising spend is a symptom of income inequality. The theory is that suppressed wages lower general purchasing power, forcing companies to spend aggressively to capture the remaining demand. They cited *The Spirit Level*, noting a correlation between high inequality and high ad spend in rich nations, attributed to status anxiety.
+*   **The Henry Ford Debate:** Users debated the "Henry Ford" economic theory—that raising wages creates the customers needed to buy products. 
+    *   **Skeptics** argued the math doesn't work for individual firms: if a car company doubles wages, those workers only spend a tiny fraction (e.g., 7%) of that new income on cars, resulting in a net loss for the firm.
+    *   **Proponents** countered that this is a collective action problem. While it fails for a single "island economy" or firm, widespread wage increases boost aggregate demand because workers have a higher marginal propensity to consume than investors.
+*   **Productivity vs. Distribution:** The thread devolved into a dispute over economic modeling. Some users argued that raising wages without increasing productivity (the "coconut island" model) merely causes inflation. Others pushed back, arguing that modern economies suffer from distribution issues and demand shortages rather than a lack of supply or productivity.
+
+### Starting from scratch: Training a 30M Topological Transformer
+
+#### [Submission URL](https://www.tuned.org.uk/posts/013_the_topological_transformer_training_tauformer) | 135 points | by [tuned](https://news.ycombinator.com/user?id=tuned) | [51 comments](https://news.ycombinator.com/item?id=46666963)
+
+Tauformer: a topological twist on Transformers, with early signs of promise at 30M params
+
+- What’s new: Instead of dot‑product attention, Tauformer compresses each head to a single “taumode” scalar via a Graph Laplacian over a domain embedding (“domain memory”). Attention logits are then just the negative distance between these scalars. The aim: bias attention toward domain-relevant structure rather than generic geometric similarity.
+
+- How it works:
+  - Keep the usual Q/K/V, RoPE, causal masking, and softmax/value aggregation.
+  - Replace Q·K scoring with a bounded Rayleigh-quotient energy xᵀLx/(xᵀx+ε) mapped to [0,1), yielding a per-token, per-head scalar λ.
+  - Logits = −|λ_q − λ_k| / temperature.
+
+- Why it could be cheaper:
+  - KV-cache can store (V, λ_k) instead of (K, V), trimming per-layer cache by roughly ~50% for typical head dims.
+  - With a sparse, precomputed Laplacian from a domain manifold, computing λ can depend on nnz(L) rather than dense D² operations.
+
+- The 30M run (TauGPT, GPT‑2–style):
+  - 6 layers, 6 heads, d_model=384, seq_len=1024, vocab=30,522.
+  - AdamW, base LR 5e‑4, 100‑step warmup; routed validation (~5%).
+  - Throughput ~60K tokens/s on ~7 GB VRAM; total tokens ~655M over 5,000 steps.
+  - Validation loss drops from ~4.93 (step 100) to ~2.36 (step 2000), with a best ~1.91 at step 4500; later steps show volatility/regression.
+  - Notably, taumode (the attention geometry) was fixed throughout this run.
+
+- Takeaways:
+  - Early learning is strong and fast at this small scale even without updating the domain geometry.
+  - The later instability suggests the geometry may need to adapt as weights evolve.
+
+- What’s next:
+  - “Adaptive” taumode strategies that periodically recalibrate (including gradient‑gated schemes to detect energy drift).
+  - Larger‑scale tests (~100M parameters).
+  - Release of code, configs, data, and logs under a permissive license once consolidated.
+
+- Why it matters:
+  - If the Laplacian‑guided scalar attention holds up, it could bring domain-aware inductive bias, smaller KV caches, and potentially cheaper inference—especially compelling for long‑context or memory‑constrained deployments.
+
+Bonus curiosity: The author flags an open question—how does cross‑entropy relate to the learned taumode distribution during training?
+
+Here is a summary of the discussion:
+
+**Scaling and Viability**
+Much of the discussion focused on whether a 30M parameter test is sufficient to predict success at scale. User `Lerc` and others cautioned that performance differences at 30M rarely represent behavior at 30B or 72B, urging the author to run "real-world" benchmarks before claiming victory. The author (`tnd`) acknowledged this, noting the current roadmap includes scaling to 100M, but emphasized that early benchmarks against a Karpathy nanoGPT fork showed comparable generation quality with ~20% faster inference.
+
+**Architecture and Efficiency**
+The reduction of the KV-cache size (by roughly 50%) was identified by users like `fby` as a "massive win" if the model quality holds up. When asked if this could be swapped into existing models, the author clarified that the architecture requires a total redesign—shifting from vector interactions to scalar interactions in a topological space—meaning current model weights cannot simply be converted.
+
+**Technical Constraints and Comparisons**
+Discussion arose regarding the efficiency of the fixed Laplacian matrix. While some feared the pre-computation might be heavy, the author argued that calculating sparse Laplacian vectors is negligible ("infinitely cheaper") compared to the dense dot-product operations required by standard attention. Other commenters drew parallels to older graph-based language modeling research, such as Sparse Non-Negative Matrix models, and discussed how this approach differs from how standard Transformers handle locality via position vectors.
+
+**Tokenization Tangent**
+A side conversation explored replacing discrete tokens with embeddings or byte-level encodings to better capture code syntax (e.g., for IDEs). The author noted that the Tauformer's manifold Laplacian approach might be particularly well-suited for such structure-heavy domains like code snippets.
+
+### Show HN: Figma-use – CLI to control Figma for AI agents
+
+#### [Submission URL](https://github.com/dannote/figma-use) | 109 points | by [dannote](https://news.ycombinator.com/user?id=dannote) | [37 comments](https://news.ycombinator.com/item?id=46665169)
+
+Figma, meet the command line: figma-use brings full read/write control (not just read) to Figma via a CLI and JSX renderer, aimed at humans and AI agents alike.
+
+Why it’s interesting
+- LLM-friendly interface: use compact CLI commands or describe UIs in JSX (echo '<Frame…>' | figma-use render). The author argues this is cheaper and more natural for agents than verbose MCP/JSON-RPC schemas.
+- Goes beyond Figma’s official MCP plugin, which is read-only; this supports creating/editing nodes, styles, variables, components, exports, and more.
+
+How it works
+- Install via npm, add the companion Figma plugin, and run a local proxy. Then:
+  - Imperative mode: figma-use create frame --width 400 --fill "#FFF" ...
+  - Declarative mode: pipe pure JSX over stdin; for logic/variants, use .figma.tsx files.
+
+Notable features
+- Components and real ComponentSets with variants; define once, instantiate many.
+- Iconify integration: drop in 150k+ icons by name (e.g., mdi:home, lucide:star).
+- Figma Variables as design tokens with fallbacks in JSX; CLI supports var:Tokens or $Tokens.
+- Diffs: structural patches with validation and visual diffs highlighting pixel changes.
+- Exports and inspection: one-liners to export nodes/screenshots; readable page tree.
+- 100+ commands; designed for chaining in agent workflows.
+
+Caveats
+- stdin render only accepts pure JSX (no variables/logic).
+- Requires running the plugin/proxy with Figma desktop (Development mode).
+- MCP/JSON-RPC are supported, but the author notes extra overhead vs CLI/JSX.
+
+Details
+- Open source (MIT). Repo: dannote/figma-use (≈220★). Package: @dannote/figma-use on npm.
+
+Here is a summary of the discussion:
+
+**The "Code-First" vs. "Design-First" Workflow**
+The most active debate centers on how AI tools like Cursor and Claude are changing the design-to-engineering loop.
+*   One user shared their experience prototyping with Cursor, noting it saved them 10 hours a month and allowed them to build rapidly using natural language. However, this resulted in a monolithic "10k line index.html" file, creating a new problem: high technical debt and a difficult handoff process.
+*   The community debated whether "figma-use" could solve this by syncing that code *back* into Figma to create a structured design system.
+*   Some argued that syncing back is necessary to maintain a "source of truth," while others cautioned against letting LLMs write directly to component libraries, citing governance issues and "design drift." A proposed ideal stack involved `Figma Variables -> Token Studio -> Storybook -> MCP` to maintain order.
+
+**CLI vs. MCP (Model Context Protocol)**
+Users discussed the efficiency of the tool’s CLI approach compared to the emerging MCP standard.
+*   **Token Efficiency:** Several commenters, including the author, noted that CLIs are more "token-efficient" for agents than MCP. MCP relies on verbose JSON-RPC schemas, whereas CLIs use concise text commands, which saves on context window usage and cost.
+*   **Session Management:** Counter-arguments highlighted that MCP provides consistent session management, whereas CLI tools might struggle with state or security (e.g., handling secrets/passwords via environment variables vs. clear text).
+
+**Feature Requests & Capabilities**
+*   **CSS/Tailwind Integration:** Users asked if they could apply styles from an existing codebase (e.g., Tailwind classes) directly to Figma. The author (`dnnt`) explained that while the tool currently binds colors to Figma variables, parsing CSS/Tailwind configs automatically is a planned future feature.
+*   **Vector Manipulation:** In response to a challenge to "make a pelican riding a bicycle" (a litmus test for vector complexity), the author pushed an update enabling vector path manipulation (commands like `path set`, `move`, `scale`, `flip`) and provided example commands to modify path data.
+*   **Licensing:** There was a brief discussion on whether this bypasses Figma's licensing models. The author clarified the tool relies on the Plugin API, which interacts with the free component of Figma's ecosystem.
+
+**Other Comparisons**
+*   **PenPot:** Users asked about support for PenPot (an open-source Figma rival). The discussion briefly touched on it being "developer-friendly" but shifted back to Figma’s dominance.
+*   **ASCII Art:** One user shared a similar projects that generates ASCII wireframes to allow for "zero friction" UI critiques.
+
+### How scientists are using Claude to accelerate research and discovery
+
+#### [Submission URL](https://www.anthropic.com/news/accelerating-scientific-research) | 119 points | by [gmays](https://news.ycombinator.com/user?id=gmays) | [72 comments](https://news.ycombinator.com/item?id=46664540)
+
+Anthropic case study: Claude is moving from “chatbot” to lab coworker
+
+- What’s new: Anthropic highlights how researchers are using Claude for end-to-end scientific work, not just literature review or coding. Since launching “Claude for Life Sciences,” the Opus 4.5 model reportedly improved at figure interpretation, computational biology, and protein benchmarks. An AI for Science program offers free API credits to high-impact projects.
+
+- The big idea: Agentic AI that orchestrates many domain tools to plan experiments, clean/merge messy data, run analyses, and interpret results—compressing workflows that take months into hours while keeping experts in the loop.
+
+- Standout example — Stanford’s Biomni:
+  - A Claude-powered agent that routes plain‑English requests across hundreds of bio tools, packages, and databases spanning 25+ subfields.
+  - GWAS pipeline ran in ~20 minutes versus months, handling cleaning, confounders, missingness, hit interpretation, and pathway context.
+  - Validation case studies:
+    - Designed a molecular cloning experiment whose blinded evaluation matched a postdoc with 5+ years’ experience.
+    - Processed 450+ wearable data files (CGM, temp, activity) from 30 people in 35 minutes vs an estimated 3 weeks for a human expert.
+    - Analyzed 336k single cells from human embryonic tissue, confirming known regulatory relationships and surfacing new candidate transcription factors.
+  - Safety/quality: Guardrails detect when the agent drifts; labs can “teach” domain SOPs as skills. In rare-disease diagnosis work, encoding a clinician’s step‑by‑step method notably improved outcomes.
+
+- Why it matters: If reliable, agentic AI that natively navigates the fragmented bioinformatics ecosystem could remove major bottlenecks (data wrangling, tool selection, protocol design) and enable new research strategies.
+
+- Caveats and open questions:
+  - External benchmarking and reproducibility beyond handpicked case studies.
+  - Error modes, oversight burden, and how often guardrails trigger.
+  - Data governance/privacy for sensitive biomedical data.
+  - Cost, vendor lock‑in, and maintenance across fast‑evolving tools and databases.
+
+- Also noted: The post teases additional, more specialized systems (e.g., automating interpretation of large-scale CRISPR knockout screens), but details weren’t included in the excerpt.
+
+Bottom line: Labs are starting to package expert SOPs and a zoo of bio tools behind agentic interfaces powered by Claude. Early results suggest big productivity gains; the next hurdle is rigorous validation and trustworthy deployment at scale.
+
+Here is a summary of the discussion on Hacker News:
+
+**Reliability and Confidence Intervals**
+A significant portion of the discussion focused on whether LLMs can genuinely provide "confidence levels" for their scientific findings. Skeptics argued that LLMs are fundamentally text generators that often "hallucinate" numbers, citing anecdotes of models failing basic tasks like reading street numbers accurately. Conversely, technical commenters argued that models can be calibrated to treat token probabilities as confidence values, comparing the architecture to how CNNs handle classification confidence in computer vision.
+
+**Computational Prediction vs. "Wet Lab" Reality**
+Users debated the practical utility of Claude in the biological sciences. While conceding that LLMs excel at finding patterns in massive datasets (such as genomics), critics cautioned that biology is notoriously difficult to model ("really damn hard"). One commenter noted that computational predictions for things like molecular binding often fail when tested physically (the "wet lab" phase), leading to skepticism about claims of massive productivity leaps without rigorous experimental validation.
+
+**The Human Element**
+The conversation touched on the comparison between AI and human error. When critics pointed out AI "hallucinations," others countered that human scientists are also prone to errors, bias, and producing low-quality research ("slop"). The consensus leaned toward viewing LLMs not as truth machines, but as tools to narrow down infinite search spaces and generate hypotheses that humans must then verify.
+
+**Technical Nuances**
+Smaller side discussions explored the mechanics of how Vision Transformers process images compared to LLMs, and the potential barriers (such as reproducibility and copyright) preventing models like Gemini from ingesting entire scientific corpora for synthesis.
+
+### Tired of AI, people are committing to the analog lifestyle in 2026
+
+#### [Submission URL](https://www.cnn.com/2026/01/18/business/crafting-soars-ai-analog-wellness) | 83 points | by [andy99](https://news.ycombinator.com/user?id=andy99) | [50 comments](https://news.ycombinator.com/item?id=46671020)
+
+- What’s happening: CNN Business reports a growing movement to “go analog” as homes fill with AI assistants and algorithmic feeds. It’s less a detox, more a long-term shift toward tangible, offline tasks and entertainment to reclaim attention, creativity, and privacy.
+
+- By the numbers: Craft retailer Michaels says searches for “analog hobbies” are up 136% in six months; guided craft kit sales rose 86% in 2025 and are expected to grow another 30–40% this year; searches for yarn kits surged 1,200% in 2025. The chain is expanding shelf space for knitting.
+
+- Why people are doing it: Fatigue with repetitive, low-effort “AI slop” and doomscrolling; desire to “cut the internet off from the information about me,” as UC Riverside’s Avriel Epps puts it. Mental health and post-pandemic coping are strong drivers.
+
+- What it looks like: Landlines and “dumb phone” modes, tech-free craft and wine nights, screen-free Sundays, swapping Spotify for an old iPod, shooting film, even buying a physical alarm clock. It isn’t anti-tech—just selective tech.
+
+- The catch: Going fully offline is hard. Even analog advocates rely on the internet to run small businesses or communities. The article’s author tried 48 hours “like it’s the ’90s” and found parts of the exercise inherently performative in a digital-media world.
+
+Why it matters for HN: This signals demand for offline-first, privacy-preserving tools and simpler devices that decouple function from feeds. Expect more products and communities built around intentionality, low/no connectivity, and human-paced creation—plus a cultural counterweight to AI-generated content.
+
+**The “Analog Lifestyle” Backlash to AI**
+
+**What’s happening:** CNN Business reports a growing movement to “go analog” as homes fill with AI assistants and algorithmic feeds. It’s less a detox, more a long-term shift toward tangible, offline tasks and entertainment to reclaim attention, creativity, and privacy.
+
+**By the numbers:** Craft retailer Michaels says searches for “analog hobbies” are up 136% in six months; guided craft kit sales rose 86% in 2025 and are expected to grow another 30–40% this year; searches for yarn kits surged 1,200% in 2025. The chain is expanding shelf space for knitting.
+
+**Why people are doing it:** Fatigue with repetitive, low-effort “AI slop” and doomscrolling; desire to “cut the internet off from the information about me,” as UC Riverside’s Avriel Epps puts it. Mental health and post-pandemic coping are strong drivers.
+
+**What it looks like:** Landlines and “dumb phone” modes, tech-free craft and wine nights, screen-free Sundays, swapping Spotify for an old iPod, shooting film, even buying a physical alarm clock. It isn’t anti-tech—just selective tech.
+
+**The catch:** Going fully offline is hard. Even analog advocates rely on the internet to run small businesses or communities. The article’s author tried 48 hours “like it’s the ’90s” and found parts of the exercise inherently performative in a digital-media world.
+
+**Why it matters for HN:** This signals demand for offline-first, privacy-preserving tools and simpler devices that decouple function from feeds. Expect more products and communities built around intentionality, low/no connectivity, and human-paced creation—plus a cultural counterweight to AI-generated content.
+
+***
+
+**Summary of Discussion:**
+
+The discussion on Hacker News validates the article's premise while offering deeper critiques on the nature of "offline" trends and digital fatigue.
+
+*   **Digital Exhaustion & "Enshittification":** The overarching sentiment is that AI is merely the "final straw" in a long line of user-hostile tech trends, including subscription fatigue, data breaches, and intrusive ads. Commenters frequently cited Cory Doctorow’s concept of "enshittification" and used the term "slop" to describe the current state of internet content. Users see the analog shift as a rejection of an internet that has been hollowed out by algorithmic engagement farming.
+*   **The Superiority of Paper for Learning:** A significant thread debated the cognitive differences between physical books and screens (Kindles/iPads). Arguments favored paper for its "spatial awareness" and lack of context-switching distractions. Anecdotes highlighted a pushback against ed-tech in schools (citing examples from Denmark), with parents noting that restricted, screen-based learning often hampers retention and critical thinking compared to traditional note-taking.
+*   **The "Performative" Value of Analog Kits:** Skeptics analyzed the statistics regarding the surge in "craft kits" (specifically knitting). They argued this trend is actually driven by *online* algorithms (TikTok trends and influencers), creating a paradox where people buy mass-produced kits to perform an "offline lifestyle" for an online audience. Some argued true offline hobbies don't require pre-packaged, viral products.
+*   **Friction vs. Addiction:** The conversation touched on the design philosophy of modern tech, which aims to remove all friction. Commenters noted that "friction" (or inherent limits) is often necessary for self-control. The rise of "dumb phones" was compared to addiction recovery, with users debating whether willpower alone is enough to combat devices literally designed to hijack dopamine loops.
+*   **Semantics & Workarounds:** There was a side discussion regarding the definition of "analog" (technically continuous signals vs. colloquially "non-digital"). Additionally, complaints about the CNN website's UI led to users suggesting technical workarounds, such as using `lite.cnn.com` or archive links to read the text without "bloat."
+
+**Top Comment:** "Is AI the final straw? Social media exhaustion, ending accounts, wars, subscription stupidity, smart devices/appliances... Chatbots are the latest in a long line of digital rent-seeking/privacy-invading scams."
+
+---
+
 ## AI Submissions for Sat Jan 17 2026 {{ 'date': '2026-01-17T17:09:08.134Z' }}
 
 ### Counterfactual evaluation for recommendation systems
@@ -507,294 +751,3 @@ The discussion reflects deep cynicism regarding OpenAI's trajectory and the intr
 *   **Subscription Vulnerability:** While ads are currently limited to Free and Go tiers, users threatened to cancel their Plus or Pro subscriptions if ads encroach on those services. Replies were pessimistic, predicting that paying users will eventually be served ads regardless of their tier.
 *   **Alternatives:** Several users indicated they would switch to competitors like DeepSeek or Gemini if the ad experience becomes intrusive.
 *   **Direct Interaction:** One user shared an anecdote about informing ChatGPT directly that they would leave the platform if advertised to, highlighting the disconnect between user sentiment and the platform's automated responses.
-
----
-
-## AI Submissions for Thu Jan 15 2026 {{ 'date': '2026-01-15T17:14:45.567Z' }}
-
-### Tldraw pauses external contributions due to AI slop
-
-#### [Submission URL](https://github.com/tldraw/tldraw/issues/7695) | 161 points | by [pranav_rajs](https://news.ycombinator.com/user?id=pranav_rajs) | [87 comments](https://news.ycombinator.com/item?id=46641042)
-
-tldraw will auto-close external PRs amid AI-generated contribution surge
-
-- What’s new: tldraw announced a temporary policy to automatically close pull requests from external contributors. Issues, bug reports, and discussions remain welcome.
-- Why: Maintainers say a wave of AI-generated PRs has increased review burden without sufficient context or follow-up. Since an open PR implies a serious review commitment, they’ll “close first” and selectively re-open PRs they’re truly considering.
-- Bigger picture: The team frames this as a short-term safeguard until GitHub ships better tooling to manage contributions—calling 2026 “a weird year” for programmers and open source.
-- Signal: The post drew strong support from the community (many 👍 and ❤️), suggesting other projects may wrestle with similar policies soon.
-
-Based on the discussion, here is a summary of the community's reaction:
-
-**The End of Anonymous Collaboration**
-Commenters widely interpreted this move as a signal that the era of "global anonymous collaboration" is drawing to a close. Participants argued that the low-friction model of the open internet (where anyone can contribute) is breaking down because trust cannot exist without verification. The consensus is that open source is shifting from a system that trusts *platforms* (like GitHub) to one that must verify *individuals*.
-
-**The Asymmetry of Effort**
-A core technical theme in the thread is the economic imbalance AI introduces to coding:
-*   **The Burden:** Users noted that "reading code is the real work." AI reduces the cost of writing code to near zero, but the cost of *understanding* and reviewing it remains high.
-*   **The Consequence:** This creates a denial-of-service attack on maintainers. While some argued AI is useful for "grunt work" (like writing Bazel build rules), others countered that without deep understanding, AI-generated PRs act as "slop" that degrades architectural quality and overwhelms human attention spans.
-
-**A Return to "Web of Trust" Models**
-The discussion leaned heavily into reviving older trust models to combat AI spam:
-*   **The Linux Model:** Several users pointed to the Linux Kernel’s hierarchical trust system (Linus trusts lieutenants, who trust subsystem maintainers) as the inevitable future for large projects.
-*   **WOT (Web of Trust):** There was enthusiasm for bringing back PGP-style "Web of Trust" networks, where reputation is transitive and bad actors face high costs for re-entry (e.g., verifying real-world identity or paying for accounts) to prevent ban evasion.
-
-**The "Human" Premium**
-Users discussed the increasing value of verifying human processes. One commenter shared their experience working with artists, noting that seeing "drafts" and "iterative sketches" is becoming the only way to distinguish human work from AI generation. The thread suggests that professional relationships will increasingly rely on long-term, verifiable interactions rather than drive-by contributions.
-
-### Handy – Free open source speech-to-text app
-
-#### [Submission URL](https://github.com/cjpais/Handy) | 227 points | by [tin7in](https://news.ycombinator.com/user?id=tin7in) | [104 comments](https://news.ycombinator.com/item?id=46628397)
-
-Handy: an offline, open-source, cross‑platform speech‑to‑text app that types into any field
-
-What it is
-- A free, MIT‑licensed desktop app (Tauri: Rust + React/TS) that transcribes speech entirely on-device. Press a shortcut, talk, release, and Handy pastes the text into whatever app is focused. Positioned to be “the most forkable” STT tool rather than the most feature‑packed.
-
-Why it matters
-- Privacy by default: no audio leaves your machine.
-- Zero setup cloud keys or services.
-- Extensible and hackable: built from familiar OSS components and designed to be forked.
-
-How it works
-- Push‑to‑talk or toggle recording via global shortcut.
-- Local VAD (Silero) filters silence.
-- Choose models:
-  - Whisper (Small/Medium/Turbo/Large) with GPU acceleration when available via whisper‑rs
-  - Parakeet V3 for fast, CPU‑optimized transcription with automatic language detection
-- Pastes the result directly into the active app (Windows, macOS, Linux).
-
-Tech and ecosystem
-- Core libs: whisper‑rs, transcription‑rs (Parakeet), cpal (audio I/O), vad‑rs, rdev (shortcuts), rubato (resampling).
-- Debug mode: Cmd+Shift+D (macOS) / Ctrl+Shift+D (Win/Linux).
-- MIT license; 11.7k GitHub stars, 778 forks.
-
-Gotchas and Linux notes
-- Whisper can crash on some Windows/Linux configs (help wanted with logs).
-- Wayland support is limited; install wtype (preferred) or dotool for reliable text input. On X11, use xdotool.
-- Overlay is disabled by default on Linux to avoid focus issues. If you enable it, pasting may misroute.
-- If you hit rendering issues on Linux, try WEBKIT_DISABLE_DMABUF_RENDERER=1.
-
-Getting started
-- Download the latest release and grant mic/accessibility permissions, set your shortcut, pick a model, and talk.
-
-Links
-- Repo: https://github.com/cjpais/Handy
-- Site: https://handy.computer/
-
-Here is a summary of the discussion:
-
-**Speed, Models, and Alternatives**
-Users were highly enthusiastic about Handy as a free, local alternative to paid subscription tools like **Superwhisper** and **VoiceInk**. The integration of the **Parakeet V3** model was a standout topic; users described it as "stunningly fast" and "near-instant" compared to Whisper, which some noted struggles with programming jargon. While some preferred the real-time text streaming of **Fluid Voice** or the polish of **Hex**, Handy was praised for being lightweight and strictly local.
-
-**Coding Agents and Context**
-A significant portion of the conversation revolved around using Speech-to-Text (STT) to drive **LLMs and coding agents**. Users with physical constraints (e.g., dystonia) and power users alike expressed a desire for STT tools that understand context—such as the active IDE or screen content—rather than just verbatim transcription. In response, the creator (`spjc`) noted that Handy was built with this in mind and revealed a **hidden debug menu** (`Cmd+Shift+D`) that already allows for LLM-based post-processing.
-
-**Technical Feedback & Wishlist**
-*   **Dictionaries:** Users requested "custom words" features to handle company names and technical terms. It was noted that basic text replacement is being added, and LLM post-processing can also handle this.
-*   **Bugs:** Linux users reported specific issues with hotkeys (Ctrl+Space) inserting control characters on X11/xdotool setups.
-*   **Requests:** There was demand for an iOS companion app and features for transcribing full meetings rather than just short bursts of text.
-
-### Raspberry Pi's New AI Hat Adds 8GB of RAM for Local LLMs
-
-#### [Submission URL](https://www.jeffgeerling.com/blog/2026/raspberry-pi-ai-hat-2/) | 246 points | by [ingve](https://news.ycombinator.com/user?id=ingve) | [205 comments](https://news.ycombinator.com/item?id=46629682)
-
-Raspberry Pi’s $130 AI HAT+ 2 lands with a Hailo-10H NPU and its own 8 GB LPDDR4X, promising standalone LLM inference that won’t steal your Pi’s CPU cycles or system RAM. On paper: 40 INT8 TOPS at up to 3W, and a step up from the original HAT’s Hailo-8 (26 INT4 TOPS).
-
-In practice, the reviewer found:
-- For LLMs, the Pi 5’s CPU often beats the Hailo-10H. The NPU’s 3W power cap makes it hard to keep up with the Pi SoC’s ~10W ceiling. The only close contest was Qwen2.5 Coder 1.5B.
-- The HAT’s 8 GB cap is a real limiter for LLMs. Many quantized “useful” models want 10–12 GB plus context. A 16 GB Pi 5 can now even run a compressed Qwen3 30B variant via llama.cpp—slow, but functional—underscoring that RAM, not just TOPS, is king for local LLMs.
-- Vision is where it shines: object detection ran ~10x faster than on the Pi CPU and worked smoothly with Raspberry Pi’s models. But you can already get most of that from the cheaper original AI HAT ($110) or the $70 AI Camera.
-- The headline “mixed mode” (vision + LLM/TTS simultaneously) wasn’t ready: attempts led to segfaults and “device not ready,” and Hailo’s RPi5 examples hadn’t been updated for the new board.
-
-Why it matters:
-- The add-on’s local RAM is a smart architectural move—offloading memory pressure from the Pi—yet 8 GB isn’t enough to make it a compelling LLM box versus a 16 GB Pi 5.
-- For makers needing efficient, low-power vision on a Pi, Hailo remains strong. For hobbyist LLMs, you’ll likely do better on the Pi CPU with more RAM, or wait for better software and mixed-mode support.
-
-Bottom line:
-- Great for computer vision; overpromised for LLMs (today). The AI HAT+ 2 feels like a dev platform for those planning to embed Hailo-10H elsewhere more than a must-have for typical Pi owners. Software maturity will determine if the “mixed” vision + language pitch ever becomes a killer feature.
-
-**Raspberry Pi’s $130 AI HAT+ 2 lands with a Hailo-10H NPU**
-The $130 add-on features a Hailo-10H NPU and 8 GB of dedicated LPDDR4X RAM, designed to run local AI inference without taxing the Raspberry Pi 5’s system resources. While the hardware excels at computer vision—performing object detection roughly 10x faster than the Pi’s CPU—reviewers found it largely underwhelming for LLMs. The 8 GB RAM cap restricts users to smaller, less capable models, and the NPU's 3W power limit allows the Pi 5's own CPU to outperform it in many text-generation benchmarks. Additionally, the promised "mixed mode" (simultaneous vision and language processing) is currently hindered by immature software.
-
-**Discussion Summary**
-The discussion reveals a growing skepticism regarding the Raspberry Pi's current value proposition, sparked by the AI HAT's limitations. Commenters argue that 8 GB of RAM is insufficient for serious local LLM work, reducing the device to a niche curiosity rather than a viable alternative to MacBooks or dedicated GPUs.
-
-The conversation shifts to a broader debate on price-to-performance ratios. Many users contend that the cost of a Raspberry Pi 5 combined with necessary accessories (power supply, case, AI HAT) now rivals that of used enterprise laptops or Mini PCs (like NUCs). Critics point out that used laptops offer superior x86 performance, built-in screens, and UPS capabilities (batteries) for the same price. However, defenders maintain that the Pi remains superior for specific embedded applications requiring GPIO access, compact form factors, and ARM64 testing. Ultimately, users feel the Raspberry Pi is being squeezed from both ends: ESP32s now dominate low-power tasks, while cheap x86 hardware is taking over the home server and heavy-lifting segments.
-
-### To those who fired or didn't hire tech writers because of AI
-
-#### [Submission URL](https://passo.uno/letter-those-who-fired-tech-writers-ai/) | 337 points | by [theletterf](https://news.ycombinator.com/user?id=theletterf) | [257 comments](https://news.ycombinator.com/item?id=46629474)
-
-TL;DR: Don’t replace technical writers with AI—augment them. Docs aren’t just output; they’re the product’s truth, created through reporting, prioritization, empathy, and judgment that LLMs can’t replicate.
-
-What the post argues:
-- AI docs break in subtle, costly ways: they lack vision, miss edge cases, and can’t feel user pain. Empathy and context are non-negotiable for great help content.
-- Liability sticks to you, not the model. Wrong AI-written instructions can cause real harm—there’s no deposing an LLM.
-- Your AI still has to RTFM. RAG, “skills,” and prompt scaffolding all depend on high-quality, human-made context. Firing writers degraded the very supply chain your AI relies on.
-
-The alternative:
-- Keep (or rehire) tech writers and arm them with AI. With clear AI policies and time to experiment, writers can orchestrate, edit, and publish faster while guarding quality.
-- Productivity gains are real when AI augments, not replaces—an approach even AWS CEO Matt Garman has endorsed.
-- Follow practitioners pioneering this hybrid model; invest in strategy with writers at the table.
-
-Why it matters:
-- Shipping without strong docs is shipping a product that can’t speak—or worse, that lies.
-- Devs shouldn’t carry docs theater; users, support costs, and adoption suffer.
-- Bottom line: AI generates infinite noise. Technical writers create the signal. Reconsider the cuts and build with them.
-
-**The Value of Empathy vs. The Cost of Output**
-The discussion debates the economic and qualitative impact of replacing technical writers with AI, centering on whether "cheaper" production inevitably leads to "enshittification."
-
-*   **Docs as Empathy:** User `ncb` argues that technical writing is fundamentally about understanding user pain, confusion, and context—an "empathy engine" that AI cannot replicate. They contend that while AI can generate text, it lacks the "listening" component required to build trust. Good documentation is framed as a cost-saving mechanism for customer support (citing Berlin public transit as an example); replacing it with low-quality AI output simply shifts the cost to support queues.
-*   **The "Landfill" Economy:** `smv` and others draw parallels to fast fashion and manufacturing, arguing that whenever production costs hit zero, the market drowns in low-quality "trash" (or "content landfill") while quality becomes a luxury. They caution that AI risks creating an ecosystem where "wealthy people afford the cheapest crap" because high-quality alternatives are drowned out by noise.
-*   **Democratization and Access:** Countering the gloom, `thptp` and `Telemakhos` suggest that while average quality might drop (comparing the shift to the invention of the printing press), AI lowers barriers for hobbyists and small teams. This allows open-source projects or solo developers to produce functionally acceptable documentation and compete with larger entities, viewing the increased volume as a necessary friction for progress rather than just waste.
-
-### Show HN: The Hessian of tall-skinny networks is easy to invert
-
-#### [Submission URL](https://github.com/a-rahimi/hessian) | 28 points | by [rahimiali](https://news.ycombinator.com/user?id=rahimiali) | [23 comments](https://news.ycombinator.com/item?id=46638894)
-
-The Hessian of tall-skinny networks is easy to invert (GitHub: a-rahimi/hessian)
-- What it is: A method and reference implementation to compute inverse-Hessian vector products for deep nets—i.e., solve Hx = v to get x = H^{-1}v. Whereas Pearlmutter’s trick efficiently computes Hv, this tackles the harder H^{-1}v directly.
-- How it works: Augments the system with auxiliary variables, pivots it into a block tri-diagonal form, factors it, then solves via passes that resemble propagation on an augmented network. This avoids the naive cubic-in-parameters cost and makes the operation tractable for “tall-skinny” architectures.
-- Why it matters: Enables practical second-order information for deep learning—useful as a preconditioner to speed up SGD and for tasks like curvature-aware optimization.
-- What’s in the repo: 
-  - demo_hessian.ipynb (demo)
-  - hessian_inverse_product (core implementation)
-  - A small library for hierarchical block-partitioned matrices (block_partitioned_matrices.py) with a tutorial
-  - Paper describing the full approach
-- Snapshot: Python/Jupyter-focused repo; ~13 stars, 1 fork, 5 contributors.
-
-The discussion revolves around the classification of the algorithm, comparisons with existing optimization methods, and definitions of limit-theory mathematical concepts used in deep learning.
-
-**Methodology and Comparisons**
-*   **Stochastic Newton:** `MontyCarloHall` and `hodgehog11` classified the author's approach as a "Stochastic Newton method" (applying Newton's method on batches). The author (`rhml`) accepted this nomenclature, noting they originally framed it simply as seeking preconditioners for deep nets.
-*   **Comparison to CG/BFGS:** Users discussed how this compares to inverting the Hessian using Conjugate Gradient (CG) or BFGS methods. While `throwaway198846` argued BFGS often outperforms CG, `hodgehog11` noted that neural network training is highly context-dependent; optimizers like SGD impose implicit regularization, so second-order methods must be evaluated on how they scale and utilize resources compared to standard techniques.
-*   **Physics Solvers:** Participants noted similar "Jacobian-free Newton-Krylov" combinations are successfully used in solving physics equations (e.g., GMRES).
-
-**Matrix Structure & definitions**
-*   **Semiseparable Matrices:** `jffjffbr` suggested that the inverse of block bi-diagonal matrices typically results in "semiseparable" structures. The author (`rhml`) clarified their specific use case involves a block diagonal plus a "tall skinny" structure ($A + C^TC$) requiring dummy variables, but acknowledged the terminology might be relevant for future theoretical work.
-*   **Term Definitions:** `Lerc`, a mathematician unfamiliar with ML-specific usage, asked for intuition on the terminology. `Nevermark` provided a breakdown:
-    *   **Gradient:** The 1st derivative (direction to move to minimize error).
-    *   **Hessian:** The 2nd derivative (curvature/slope of the slope). This allows for larger steps but is computationally expensive ($N \times N$).
-    *   **Jacobian:** Derivatives of output vectors with respect to input parameters, usually resulting in massive matrices for deep learning models. `mxwsn` clarified that the Gradient is essentially a Jacobian for a function mapping to a single dimension (loss).
-
-**General Sentiment**
-*   The community reacted positively (`hlg`, `pttrs`) to the contribution, specifically praising the achievement of making Hessian calculations linear in depth, which constitutes a solid step toward practical second-order optimization.
-
-### Show HN: Control Claude permissions using a cloud-based decision table UI
-
-#### [Submission URL](https://github.com/rulebricks/claude-code-guardrails) | 13 points | by [sidgarimella](https://news.ycombinator.com/user?id=sidgarimella) | [10 comments](https://news.ycombinator.com/item?id=46636786)
-
-Rulebricks launches real-time guardrails for Claude Code tool calls
-
-What it is
-- A lightweight hook that intercepts Claude Code’s tool calls (shell commands, file ops, MCP server calls) and routes them to Rulebricks for an allow/deny/ask decision—before execution.
-- Aimed at teams that need instant policy changes, conditional logic, and an audit trail—beyond what ~/.claude/settings.json offers.
-
-Why it matters
-- Built-in Claude settings require JSON edits, restarts, and offer limited pattern matching with no centralized audit.
-- Rulebricks adds:
-  - Instant policy updates across a team (no restarts, no git pulls)
-  - Detailed logs of blocked/approved actions for compliance
-  - Conditional rules (e.g., allow “rm -rf node_modules”, deny elsewhere)
-  - Non-engineer-friendly rule editing via a web UI
-
-How it works
-- Claude Code → PreToolUse hook → Rulebricks API → decision (allow/deny/ask)
-- Templates included for:
-  - Bash command guardrails
-  - File read/write/edit policies
-  - MCP tool governance (mcp__*)
-- Verbose mode logs decisions to stderr; histories visible in the Rulebricks Logs tab.
-
-Setup (about 5 minutes)
-- Create an account on rulebricks.com, fork a template, customize, publish, copy API key.
-- git clone https://github.com/rulebricks/claude-code-guardrails && ./install.sh
-- Add env vars to ~/.claude/settings.json (RULEBRICKS_API_KEY, optional RULEBRICKS_VERBOSE), then restart Claude Code.
-- Uninstall is a single command to remove the hook and clean settings.
-
-Privacy/hosting
-- You can redact sensitive data before it’s sent; private/self-hosted options are supported if you can’t use the cloud.
-
-Project stats
-- MIT-licensed; Python/Shell
-- Stars: 26, Forks: 1 (at posting)
-
-Links
-- Repo: https://github.com/rulebricks/claude-code-guardrails
-- Service: https://rulebricks.com
-
-Who should care
-- Teams running Claude Code in regulated or security-conscious environments that need centralized, auditable, instantly updatable guardrails.
-
-**Rulebricks launches real-time guardrails for Claude Code tool calls**
-A lightweight hook that intercepts and governs Claude Code’s shell commands and file operations via a centralized Rulebricks dashboard.
-
-Discussion Summary:
-The discussion sparked immediate scrutiny regarding trust and presentation; users criticized the project's landing page for employing "dark patterns" in cookie notices and utilizing numerous tracking scripts, arguing such practices erode trust in a security-focused tool. The creator acknowledged this feedback and promised revisions. Others found the tool promising for corporate compliance, noting that native Claude permission checks are often frustrating enough that teams bypass them entirely (via `dangerously-skip-permissions`). Technical feedback included observations that default templates missed critical commands like `shutdown` and `passwd`; the author clarified that decision tables can be extended to cover these cases.
-
-### 2026: This is AGI
-
-#### [Submission URL](https://sequoiacap.com/article/2026-this-is-agi/) | 13 points | by [tfincannon](https://news.ycombinator.com/user?id=tfincannon) | [15 comments](https://news.ycombinator.com/item?id=46640796)
-
-2026: This is AGI — investors argue long‑horizon agents have arrived
-Authors: Pat Grady and Sonya Huang (Sequoia) • Published Jan 14, 2026
-
-The take
-- Thesis: AGI is here in a practical sense. Define it functionally as “the ability to figure things out,” not by a strict technical rubric.
-- Why now: A three‑step arc—pretraining for knowledge (ChatGPT, 2022) → inference‑time reasoning (OpenAI o1, 2024) → long‑horizon, iterative agents (e.g., Claude Code, late 2025/early 2026).
-
-What “figuring things out” looks like
-- Example: An autonomous agent sources a DevRel hire in 31 minutes by iterating across LinkedIn, conference talks on YouTube, and Twitter activity; it forms hypotheses, filters for real influence, spots disengagement signals, and drafts a tailored outreach—no explicit step‑by‑step prompt.
-
-How we got here
-- Two complementary paths:
-  - Reinforcement learning: teaches models to stay on task and use tools reliably over longer spans (research‑lab domain).
-  - Agent harnesses: scaffolding around model limits (memory handoffs, compaction, planning loops) to sustain multi‑hour workflows (application‑layer domain).
-
-Why it matters
-- Coding agents are the beachhead; similar long‑horizon autonomy will spill into recruiting, ops, sales, customer support, and more—work that involves ambiguity, hypothesis testing, and iteration.
-- The claim reframes AGI from a philosophical milestone to a business capability: autonomous software that gets complex, messy tasks done.
-
-Caveats
-- Agents still fail—hallucinations, context loss, wrong turns—but the authors argue the failure modes are increasingly fixable and the trajectory is clear.
-
-Bottom line
-- 2026 is the “year of the long‑horizon agent.” If AGI means software that can independently figure things out over hours, the authors say it’s already here.
-
-Here is the summary of the Hacker News discussion regarding Sequoia's "2026 is AGI" thesis:
-
-**The Hyped Investor Agenda**
-The dominant reaction to the article was deep cynicism regarding Sequoia’s unexpected pivot to defining AGI. Multiple commenters viewed the piece not as technical analysis, but as "transparently self-serving" marketing designed to pump portfolio valuations and sustain the hype cycle before eventual IPOs. Users attacked Sequoia's credibility, referencing past due diligence failures (referencing Valeant or FTX) as reasons to doubt their "moral authority" or technical foresight.
-
-**Redefining Terms Effect**
-Readers were particularly frustrated by the authors' attempt to redefine AGI as merely "the ability to figure things out" rather than adhering to technical rigor. Several users claimed they "stopped reading" the moment the authors dismissed technical definitions, arguing that VCs are "hijacking the narrative" by creating gray areas to justify funding rounds. The sentiment was that the article showcased "technical incompetence" masquerading as visionary insight.
-
-**Consequences: Layoffs and "Slop"**
-Beyond the semantics, the discussion touched on the practical output of these "long-horizon agents." While the authors predict business autonomy, commenters fear the reality will be massive increases in generated spam ("10x Slop") and a focus on labor reduction. Some users argued the true definition of this "corporate AGI" translates simply to workforce reduction and layoffs by 2030, rather than a philosophical breakthrough in intelligence.
-
-### Simpler than Photoshop but for free AI Landscaping
-
-#### [Submission URL](https://hadaa.pro/) | 9 points | by [Fh_](https://news.ycombinator.com/user?id=Fh_) | [8 comments](https://news.ycombinator.com/item?id=46630372)
-
-Hadaa is pitching itself as “Midjourney for your yard”: upload a photo of your outdoor space, brush the areas you want changed, pick a style (Mediterranean, modern, cottage, Zen, etc.), and its AI generates photorealistic garden makeovers. It then suggests climate‑appropriate plants based on your location and produces a shopping list plus planting guide. You can refine results with plain‑text edits (e.g., “add a Zen garden,” “change the deck to pavers”), and the tool claims to understand depth, lighting, and perspective for realistic renders.
-
-Highlights
-- Workflow: upload photo → mask areas → choose a style → AI render → guided shopping/planting → iterate with text prompts.
-- Free plan: 60 credits, no credit card required; afterward, pay‑as‑you‑go ($10 for 200 credits).
-- Extras: live preview, photorealistic examples, and plant recommendations tuned to your climate zone.
-- Pitch: “turn inspiration into buildable plans” with a complete materials list; claims 10,000+ users.
-
-What’s not clear from the page: export formats, cost estimates, data/privacy policies, and how well designs account for real‑world constraints (grading/drainage, local codes).
-
-**Hadaa: Midjourney for your Yard**
-
-The tool’s creator (**Fh_**) joined the thread to discuss the dashboard mechanics, highlighting features like an "Auto Fix" tool that automatically detects potential design improvements in a given space.
-
-The conversation focused on utility compared to general-purpose generative tools:
-*   **Existing Alternatives:** User **tsmn** shared their current workflow using Photoshop Generative Fill to remove fallen trees or visualize gazebos but acknowledged a specialized tool could better serve professional landscapers. **srd** also questioned if existing LLMs with image editing capabilities were sufficient for this use case.
-*   **UX & Control:** User **gvmr** specifically requested a closer look at the "brushing" interface, noting that controlling highlighter/masking tools is often difficult in other apps. **Fh_** responded with screenshots and descriptions of the tool's three main editing modes:
-    1.  **Presets:** Supports manual masking and style application.
-    2.  **Smart Fix:** Allows for prompt-based edits (text-to-image interpretation).
-    3.  **Auto Fix:** Automatically detects yard constraints and applies solutions with one click.
-*   **Future Scope:** In response to **R_D_Olivaw**, who asked about general home renovation and construction features, the creator indicated that while the focus is currently on outdoor spaces and planting guides, extending into broader renovations is a possibility.
