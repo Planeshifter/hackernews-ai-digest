@@ -10,6 +10,357 @@ export async function getStaticProps() {
 
 ---
 
+## AI Submissions for Sat Feb 21 2026 {{ 'date': '2026-02-21T17:13:15.051Z' }}
+
+### How Taalas “prints” LLM onto a chip?
+
+#### [Submission URL](https://www.anuragk.com/blog/posts/Taalas.html) | 306 points | by [beAroundHere](https://news.ycombinator.com/user?id=beAroundHere) | [167 comments](https://news.ycombinator.com/item?id=47103661)
+
+Taalas “prints” Llama 3.1 8B onto an ASIC, claims 17,000 tokens/sec and 10x gains in cost and power
+
+TL;DR: A 2.5-year-old startup, Taalas, built a fixed-function ASIC that hardwires Llama 3.1 8B’s weights into silicon, reportedly hitting ~17k tokens/sec with 3/6-bit quantization, while being ~10x cheaper to run and ~10x more energy-efficient than GPU inference.
+
+How it works
+- No HBM/DRAM loop: Instead of shuttling weights over a memory bus each step, the model’s 32 layers are physically laid out on-chip. Inputs stream through layer-by-layer logic with pipeline registers; activations don’t round-trip to external memory.
+- Weights in silicon: The weights are “engraved” as transistors; Taalas hints at a “magic multiplier” that can store 4-bit data and perform its multiply in what they describe as a single-transistor element, enabling dense, low-power compute-in-memory–style MACs.
+- Minimal SRAM: On-chip SRAM is used for KV cache and to host LoRA adapters; there’s no external DRAM/HBM.
+- One model per chip: It’s a fixed-function device (think cartridge/CD-ROM). To target a new model, they customize only the top metal layers over a generic base fabric, which they say let them map Llama 3.1 8B in ~2 months.
+
+Why it matters
+- Smashes the memory wall: By eliminating weight fetches over a memory bus, the design attacks the core bandwidth/latency bottleneck in today’s GPU LLM inference.
+- Throughput and efficiency: If the 17k tok/s and 10x cost/power claims hold, inference economics—especially at the edge or at massive scale—could shift sharply away from general-purpose GPUs for stable, high-volume models.
+
+Caveats and open questions
+- Flexibility: It’s essentially one-model-per-chip; updating architectures or sizes requires a respin.
+- Quality trade-offs: Real-world accuracy with 3/6-bit quantization isn’t detailed; effects across tasks and long contexts remain to be seen.
+- Practical limits: KV cache size, max context length, batching, sampling features, and how the “single-transistor multiplier” works (analog vs. digital, precision, variability) are not fully explained.
+- Manufacturing/yield: Customizing top metal layers is faster than a full new chip, but still slower and riskier than software updates.
+
+Here is a summary of the discussion:
+
+**Feasibility and quantization trade-offs**
+Commenters crunched the numbers on the claim of packing ~8B coefficients into 53B transistors, concluding the math theoretically holds up if the device relies on aggressive quantization (likely 3-bit or "double FP4"). While some users were excited by the prospect of "model-to-VHDL" synthesis, others worried that hardwiring such strong quantization into silicon would permanently degrade model quality, making the chip useless for tasks requiring higher precision.
+
+**The inevitable hardware cycle**
+Many users viewed this as a predictable evolution of computing, drawing parallels to the transition from CPU to GPU to ASIC in Bitcoin mining, or the move from software rendering to hardware acceleration in 3D graphics. While some suggested FPGAs as a middle ground, others argued FPGAs lack the efficiency/scaling needed to compete with GPUs or ASICs in this specific domain.
+
+**The "Inflexibility" bottleneck**
+The primary skepticism revolved on the risk of obsolescence. With LLM architectures and weights changing almost daily, users noted that a fixed-function chip could become e-waste before it hits the market. Big tech companies likely haven't pursued this yet because they are constrained by fab capacity and cannot afford to bet on a model that might be outdated in six months.
+
+**Killer use-case: Edge and Latency**
+Despite the flexibility concerns, users identified a strong niche for this tech: local inference.
+*   **Latency:** Eliminating the 50-200ms network overhead of the cloud allows for sub-100ms response times, enabling real-time voice and video agents that current GPUs can't serve efficiently over the web.
+*   **Stable Appliances:** It was suggested these chips are perfect for "frozen" models running on drones, phones, or appliances (e.g., a smart fridge) where the model doesn't need to be State-of-the-Art, just functional and offline.
+
+### Show HN: Llama 3.1 70B on a single RTX 3090 via NVMe-to-GPU bypassing the CPU
+
+#### [Submission URL](https://github.com/xaskasdf/ntransformer) | 321 points | by [xaskasdf](https://news.ycombinator.com/user?id=xaskasdf) | [82 comments](https://news.ycombinator.com/item?id=47104667)
+
+NTransformer: runs Llama 70B on a single RTX 3090 by streaming layers over PCIe
+
+What’s new
+- A C++/CUDA LLM inference engine that keeps only a subset of layers in VRAM and streams the rest from RAM/NVMe, enabling 70B models on a 24GB GPU. No PyTorch or cuBLAS; GGUF models with multiple quantizations supported.
+
+How it works
+- 3-tier adaptive caching: VRAM-resident layers (no I/O), pinned RAM (H2D only), and NVMe/mmap fallback, auto-sized from your hardware.
+- NVMe direct I/O: a userspace driver reads weights straight into GPU-accessible pinned memory, overlapping disk, PCIe DMA, and compute (SLEP streaming).
+- Layer skipping: cosine-similarity–based calibration can skip ~20 of 80 layers per token at 0.98 threshold, with minimal quality loss.
+- Self-speculative decoding: uses resident layers as a draft model; no second model required.
+
+Performance highlights (author’s tests, RTX 3090 + 48GB RAM)
+- Llama 3.1 8B Q8_0 (resident): ~48.9 tokens/s using ~10GB VRAM.
+- Llama 3.1 70B:
+  - Q6_K tiered: ~0.2 tok/s at ~23.1GB VRAM (26 layers in VRAM, rest in RAM).
+  - Q4_K_M tiered: ~0.3 tok/s at ~22.9GB VRAM (36 layers in VRAM).
+  - Q4_K_M + layer skip: ~0.5 tok/s (fastest reported).
+- Claims up to 83x speedup over naive mmap streaming; bottleneck is PCIe H2D bandwidth (Gen3 x8 ~6.5 GB/s).
+
+Caveats and setup
+- Linux + CUDA 13.1, gcc-14, CC 8.0+ GPU (3090 tested). Optional NVMe on a separate PCIe slot for best results.
+- For NVMe-direct mode, the setup script performs invasive system changes: disables IOMMU, patches NVIDIA DKMS for recent kernels, tweaks CUDA headers, and binds NVMe via VFIO with “unsafe noiommu” mode. Not recommended on multi-tenant/production systems; missteps can break your GPU driver.
+
+Why it matters
+- A clever, low-level approach that makes 70B models usable on consumer GPUs by trading speed for capacity and I/O orchestration. Great for experimentation and edge cases where VRAM is the limiting factor—just be mindful of the heavy-duty system tweaks and modest 70B throughput.
+
+Based on the discussion, here is a summary of the community's reaction:
+
+**Performance vs. Practicality**
+Discussion focused heavily on whether 0.2–0.5 tokens/second is usable.
+*   **Chat vs. Batch:** Most users agreed this is too slow for interactive chat, but several (like `umairnadeem123`) noted it is viable for automated background tasks (batch processing) where latency doesn't matter, offering a private, fixed-cost alternative to APIs.
+*   **Better Alternatives:** Users like `flrdtn` pointed out that standard CPU offloading (system RAM + GPU) is currently faster than this method, citing ~1.5 t/s on a Ryzen 7950X + 3090.
+*   **Small Models:** Some argued that for interactive use, a high-quality 8B model entirely in VRAM offers a better experience than a crippled 70B model.
+
+**Hardware Bottlenecks & Apple Comparisons**
+*   **The Apple Factor:** `MarcLore` and others drew comparisons to Apple’s M-series chips (Unified Memory), which handle 70B models natively with much higher throughput, though at a higher hardware entry price.
+*   **Author’s Constraints:** The author (`xsksdf`) clarified that their benchmarks are severely bottlenecked by their specific hardware setup—a B450 motherboard limiting the GPU to **PCIe 3.0 x8** speeds. A modern PCIe 4.0/5.0 x16 setup would likely yield significantly higher throughput.
+
+**The "Why" (PlayStation 2 Origins)**
+In a surprising reveal, the author explained that this project stems from their background in **retro-gaming development**. They previously built a transformer engine for the **PlayStation 2** (`PS2-LLM`), where the console's tiny 32MB RAM and 4MB VRAM forced them to master DMA (Direct Memory Access) and layer streaming. They simply applied the same "extreme constraint" logic to the RTX 3090.
+
+**Cost & Power**
+There was a debate regarding the economics of running this locally versus using cheap APIs.
+*   **Energy:** While `esquire_900` calculated it might be cheaper than APIs over time, `lvntysvn` reminded the thread to factor in the 300W+ power draw of a 3090 running for hours to generate a single report.
+*   **Utilization:** The author noted that due to the I/O bottleneck, the GPU isn't actually hitting full TDP (power limit), so electricity costs might be lower than expected.
+
+### zclaw: personal AI assistant in under 888 KB, running on an ESP32
+
+#### [Submission URL](https://github.com/tnm/zclaw) | 230 points | by [tosh](https://news.ycombinator.com/user?id=tosh) | [125 comments](https://news.ycombinator.com/item?id=47100232)
+
+zclaw: an 888 KiB AI assistant firmware for ESP32
+
+- What it is: A tiny C-based “agent” for ESP32 boards that turns a microcontroller into a natural-language assistant. It handles schedules (cron-style), GPIO control with guardrails, persistent memory, and user-defined tools. Chat via Telegram or a hosted web relay. Persona options include neutral, friendly, technical, and witty.
+
+- How it works: Runs fully on-device as an orchestrator with Wi‑Fi, TLS, and certs, but uses cloud LLMs (Anthropic, OpenAI, OpenRouter) for reasoning. Includes provisioning, rate limits (default 100/hour, 1000/day), and optional encrypted credentials in flash.
+
+- Footprint bragging rights: All-in firmware cap of 888 KiB, including ESP-IDF/FreeRTOS, networking, TLS/crypto, and cert bundle. Current build: ~869,952 bytes. App logic alone is ~35 KiB (~4%); the bulk is networking/TLS/runtime.
+
+- Hardware and dev: Tested on ESP32-C3/S3/C6 (recommended: Seeed XIAO ESP32-C3). QEMU profile available. One-line bootstrap, secure flash, provisioning, relay/serial benchmarking, and a web relay with mobile chat UI.
+
+- Why it’s interesting: It shows how much “agent” capability you can pack into a sub‑1 MB firmware on a $5 microcontroller—no local LLM, but solid tool composition, scheduling, and state, all in C.
+
+- License and repo: MIT. GitHub: https://github.com/tnm/zclaw — Docs: https://zclaw.dev
+
+Notes:
+- Cloud LLM required (not on-device inference).
+- Guardrails for GPIO (including bulk reads).
+- Scripts cover flashing, provisioning, Telegram backlog clearing, emulation, and latency benchmarking.
+
+Here is the summary of the discussion on Hacker News:
+
+**zclaw: an 888 KiB AI assistant firmware for ESP32**
+
+The comment section explores the utility of running AI agents on bare-metal microcontrollers versus full operating systems, alongside skepticism regarding the "agent" hype cycle.
+
+*   **ESP32 vs. Linux for Agents:** `umairnadeem123` argues that the primary appeal of `zclaw` is the "zero-maintenance" aspect of the ESP32; unlike a Linux box which requires updates and suffers from OOM kills, an ESP32 provides a simpler, predictable failure mode for always-on orchestration. However, `hsbvhbzb` counters that this approach introduces new points of failure—specifically reliance on cloud APIs, Wi-Fi stability, and the internet—suggesting that swapping an OS for a microcontroller doesn't inherently solve reliability problems.
+*   **Tamagotchis and Use Cases:** `GTP` proposed building an "intelligent Tamagotchi" using this stack. `tempaccount5050` shared their experience attempting this, noting that an LLM alone isn't enough; the project still requires a state machine to define constants (like "hunger") to prevent the AI from getting stuck in a loop. Others, like `post_below`, discussed more complex home automation, such as a self-hosted agent that manages grocery lists via Signal and automatically populates browser-based shopping carts.
+*   **The "Claw" Ecosystem & Protocols:** There is confusion regarding the "OpenClaw" ecosystem compared to `zclaw`. `blnsr` compared OpenClaw to ROS (Robot Operating System) for distributed nodes, but `TheDong` quipped that the only real protocol here is English, stating we are in a "post-API world" where natural language turns into bash or browser tool invocations.
+*   **Security and Hype:** The discussion veered into the risks of IoT agents. `dlt713705` jokingly envisioned a future where vacuum cleaners declare war on refrigerators via Discord. On a serious note, `h4ch1` criticized the "ostrich-head-in-the-sand" enthusiasm for agent frameworks, warning that giving unfettered API and tool access to unverified dependencies (likened to eating "cake made of plastic") is a disaster waiting to happen.
+*   **Technical Implementation:** `Dr_Birdbrain` and others dismissed the project as merely a "tiny LLM power agent wrapper" connected to the internet, though some appreciated the engineering effort required to fit the TLS stack and runtime into less than 1 MB of flash.
+
+### AI uBlock Blacklist
+
+#### [Submission URL](https://github.com/alvi-se/ai-ublock-blacklist) | 265 points | by [rdmuser](https://news.ycombinator.com/user?id=rdmuser) | [114 comments](https://news.ycombinator.com/item?id=47098582)
+
+AI uBlock Origin Blacklist: A crowdsourced filter list to hide AI-generated “content farm” sites. GitHub user alvi-se maintains a manually curated uBlock Origin list (and a uBlacklist version for search engines) that blocks domains and specific paths churning out SEO’d, low-value, ad/affiliate-heavy AI articles. Installation is via a one-click subscription link or by adding the raw list URL as a 3rd-party filter in uBlock. The author argues automated detection is unreliable, so entries are added by hand and guided by telltale signs: fluffy/baroque intros, “Comprehensive/Ultimate Guide” titles, few outbound links or sources, and aggressive referral links. Contributors are encouraged to file issues or PRs; the repo avoids blanket-banning platforms like Medium/dev.to by targeting offending blogs/paths only. Despite being personal and somewhat Italy-biased, the maintainer says the list is effective because the same spammy sites recur across searches. As of now: ~213 commits, ~349 stars.
+
+Based on the discussion, here is a summary of the comments:
+
+**Concerns Regarding Maintenance and False Positives**
+A significant portion of the discussion focuses on the risks associate with personal, manually curated blacklists. Several users criticize the specific maintainer of this list, describing them as having a "suspicious attitude" and believing themselves to be "infallible."
+*   **Lack of Recourse:** Examples were shared of personal websites being blocked by similar lists on PiHole or uBlock; users noted that requests to be unblocked often go unanswered or are ignored entirely.
+*   **Domain Churn:** Users pointed out that static blacklists fail to account for domain ownership changes. A domain currently hosting AI spam might later be purchased by a legitimate owner, but it remains in a "reputational blackhole" with no easy mechanism for removal.
+*   **Comparison to Anti-Cheat:** The situation was likened to "VAC bans" in gaming, where false positives occur, but the system is treated as absolute.
+
+**The State of Search and "AI Slop"**
+Despite the concerns about the list's implementation, many commenters expressed a desperate need for tools to filter AI-generated noise.
+*   **Search Quality:** Users described the current search experience as being drowned in "slop," making it difficult to find human-created content (specifically on platforms like Reddit).
+*   **"Hater" Lists vs. Utility:** There was debate regarding alternative lists (such as the "HUGE AI Blocklist"). Some argued these are merely "hater lists" that block sites for tangentially related reasons (like having an AI widget or unrelated grievances), while others defended aggressive blocking as the only way to improve the user experience.
+
+**Side Discussion: AI in the Workplace**
+A tangible sub-thread emerged regarding the use of AI for writing text (emails, reports) in professional settings.
+*   **"Cosmetic Surgery" Analogy:** One user described a coworker who uses Copilot to generate 20-paragraph emails as having "extraordinarily bad cosmetic surgery"—it looks polished at a glance but is fundamentally uncanny and distinct from human communication.
+*   **Skill vs. Laziness:** Commenters debated whether this usage covers for "functional illiteracy" and language barriers, or if it simply encourages laziness and results in "mediocre crap" that colleagues are forced to read.
+
+**Alternatives and Technical Solutions**
+Users shared various alternatives to the submitted list, including:
+*   **uBlacklist:** Specifically mentioned as a tool to remove specific domains from search engine results pages (SERPs).
+*   **AdGuard/PiHole:** Discussed as broader network-level solutions, though they suffer from the same false-positive risks if the underlying lists are poor.
+*   **Other Repos:** Links to other GitHub repositories and Gists were shared for those looking for different filtering criteria.
+
+### Cord: Coordinating Trees of AI Agents
+
+#### [Submission URL](https://www.june.kim/cord) | 151 points | by [gfortaine](https://news.ycombinator.com/user?id=gfortaine) | [75 comments](https://news.ycombinator.com/item?id=47096466)
+
+The pitch
+- Most multi‑agent frameworks make developers predefine roles, graphs, and handoffs. Cord flips this: you give a goal, and the agent plans, decomposes, parallelizes, blocks on dependencies, and asks humans when needed.
+
+What’s different
+- Runtime decomposition: The agent decides the workflow as it goes, not from a static graph or role roster.
+- Spawn vs. Fork: Two context-flow primitives.
+  - Spawn: clean slate; only the prompt plus explicit dependencies. Good for independent subtasks.
+  - Fork: inherits all completed sibling results. Good for synthesis and analysis.
+- Explicit dependencies and blocking: Tasks can wait on others and on human answers, enabling predictable parallelism.
+
+Example
+- Given “Should we migrate from REST to GraphQL?”, Cord:
+  - Spawns parallel research and API audit
+  - Asks a human about traffic scale, blocked on the audit
+  - Forks a comparative analysis that inherits prior results
+  - Writes a tailored recommendation after dependencies resolve
+
+Why it matters
+- Moves from developer-scripted workflows to agent-discovered structure, matching how strong models plan and reason today.
+- Introduces simple, learnable context flow so agents can parallelize without losing necessary shared knowledge.
+
+Under the hood
+- Each agent is a Claude Code CLI process with MCP tools, coordinated via a shared SQLite DB.
+- Minimal API: spawn, fork, ask, complete, read_tree.
+- Roadmap idea: first-class context_query to distill and pass only relevant context to children via a compaction subagent.
+
+**The Debate: Dynamic Planning vs. Deterministic Control**
+The discussion centered on a fundamental divide in agentic engineering:
+*   **Reliability vs. autonomy:** Some users argued that strict, discrete topologies (static DAGs) form the only viable path for reliable systems, warning that unconstrained agent planning compounds probabilistic errors.
+*   **Obsolescence of hardcoding:** Counter-arguments suggested that modern models (like Claude 3.5 Sonnet) are now sufficiently capable of planning and decomposition that hardcoding task graphs is becoming obsolete.
+
+**Key Technical Feedback**
+*   **Context flow primitives:** The community reacted positively to the "Spawn" (clean state) vs. "Fork" (inherited context) distinction, viewing it as a clever strategy to manage context window pollution.
+*   **Feature Suggestion:** One commenter proposed adding a distinct `context_query` primitive—a mechanism where a subagent requests specific data via natural language query rather than receiving a raw dump of the parent’s context, effectively acting as "context compression."
+*   **Comparisons:** Users drew parallels to Anthropic’s internal tooling (Agent Tums) and Claude Code’s existing capabilities. The OP clarified that while Claude can spawn subagents, Cord aims to enable deeper, recursive trees where subagents can spawn their own sub-subagents.
+
+**Framework Fatigue & Skepticism**
+*   **"Not another framework":** Several commenters expressed fatigue with the proliferation of orchestrator tools (referencing LangGraph), with some preferring simple shell scripts or "roll-your-own" solutions over adopting new protocols.
+*   **AI-generated content:** A meta-discussion emerged regarding the blog post's writing style; multiple users felt the prose was obviously AI-generated, which they argued detracted from the message reliability, though the OP acknowledged this and promised follow-up data.
+
+### Large Language Model Reasoning Failures
+
+#### [Submission URL](https://arxiv.org/abs/2602.06176) | 40 points | by [T-A](https://news.ycombinator.com/user?id=T-A) | [80 comments](https://news.ycombinator.com/item?id=47098839)
+
+Large Language Model Reasoning Failures (Song, Han, Goodman) — a TMLR 2026 survey with Survey Certification — maps where LLMs still stumble, even on “simple” problems, and organizes a scattered literature into a single playbook.
+
+What’s new
+- A two-axis taxonomy: 
+  - Types of reasoning: embodied vs. non-embodied; the latter split into informal (intuitive) vs. formal (logical).
+  - Types of failures: fundamental (architecture-level), application-specific (domain-bound), and robustness issues (brittleness to small prompt/task variations).
+- For each failure class: clear definitions, evidence from prior studies, suspected root causes, and mitigation strategies collected from the literature.
+- A curated GitHub repository aggregating papers on LLM reasoning failures for quick entry into the area.
+
+Why it matters
+- Gives researchers and product teams a shared vocabulary to diagnose errors, design evaluations across reasoning modes, and choose mitigations.
+- Highlights that many “reasoning” wins remain fragile, with inconsistent behavior under minor changes.
+
+Links
+- Paper: arXiv:2602.06176 (with arXiv-issued DOI)
+- Repository: included via the paper’s GitHub link
+
+ **The Discussion**
+
+The Hacker News discussion focuses heavily on whether the paper’s claims about "fundamental" failures hold up against the most recent state-of-the-art models, alongside a broader debate about the nature of machine intelligence.
+
+**Arithmetic, Tools, and "Cheating"**
+A contentious debate erupted over the paper's assertion that LLMs fail at basic arithmetic (specifically large-number multiplication).
+*   User **smnwrds** attempted to "falsify" the paper's claims by testing 20-digit multiplication on GPT-o1 Pro, which solved the problems correctly.
+*   Others, notably **rybswrld** and **chcknmprnt**, countered that this doesn't prove the *LLM* can reason; rather, it highlights how frontier models increasingly rely on hidden tools. They argued that models often offload math to internal Python interpreters or obscure "Chain of Thought" processes effectively "faking" the alignment.
+*   When **chcknmprnt** tested a local model (Mistral) where tool-use was explicitly disabled, the model hallucinated the answer, supporting the paper's thesis. **smnwrds** dismissed this as picking on "the worst model," while others maintained that even closed-source models likely rely on undocumented internal subsystems (like specific Rust optimizations) to patch these fundamental architectural weaknesses.
+
+**Anthropomorphism vs. Architecture**
+Top-level commenter **srgmtt** welcomed the paper as a necessary check against anthropomorphism.
+*   They argued that the identified failures—such as inability to count like a toddler or handle object permanence—stem from the nature of "next-token predictors" being fundamentally different from human general intelligence.
+*   **lnsbr** and **mttmg** added that unlike humans, who evolve and maintain long-term dynamic memories, LLMs rely on frozen weights, making the comparison to human reasoning inherently flawed.
+*   **otabdeveloper4** cynically noted that these systems are sold as AGI primarily to sustain stock market narrratives.
+
+**Social and Moral Fragility**
+Finally, **Lapel2742** highlighted the paper's points on social reasoning failures.
+*   The commenter ridiculed the idea that models are ready for ethical decision-making, noting they struggle with social norms and cultural context.
+*   They joked that the industry has successfully created AI in the image of "Techbro-CEOs" rather than a system capable of broadly congruent human values. **rnlszlrn** agreed, suggesting current models embed values that are incompatible with large percentages of the global population.
+
+### Show HN: AI writes code – humans fix it
+
+#### [Submission URL](https://humansfix.ai) | 5 points | by [stasman](https://news.ycombinator.com/user?id=stasman) | [3 comments](https://news.ycombinator.com/item?id=47105821)
+
+Humans-on-demand for broken AI code: a 24-hour bug-fix marketplace
+
+A new service targets the growing “AI wrote it, now it’s broken” gap. You post a bug, set a price (from $49), and a vetted human developer delivers a fix within 24 hours—no meetings, no chat, just a PR.
+
+Key details:
+- Workflow: Post task with context/screenshots → set your price → a verified dev gets read-only repo access → they propose a fix and submit a delivery → on approval, you receive a pull request.
+- Pricing: You choose the bounty (min $49) + 10% platform fee. Payment is charged when a dev accepts, held in escrow, released on your approval. If no one picks it up in 24 hours, the hold auto-expires. Cancel anytime before acceptance.
+- Quality/safety: Developers are manually vetted via LinkedIn/GitHub. You get 1 free revision if the first attempt misses. If deadlines slip or no one picks it up, you’re refunded.
+- Positioning: “Introvert-friendly” debugging—no calls, fast turnaround—aimed at users of tools like Bolt, Replit, Cursor, Claude Code, Windsurf, and Base44.
+
+Why it matters: As AI code-gen accelerates, this is a lightweight, SLA-backed alternative to hiring a freelancer or slogging through fixes yourself—human-in-the-loop debugging as a service.
+
+**Humans-on-demand for broken AI code: a 24-hour bug-fix marketplace**
+A new service proposes a bounty-based marketplace (minimum $49) where vetted developers fix broken, AI-generated code within 24 hours via pull request, functioning as a "human-in-the-loop" layer for tools like Replit or Cursor.
+
+**Discussion:**
+*   **The Model:** One commenter pointed out that this approach is backed by research suggesting human-AI pairs consistently outperform AI working autonomously.
+*   **Technical Glitches:** Early feedback included a bug report regarding the onboarding process, with a user noting that Stripe incorrectly flagged their location as the Netherlands. They noted the idea was "cool" despite needing to contact the developer to resolve the payment issue.
+*   **Developer Experience:** Sentiment regarding the work itself was mixed, with one user remarking that the prospect of fixing broken AI code "sounds miserable."
+
+### Why is Claude an Electron app?
+
+#### [Submission URL](https://www.dbreunig.com/2026/02/21/why-is-claude-an-electron-app.html) | 395 points | by [dbreunig](https://news.ycombinator.com/user?id=dbreunig) | [410 comments](https://news.ycombinator.com/item?id=47104973)
+
+Why Claude (and so many others) still ship as Electron apps, even in the agent era
+
+- The pitch: If coding agents can turn a spec and test suite into cross-platform code, why not ship snappy native apps per OS instead of bundling a browser with Electron?
+- The reality: Agents excel at the first 90%, but the last 10%—edge cases, real‑world quirks, regressions, and ongoing support—is where costs explode. Maintaining three native codebases (Mac/Win/Linux) triples the surface area for bugs and support.
+- Case in point: Anthropic’s much‑touted agent swarm spent ~$20k building a Rust‑based C compiler that flew through early tests but hit a wall on stability and completeness—impressive, yet largely unusable without heavy human cleanup.
+- Why Electron wins today: One codebase, familiar web stack, and instant cross‑platform reach outweigh bloat, lag, and weaker OS integration for most teams. The incentives favor shipping once over hand‑holding agents to production‑ready parity across three native apps.
+- Bottom line: Spec‑driven, agent‑powered native builds are promising, but the last mile and ongoing maintenance keep Electron in the lead—for now—even for AI leaders like Anthropic.
+
+Based on the discussion, here is a summary of the comments:
+
+**The Insider Perspective**
+A commenter identifying as an engineer on the project noted that the team had previous experience with Electron and preferred building non-natively to share code between web and desktop. However, they acknowledged that engineering tradeoffs might change in the future.
+
+**User Experience: Terminal vs. Desktop**
+Users drew a sharp distinction between Anthropic's tools.
+*   **Claude Code (CLI):** Was described as "magical" and highly effective, even on single terminals.
+*   **Claude Desktop (Electron):** Received significant criticism for poor performance. Users reported it turning laptops into "toasters," causing fans to run wildly, and suffering from lag/freezing (one user noted delays of multiple seconds when switching tasks).
+*   **Workarounds:** Some users resort to "disposable conversations" or stick strictly to the terminal interface to avoid the resource heaviness of the desktop app.
+
+**The "Coding is Solved" Irony**
+A major theme of the discussion was the perceived contradiction between Anthropic’s marketing and their tech stack choices.
+*   **The Paradox:** Commenters questioned why, if Claude is capable of "solving coding" or effortlessly porting code between languages, Anthropic cannot use their own agent to maintain three native codebases (Mac/Windows/Linux) instead of relying on Electron.
+*   **The Rebuttal:** Others argued that "coding" isn't the bottleneck—maintenance is. Even if AI generates the code, maintaining three separate stateful architectures is a logistical nightmare compared to deploying a single web-stack application.
+
+**The Broader Electron Debate**
+The thread evolved into a classic debate over the viability of Electron:
+*   **Defenders:** Argued that performance complaints are often hyperbole. They cited **VS Code** and **Gmail** as examples of complex, successful web-stack applications. Some argued that "native app development is dead" outside of gaming and walled gardens (iOS), and that the browser is the only runtime that matters.
+*   **Detractors:** Countered that VS Code is an outlier that relies heavily on native modules (Rust/C++) and WebGL optimizations to function well, implying standard Electron apps remain "junk." Users pointed to native alternatives (like Neovim or Thunderbird) as proof of the superior efficiency and speed of native code compared to web technologies.
+
+### How an inference provider can prove they're not serving a quantized model
+
+#### [Submission URL](https://tinfoil.sh/blog/2026-02-03-proving-model-identity) | 67 points | by [FrasiertheLion](https://news.ycombinator.com/user?id=FrasiertheLion) | [48 comments](https://news.ycombinator.com/item?id=47098172)
+
+Tinfoil’s “Modelwrap” aims to solve a long‑standing gripe with inference APIs: you can ask for a specific model, but you can’t really know what you got. Providers can silently swap in different quantizations, tweak context windows under load, or drift over time—something users have observed across vendors and even within the same vendor.
+
+What they built: verifiable inference that binds an API call to an exact set of model weights at runtime, without changing app code.
+
+How it works
+- Public commitment to weights: Tinfoil publishes a single Merkle-tree root hash for the model’s weight files (e.g., 140 GB split into 4 KB blocks).
+- Enclave attestation, extended to data: They use secure enclaves, but go beyond “what binary booted” by attesting two things at launch: the committed root hash and the presence of an enforcement mechanism.
+- Kernel-enforced verification on every read: dm-verity in the Linux kernel checks each disk block read against the Merkle tree; if any byte doesn’t match the committed root, the read fails with an I/O error. Apps like vLLM don’t need modifications and can’t accidentally read uncommitted bytes.
+- Client-side verification: On each request, clients can verify the enclave’s attestation report contains the expected root hash and dm-verity configuration, tying the running server to the public commitment.
+- Analogy: This is the same mechanism behind Android Verified Boot (root hash + kernel-enforced Merkle checks), repurposed for model weights.
+
+Why it matters
+- Proves you’re hitting the exact weights you pinned (no silent quantization or model swaps).
+- Stabilizes evals and regression tracking across time/providers.
+- Works for closed-source models too: you can’t see the weights, but you can verify you’re getting the same committed bits every time.
+
+Caveats and open questions
+- Scope: This guarantees the bytes read from disk match the commitment; it doesn’t by itself prove anything about post-load transformations or runtime configuration unless those are also covered by attestation.
+- Trust base: You’re trusting the enclave/CPU vendor’s attestation and kernel integrity.
+- Practicalities: Update/rollout mechanics, performance overhead of dm-verity, and how broader server config (e.g., context window, KV cache policies) is pinned weren’t detailed here.
+
+Bottom line: Modelwrap turns “trust us” into “verify us,” giving API users a cryptographic handle (a root hash) they can pin to—and a kernel-enforced path that makes serving anything else fail fast.
+
+The discussion revolves around the technical limitations of "black box" verification (checking outputs) versus the cryptographic verification proposed by Tinfoil, with the author (`FrasiertheLion`) answering questions about the specific security architecture.
+
+**The feasibility of "Output Checking"**
+The thread began with users questioning why complex attestation is necessary when users could simply check for deterministic outputs using a fixed seed.
+*   **The Consensus:** Commenters (including `trpplyns`, `jshlm`, and `msrblfnc`) argued that checking outputs is unreliable. Floating-point math is not truly associative, meaning the order of operations matters.
+*   **Hardware Variance:** At scale, providers split models across different GPU/CPU combinations and use optimizing compilers that change instruction scheduling. This results in slight numerical differences that break strict determinism, making it impossible to distinguish between a benign hardware change and a malicious model swap based on output alone.
+*   **Benchmarking issues:** `Aurornis` noted that while external benchmarking sites exist, they are expensive to maintain and often produce noisy data rather than definitive proof of model degradation.
+
+**Attestation Mechanics & Trust**
+A significant portion of the discussion focused on how the client effectively trusts the server.
+*   **The Mechanism:** `FrasiertheLion` explained that the system relies on hardware-backed enclaves (Intel TDX, AMD SEV-SNP, Nvidia Confidential Computing).
+*   **Preventing "Replay" Attacks:** Users (`rbls`, `vrptr`) asked how a client knows the provider isn't faking the attestation report. The author clarified:
+    1.  The enclave generates an ephemeral key pair at boot.
+    2.  The public key is embedded in the hardware-signed attestation report.
+    3.  The client encrypts their request using that public key.
+    4.  Only the specific, verified enclave instance can decrypt and process the request, preventing Man-in-the-Middle attacks or spoofed reports.
+*   **Trust Anchor:** `jlsdrn` observed that this technology effectively shifts the "root of trust" from the API provider (who might cut corners) to the hardware manufacturer (Intel/AMD), who certifies the chip state.
+
+**Other Notes**
+*   **Apple:** There was interest in Apple’s similar approach with "Private Cloud Compute," which users felt offered strong integrity guarantees due to Apple's control over the entire hardware/software stack.
+*   **Quantization:** `rbrnd` noted that quantization isn't inherently bad—users often want the trade-off of 99% quality for 50% cost—but the implication is that transparency about *which* version is running remains the key issue.
+
+---
+
 ## AI Submissions for Fri Feb 20 2026 {{ 'date': '2026-02-20T17:14:24.510Z' }}
 
 ### Ggml.ai joins Hugging Face to ensure the long-term progress of Local AI
@@ -637,213 +988,3 @@ Commenters provided context for the friction, noting the specific history betwee
 
 **Tech Celebrity Status**
 There was a brief debate regarding the longevity of these figures. While one user dismissed them as "ephemeral celebs," others pushed back strongly (one switching to Spanish to emphasize the point), arguing that dismissing the architects of the current AI boom as fleeting figures is a miscalculation of how the next decade will play out.
-
----
-
-## AI Submissions for Wed Feb 18 2026 {{ 'date': '2026-02-18T17:28:27.791Z' }}
-
-### What years of production-grade concurrency teaches us about building AI agents
-
-#### [Submission URL](https://georgeguimaraes.com/your-agent-orchestrator-is-just-a-bad-clone-of-elixir/) | 115 points | by [ellieh](https://news.ycombinator.com/user?id=ellieh) | [36 comments](https://news.ycombinator.com/item?id=47067395)
-
-Title: Your Agent Framework Is Just a Bad Clone of Elixir: Concurrency Lessons from Telecom to AI
-Author: George Guimarães
-
-Summary:
-Guimarães argues that today’s Python/JS agent frameworks are reinventing Erlang/Elixir’s 40-year-old actor model—the same principles the BEAM VM was built on to run telecom switches. AI agents aren’t “web requests”; they’re long-lived, stateful, concurrent sessions that demand lightweight isolation, message passing, supervision, and fault tolerance. Those properties are native to the BEAM and only partially approximated by Node.js and Python frameworks. If you’re building AI agents at scale, Elixir isn’t a hipster pick; it’s the architecture the problem calls for.
-
-Key points:
-- The 30-second request problem: Agent sessions routinely hold open connections for 5–30s with multiple LLM calls, tools, and streaming—multiplied by 10,000+ users. Thread-per-request stacks struggle here.
-- Why BEAM fits:
-  - Millions of lightweight processes (~2 KB each), each with its own heap, GC, and fault isolation.
-  - Preemptive scheduling (every ~4,000 reductions) prevents any single agent from hogging CPU.
-  - Per-process garbage collection avoids global pauses at high concurrency.
-  - Native distribution: processes talk across nodes transparently.
-  - Phoenix Channels/LiveView already handle 100k+ WebSockets per server; an agent chat is just another long-lived connection.
-- Node.js comparison:
-  - Single-threaded event loop makes CPU-heavy work block unrelated sessions unless offloaded.
-  - Stop-the-world GC and process-wide crashes hurt tail latency and reliability.
-- Python/JS agent frameworks are converging on actors:
-  - Langroid explicitly borrows the actor model.
-  - LangGraph models agents as state machines with reducers and conditional edges.
-  - CrewAI coordinates agents via shared memory and task passing.
-  - AutoGen 0.4 pivots to an “event-driven actor framework” with async message passing and managed lifecycles.
-  - Conclusion: they’re rediscovering what the BEAM has provided since 1986.
-- LLMs + Elixir: José Valim highlighted a Tencent study where Claude Opus 4 achieved the highest code-completion rate on Elixir problems (80.3%), but the deeper point is runtime fit, not just codegen ergonomics.
-
-Why it matters:
-- Agentic workloads look like telecom, not classic web requests. Architectures tuned for short, stateless requests buckle under thousands of long-lived, stateful streams. BEAM’s actor model maps directly onto agent process-per-session designs with supervision and graceful failure.
-
-Practical takeaways for builders:
-- Model each agent/session as an independent BEAM process; use supervision trees for fault recovery.
-- Stream tokens over Phoenix Channels; scale horizontally with native distribution.
-- Keep heavy CPU/ML off the schedulers (use ports, separate services, or NIFs with dirty schedulers).
-- Use per-process state for isolation; leverage ETS when shared, fast in-memory tables are needed.
-
-Caveats:
-- Python still dominates ML tooling; you’ll often pair Elixir orchestration with Python/Rust for heavy inference.
-- NIFs can stall schedulers if misused; prefer ports or dirty schedulers for safety.
-- Team familiarity and hosting/tooling may influence stack choice despite the runtime fit.
-
-Bottom line:
-AI agent frameworks in Python/JS are converging on the actor model because the problem demands it. If you want production-grade concurrency, fault isolation, and effortless real-time at scale, the BEAM/Elixir stack is the battle-tested blueprint rather than a pattern to reimplement piecemeal.
-
-Here is a summary of the discussion:
-
-**Runtime Fit vs. Real-World Bottlenecks**
-A major thread of debate centered on whether BEAM’s concurrency advantages matter when AI workloads are heavily IO-bound. Users like **rndmtst** and **mccyb** argued that since agents spend 95% of their time waiting on external APIs (OpenAI/Anthropic), the scheduler's efficiency is less critical than it was for telecom switches. While they admitted hot code swapping is a genuine advantage for updating logic without dropping active sessions, they questioned if runtime benefits outweigh the massive ecosystem and hiring advantages of Python.
-
-**"Let It Crash" vs. Context Preservation**
-Commenters wrestled with applying Erlang’s "let it crash" philosophy to LLM context. **qdrpl** and **vns** pointed out that restarting a process effectively wipes the in-memory conversation history—a critical failure in AI sessions. **asa400** clarified that supervisors are intended for unknown/transient execution errors, not semantic logic failures; however, **mckrss** noted that BEAM’s fault tolerance doesn't solve "durable execution" (sustaining state across deployments or node restarts), often requiring hybrid architectures with standard databases anyway.
-
-**Concurrency Constructs**
-**znnjdl** shared an anecdote about switching from a complex Kubernetes setup to Elixir for long-running browser agents, noting that distributed problems that resulted in infrastructure "hell" elsewhere were solved by native language constructs. There was significant technical dispute between **wqtwt**, **kbwn**, and others regarding whether modern Linux OS threads are sufficient for these workloads versus the BEAM’s lightweight 2KB processes.
-
-**Frameworks vs. Primitives**
-The discussion compared building on Elixir primitives (OTP) versus Python frameworks. **vns** described tools like LangChain as "bloated" attempts to provide structure that Elixir offers natively, though **d4rkp4ttern** defended newer Python frameworks like Langroid. Finally, **jsvlm** (José Valim, creator of Elixir) chimed in to correct the historical record, noting that the creators of Erlang implemented the actor model independently to solve practical problems, rather than adopting it from academic theory.
-
-### AI adoption and Solow's productivity paradox
-
-#### [Submission URL](https://fortune.com/2026/02/17/ai-productivity-paradox-ceo-study-robert-solow-information-technology-age/) | 780 points | by [virgildotcodes](https://news.ycombinator.com/user?id=virgildotcodes) | [734 comments](https://news.ycombinator.com/item?id=47055979)
-
-Headline: CEOs say AI hasn’t moved the needle—economists dust off the Solow paradox
-
-- A new NBER survey of ~6,000 executives across the U.S., U.K., Germany, and Australia finds nearly 90% report no AI impact on employment or productivity over the past three years. About two-thirds say they use AI—but only ~1.5 hours per week on average—and a quarter don’t use it at all.
-- Despite the muted present, leaders still expect near-term gains: +1.4% productivity and +0.8% output over the next three years. Firms forecast a small employment drop (-0.7%), while workers expect a slight rise (+0.5%).
-- The disconnect revives Solow’s productivity paradox: technology is everywhere except in the macro data. Apollo’s Torsten Slok says AI isn’t yet visible in employment, productivity, inflation, or most profit margins outside the “Magnificent Seven.”
-- Evidence is mixed: the St. Louis Fed sees a 1.9% excess cumulative productivity bump since late 2022; an MIT study projects a more modest 0.5% over a decade. Separately, ManpowerGroup reports AI use up 13% in 2025 but confidence down 18%. IBM says it’s boosting junior hiring to avoid hollowing out its management pipeline.
-- Optimists see a turn: Erik Brynjolfsson points to stronger GDP and estimates U.S. productivity rose 2.7% last year, suggesting benefits may finally follow 2024’s >$250B corporate AI spend.
-
-Why it matters: Echoes of the 1980s IT cycle—big investment first, measurable gains later. Light-touch adoption and workflow inertia may be masking what only shows up after reorganization, tooling maturity, and broader diffusion.
-
-Here is a summary of the discussion:
-
-**The Solow Paradox & Historical Parallels**
-Commenters engaged deeply with the article's comparison to the 1970s/80s productivity paradox. While some agree that we are in the "DOS era" of AI—where expensive investment precedes the "Windows 95" era of utility—others argue the comparison is flawed. One user notes a key economic difference: modern AI (e.g., a $20 Claude subscription) has a significantly lower barrier to entry and onboarding cost than the mainframe computing and manual office training required in the 1970s.
-
-**The "Infinite Report" Loop**
-A major thread of cynicism focuses on the nature of corporate work. Users argue that while AI might make producing reports "3x faster," it often degrades the signal-to-noise ratio.
-*   **The Fluff Tax:** Critics point out that faster writing shifts the burden to the reader; if a report takes 10% longer to understand because of AI "fluff," overall organizational value is lost.
-*   **The AI Ouroboros:** Several users joked (or lamented) that the inevitable solution is people using AI to summarize the very reports that colleagues used AI to generate, resulting in a hollow loop of information transfer.
-
-**Skill Acquisition vs. "Licking the Window"**
-There is significant skepticism regarding using LLMs for learning and skill development.
-*   **False Confidence:** Users warn that AI gives a "false sense of security" regarding understanding material. One commenter vividly described it as "looking through the window" at knowledge rather than grasping it, advocating for the traditional "RTFM" (Read The F*ing Manual) approach for true expertise.
-*   **Code vs. Prose:** While confidence in AI for general communication is low, some developers defend the utility of current models for coding, noting that recent improvements in context handling allow models to effectively read codebases and implement solutions, unlike the "hallucinations" common in semantic text tasks.
-
-**Technical Bottlenecks**
-The discussion touched on the limits of current distinct architectures. Some predict that purely scaling context windows (RAG) yields diminishing returns or slows down processing. One prediction suggests that the real productivity breakthrough won't come from larger LLMs, but from hybrid models that pair LLMs with logic-based systems to eliminate hallucinations and perform actual reasoning rather than probabilistic token generation.
-
-### Microsoft says bug causes Copilot to summarize confidential emails
-
-#### [Submission URL](https://www.bleepingcomputer.com/news/microsoft/microsoft-says-bug-causes-copilot-to-summarize-confidential-emails/) | 261 points | by [tablets](https://news.ycombinator.com/user?id=tablets) | [71 comments](https://news.ycombinator.com/item?id=47060202)
-
-Microsoft says a bug in Microsoft 365 Copilot Chat has been summarizing emails marked confidential, effectively bypassing data loss prevention policies. Tracked as CW1226324 and first detected January 21, the issue hit the Copilot “work tab” chat, which pulled content from users’ Sent Items and Drafts in Outlook desktop—even when sensitivity labels should have blocked automated access. Microsoft attributes it to a code/configuration error and began rolling out a fix in early February; a worldwide configuration update for enterprise customers is now deployed, and the company is monitoring and validating with affected users. Microsoft stresses no one gained access to information they weren’t already authorized to see, but admits the behavior violated Copilot’s design to exclude protected content. The company hasn’t disclosed the scope or a final remediation timeline; the incident is flagged as an advisory, suggesting limited impact. Why it matters: it’s a trust hit for AI guardrails in enterprise email—showing how label- and DLP-based protections can be undermined by new AI features even without a classic data breach.
-
-Based on the discussion, commenters focused on the fundamental conflict between rapid AI integration and enterprise security requirements. Several users criticized Microsoft's approach as "sprinkling AI" onto existing tech stacks without rethinking the underlying security architecture, noting that standard protections (like prompt injection defenses) are insufficient against "unknown unknowns." A self-identified AI researcher argued that engineering is currently outpacing theoretical understanding, leading to "minimum viable product" safeguards that cannot guarantee data safety or effectively "unlearn" information once processed.
-
-Key themes in the thread included:
-
-*   **Failure of Guardrails:** Participants noted that Data Loss Prevention (DLP) tools are pointless if the AI layer can bypass them, effectively rendering manual classification (like employee NDAs or "Confidential" labels) moot.
-*   **The OS Debate:** The incident sparked a recurring debate about leaving the Microsoft ecosystem for Linux or macOS due to "user-hostile" feature bloat, though counter-arguments pointed out that switching operating systems does not mitigate cloud-service vulnerabilities.
-*   **Terminology:** There was significant skepticism regarding Microsoft’s classification of the bug as an "advisory." Users argued this term softens the reality of what they view as a significant breach of trust and privacy, distinguishing it from the typical, lower-severity definition of the word in IT contexts.
-
-### Fastest Front End Tooling for Humans and AI
-
-#### [Submission URL](https://cpojer.net/posts/fastest-frontend-tooling) | 109 points | by [cpojer](https://news.ycombinator.com/user?id=cpojer) | [94 comments](https://news.ycombinator.com/item?id=47060052)
-
-Fastest Frontend Tooling for Humans and AI: a push for 10x faster JS/TS feedback loops
-
-The author argues 2026 is the year JavaScript tooling finally gets fast by pairing strict defaults with native-speed tools—benefiting both humans and LLMs. The centerpiece is tsgo, a Go rewrite of TypeScript that reportedly delivers ~10x faster type checking, editor support, and even catches some errors the JS implementation missed. It’s been used across 20+ projects (1k–1M LOC) and is pitched as stable enough to adopt, especially if you first swap builds to tsdown (Rolldown-based) for libraries or Vite for apps. Migration is simple: install @typescript/native-preview, replace tsc with tsgo, clean legacy flags, and flip a VS Code setting.
-
-On formatting, Oxfmt aims to replace Prettier without losing ecosystem coverage. It bakes in popular plugins (import/Tailwind class sorting) and falls back to Prettier for the long tail of non-JS languages, easing migration and editor integration.
-
-For linting, Oxlint is positioned as the first credible ESLint replacement because it can run ESLint plugins via a shim and NAPI-RS, supports TS config files, and adds type-aware rules. With oxlint --type-aware --type-check, you can lint and type-check in one fast pass powered by tsgo.
-
-To make strictness easy, @nkzw/oxlint-config bundles a comprehensive, fast, and opinionated rule set designed to guide both developers and LLMs:
-- Error-only (no warnings)
-- Enforce modern, consistent style
-- Ban bug-prone patterns (e.g., instanceof), disallow debug-only code in prod
-- Prefer fast, autofixable rules; avoid slow or overly subjective ones
-
-The post includes “migration prompts” for swapping Prettier→Oxfmt and ESLint→Oxlint, and points to ready-made templates (web, mobile, library, server) used by OpenClaw. Smaller DevX picks name-check npm-run-all2, ts-node, pnpm, Vite, and React.
-
-Why it matters: Faster, stricter tooling shortens feedback loops, reduces bugs, and—per the author’s experiments—helps LLMs produce more correct code under strong guardrails. Caveat: tsgo is still labeled experimental, so teams should trial it on a branch before a full switch.
-
-Based on the discussion, the community reaction is divided between excitement for performance gains and concern over the long-term maintainability of a "fractured" ecosystem.
-
-**The "Schism" and Maintainability**
-The most contentious point, led by user **conartist6**, is the fear that rewriting JavaScript tooling in low-level languages (Rust, Go) creates a "big schism." Critics argue this prevents the average JS developer from understanding, debugging, or contributing to the tools they rely on, potentially leaving critical infrastructure in the hands of VC-backed entities (like the creators of VoidZero) rather than the community. **TheAlexLichter** counters this, arguing that the average web developer rarely contributes to tooling internals anyway, and that AI tools make crossing language barriers (JS to Rust) easier for those who do wish to contribute.
-
-**Performance vs. Architecture**
-There is a debate regarding *why* current tooling is slow.
-*   **The Unified JS Argument:** Some users argue that the slowness isn't due to JavaScript itself, but rather the inefficiency of running three separate programs (bundler, linter, formatter) that all parse the Abstract Syntax Tree (AST) separately. They suggest a unified toolchain written in JS would be sufficient if architected correctly.
-*   **The Native Speed Argument:** Others, including **9dev**, argue that JS runtimes have hit a performance wall ("throughput cliff"), making native languages necessary for modern build speeds. They contend that "batch processing" speed is relevant and not just an architectural issue.
-
-**Adoption and Compatibility**
-Users like **dcr** express high interest in switching for the "10x speed increase," noting that if the tools are compatible (e.g., Oxfmt supporting Prettier plugins, Oxlint running ESLint rules via compatibility layers), the migration is worth it. **TheAlexLichter** confirms that tools like Oxlint and independent projects like Rolldown are designed to be compatible replacements for existing standards.
-
-**Other points raised:**
-*   **Bun:** User **fsmdbrg** questions why **Bun** wasn't mentioned, noting it already offers a fast, unified runtime, bundler, and test runner that solves many of these problems.
-*   **AI Skepticism:** One user initially dismissed the post as "AI spam" due to its tone, highlighting a growing distrust in the community toward AI-generated technical content, though they later walked back the comment.
-*   **Security:** There were minor concerns regarding tracking CVEs in the native dependencies of these new tools, though others felt the risk was manageable compared to general supply chain risks.
-
-### The Future of AI Software Development
-
-#### [Submission URL](https://martinfowler.com/fragments/2026-02-18.html) | 199 points | by [nthypes](https://news.ycombinator.com/user?id=nthypes) | [140 comments](https://news.ycombinator.com/item?id=47062534)
-
-Martin Fowler recaps Thoughtworks’ Future of Software Development Retreat, pushing back on calls for an “AI-era manifesto.” Instead, a 17-page summary distills eight themes showing how practices built for human-only development are buckling under AI-assisted work. Replacements are emerging but immature.
-
-What’s new
-- Supervisory engineering “middle loop”: a layer between prompt/coding and production that focuses on oversight, verification, and integration.
-- Risk tiering as a core discipline: engineering practices and controls scale with the risk of the change/system.
-- TDD reframed as prompt engineering: tests as the most reliable way to specify and constrain LLM behavior.
-- From DevEx to AgentEx: invest in tooling and workflows for humans plus agents, not just humans.
-
-Reality check
-- AI is an accelerator/amplifier, not a panacea. It speeds coding, but if delivery practices are weak, it just accelerates tech debt (echoing the 2025 DORA report).
-- No one has it figured out at scale; the most valuable outcome may be a shared set of questions.
-
-Open questions
-- Skill mix: will LLMs erode FE/BE specialization in favor of “expert generalists,” or just code around silos?
-- Economics: what happens when token subsidies end?
-- Process: do richer specs push teams toward waterfall, or can LLMs speed evolutionary delivery without losing feedback loops?
-
-Security and platforms
-- Security lagged in attendance, but consensus: platform teams must provide “bullet trains” — fast, safe AI paths with security baked in. Vendors may be underweighting safety factors.
-
-Meta
-- Open Space format fostered deep, respectful dialogue and notable inclusivity — a reminder culture still compounds tooling.
-
-Here is the daily digest summary for the top story:
-
-### **Martin Fowler on AI’s impact: no new manifesto, but big shifts underway**
-
-Martin Fowler provides a recap of the Thoughtworks Future of Software Development Retreat, arguing against the creation of a new "AI manifesto" and instead presenting a summary of how AI is buckling practices originally designed solely for humans. The report identifies eight key themes, suggesting that while AI serves as an accelerator, it also threatens to speed up the accumulation of technical debt if delivery practices are weak.
-
-**Key emerging concepts include:**
-*   **Supervisory Engineering:** A "middle loop" focused on oversight and verification rather than direct coding.
-*   **Risk Tiering:** Scaling engineering controls based on the risk level of the change.
-*   **TDD as Prompt Engineering:** Using tests as the primary method to specify and constrain LLM behavior.
-*   **AgentEx:** Moving beyond Developer Experience to build tooling for both humans and agents.
-
-The report concludes that no one has solved this at scale yet, and the industry currently has more shared questions—about economics, skill specialization, and security—than answers.
-
-***
-
-### **Discussion Summary**
-
-The discussion on Hacker News pivots from Thoughtworks' high-level theory to the practical realities of model costs, hardware, and the changing nature of code quality.
-
-**The Rise of Efficient Models (Kimi k2.5 vs. Claude)**
-A significant portion of the thread focuses on the emergence of **Kimi k2.5** (often accessed via Fireworks AI or OpenCode) as a "daily driver" for coding. Users report switching away from Anthropic’s Claude (Sonnet/Opus) due to cost and "sporadic" refusal issues. Several commenters describe Kimi as offering a superior price-to-performance ratio, with one user noting it solved a problem in 60 seconds that Claude failed to address, all for a fraction of the monthly subscription cost.
-
-**Local Hardware vs. API Economics**
-There is an active debate regarding the economics of running models locally versus using APIs:
-*   **Hardware:** Enthusiasts are discussing the viability of running near-SOTA models (like Qwen 2.5 Coder or Minimax M25) on consumer hardware. Specific mentions include the **AMD Ryzen Strix Halo** (approx. $2,500 build) capable of decent token speeds, versus high-end Mac Studios ($20k).
-*   **Commoditization:** Users speculate that token costs are trending toward zero. Given how cheap inference is becoming, some argue it makes less sense to invest heavily in local hardware for pure coding utility, reserving local builds for privacy or hobbyist experimentation.
-
-**Philosophy: The Death of "Clean Code"?**
-A deep sub-thread challenges the necessity of "production quality" code in an AI-native world.
-*   **"Garbage" Grade Code:** Users admit that while LLM output can be "garbage grade" (messy, unoptimized), it is often "flawless" in utility—solving immediate problems or building side projects that simply work.
-*   **Pattern Obsolescence:** Commenters argue that design patterns and "clean code" principles exist primarily to lower cognitive load for *human* maintainers. If AI agents eventually take over maintenance and modification, the need for human-readable architecture may diminish, shifting the requirement from "maintainable" software to simply "scalable and robust" software.
