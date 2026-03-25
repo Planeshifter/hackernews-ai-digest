@@ -10,6 +10,595 @@ export async function getStaticProps() {
 
 ---
 
+## AI Submissions for Tue Mar 24 2026 {{ 'date': '2026-03-24T17:31:11.192Z' }}
+
+### Arm AGI CPU
+
+#### [Submission URL](https://newsroom.arm.com/blog/introducing-arm-agi-cpu) | 391 points | by [RealityVoid](https://news.ycombinator.com/user?id=RealityVoid) | [288 comments](https://news.ycombinator.com/item?id=47506251)
+
+Arm unveils AGI CPU, its first in-house data center silicon, built on Neoverse and aimed squarely at “agentic AI” workloads where CPUs orchestrate accelerators, memory, storage, and swarms of software agents at scale. The pitch: rack-level throughput and efficiency under sustained, massively parallel load.
+
+Highlights
+- Rack-scale design: 1OU dual‑node reference blade with two chips totals 272 cores; 30 blades in a standard 36kW air‑cooled rack yields 8,160 cores. A Supermicro 200kW liquid‑cooled config fits 336 AGI CPUs for 45,000+ cores.
+- Claimed gains: >2x performance per rack vs latest x86 under sustained load, credited to higher memory bandwidth and Neoverse V3 single‑thread efficiency that keeps threads productive under contention. (Methodology not detailed.)
+- Why now: As always‑on “agentic” systems remove the human bottleneck, Arm argues the CPU becomes the pacing element for AI data centers, coordinating accelerators and large fan‑outs of tasks.
+- Ecosystem: Meta is lead partner and customer, co‑developing AGI CPU to pair with MTIA accelerators. Other launch partners include Cerebras, Cloudflare, F5, OpenAI, Positron, Rebellions, SAP, and SK Telecom.
+- Hardware availability: Systems from ASRockRack, Lenovo, and Supermicro are orderable now. Arm will contribute a 1OU Dual Node OCP DC‑MHS reference server plus firmware, specs, and tooling.
+
+What to watch
+- Independent benchmarks vs top x86 and other Arm servers (Graviton, Axion, Cobalt).
+- Real TCO at 36kW air vs 200kW liquid racks, and how well workloads exploit the memory bandwidth.
+- Software/ops maturity for large agentic orchestration and accelerator management on Arm.
+
+**Arm unveils AGI CPU**
+The discussion overwhelmingly leans toward cynicism regarding the product's branding, with users criticizing the term "AGI CPU" as misleading marketing fluff comparable to the "Long Blockchain Corp" pivot or AT&T’s "5Ge" rebranding of 4G networks.
+
+*   **Marketing vs. Reality:** Commenters joke that "AGI" has become a meaningless buzzword, comparing the acronym to "Athletic Greens" (AG1) or "Artificial Gut Incense." One user expresses sympathy for the engineers whose technical work was likely renamed by a marketing department.
+*   **Investor Impact:** A significant debate emerged regarding whether this branding borders on securities fraud. While user `tmbrt` argued that such names trick computer-illiterate investors (citing the "CUBA" fund ticker anomaly), user `0x3f` countered that modern markets function more like a "Keynesian beauty contest," where investors bet on sentiment and momentum rather than being genuinely duped by a name.
+*   **Strategic Shift:** A sidebar discussion noted that this move represents a shift for Arm, with user `fdtrn` suggesting the company is "getting grimy" by increasingly competing with its own customers.
+
+### Show HN: Gemini can now natively embed video, so I built sub-second video search
+
+#### [Submission URL](https://github.com/ssrajadh/sentrysearch) | 401 points | by [sohamrj](https://news.ycombinator.com/user?id=sohamrj) | [99 comments](https://news.ycombinator.com/item?id=47503617)
+
+SentrySearch: natural‑language search for dashcam footage using Gemini video embeddings
+
+What it does
+- Type a query like “red truck running a stop sign,” get back a trimmed clip from your dashcam footage.
+- No transcripts or captions: it embeds raw video and text into the same vector space and matches them directly.
+
+How it works
+- Splits videos into overlapping chunks (defaults: 30s chunks, 5s overlap).
+- Preprocesses locally (480p at 5fps by default) to keep uploads small and fast.
+- Uses Google’s Gemini Embedding 2 to embed each video chunk; stores vectors in a local ChromaDB.
+- On search, embeds your text query, finds nearest matches, and uses ffmpeg to auto‑trim the best clip from the source file.
+- CLI flow: sentrysearch init (set Gemini API key) → sentrysearch index <directory> → sentrysearch search "<query>"; plus sentrysearch stats and verbose mode.
+
+Cost and performance
+- Author estimates ~$2.84 per hour of footage at defaults. Gemini processes video at 1 frame/second regardless of original FPS.
+- Still‑frame skipping (on by default) can cut costs by avoiding calls for static chunks.
+- Tuning trade‑offs: longer chunks and less overlap mean fewer API calls; preprocessing mainly speeds uploads and avoids timeouts, not billed frames.
+
+Limitations
+- Still‑frame detection is heuristic and can miss subtle motion.
+- Events straddling chunk boundaries may be less accurately retrieved; smarter scene‑based chunking could help.
+- Gemini Embedding 2 is in preview.
+
+Why it matters
+- Makes sub‑second semantic search over hours of dashcam or security footage practical with simple tooling and a local vector store.
+- A clean, open‑source CLI that shows what native video‑text embeddings can do today.
+
+Requirements and setup
+- ffmpeg (or bundled imageio‑ffmpeg), Python package install, Gemini API key (via sentrysearch init or .env).
+- Repo: https://github.com/ssrajadh/sentrysearch (open source; local DB, cloud embeddings).
+
+While users praised the implementation as "magic," the discussion immediately pivoted to the privacy implications of making video surveillance searchable via natural language. Commenters described the technology as a realistic step toward a "panopticon," with one user sharing a recent city council experience involving a vendor (Fusus) pitching similar semantic search capabilities for police and civilian cameras.
+
+The tool's creator (*shmrj*) acknowledged these concerns but argued that the current cost (~$2.50–$2.84/hr) and latency make continuous, mass real-time indexing impractical for now. However, they admitted that the trajectory toward open-weight local models running on consumer hardware will eventually bypass these barriers. Other threads explored constructive pivots for the tool, such as using it to generate Edit Decision Lists (EDLs) for software like Adobe Premiere to automate video editing tasks, or for home security to check if doors were left open.
+
+### Hypura – A storage-tier-aware LLM inference scheduler for Apple Silicon
+
+#### [Submission URL](https://github.com/t8/hypura) | 212 points | by [tatef](https://news.ycombinator.com/user?id=tatef) | [84 comments](https://news.ycombinator.com/item?id=47504695)
+
+Hypura: Run oversized LLMs on Apple Silicon by streaming tensors across GPU/RAM/NVMe
+
+- What it is: A Rust-based, storage-tier-aware inference scheduler for Apple Silicon that places model tensors across Metal GPU memory, RAM, and NVMe based on access patterns. Goal: make models that exceed physical memory actually run instead of swap-thrashing and crashing.
+
+- Why it matters: Macs have fast unified memory and NVMe but limited capacity. Vanilla llama.cpp often OOMs on big models. Hypura turns that into “runs,” with no overhead when models fit in memory.
+
+- How it works:
+  - Hardware-aware placement after profiling your Mac (GPU working set, RAM, NVMe bandwidth).
+  - GPU: attention, norms, embeddings. RAM: overflow via mmap. NVMe: on-demand direct I/O with prefetch (F_NOCACHE + pread).
+  - Modes (auto-selected):
+    - Full-resident: fits in GPU+RAM; zero overhead.
+    - Expert-streaming (MoE like Mixtral): keep non-expert tensors on GPU; stream only the 2/8 experts selected per token; router interception + neuron cache hits 99.5% after warmup; speculative prefetch of likely experts.
+    - Dense FFN-streaming (e.g., Llama 70B): keep attention+norms on GPU; stream dense FFN weights via a dynamically-sized pool buffer with auto-scaled prefetch depth.
+  - No manual tuning: pool size, prefetch depth, and budgets derive from your machine.
+
+- Performance (M1 Max, 32 GB, ~5.1 GB/s NVMe):
+  - Qwen 2.5 14B Q4_K_M (8.4 GB): ~21 tok/s (fits; matches llama.cpp).
+  - Mixtral 8x7B Q5_K_M (~31 GB): 2.2 tok/s; llama.cpp OOMs.
+  - Llama 3.3 70B Q4_K_M (~40 GB): 0.3 tok/s; llama.cpp OOMs.
+  - Key takeaway: When it fits, there’s no slowdown. When it doesn’t, Hypura trades a crash for usable throughput by streaming only what’s needed.
+
+- Dev details:
+  - Reads GGUF; vendors llama.cpp; uses Metal on Apple Silicon.
+  - Builds with Rust 1.75+ and CMake. Homebrew tap coming.
+  - Ollama-compatible HTTP API (/api/generate, /api/chat, /api/tags), so it slots into existing local AI tooling.
+
+- Quick start:
+  - git clone --recurse-submodules https://github.com/hypura/hypura.git
+  - cd hypura && cargo build --release
+  - hypura profile
+  - hypura run ./model.gguf --prompt "Hello, world"
+  - Tip: Start with --max-tokens 10 on new models.
+
+Bottom line: Smart tiering + MoE-aware streaming makes big models runnable on 32 GB Macs, unlocking local LLMs that previously crashed, while staying zero-overhead for models that fit.
+
+Here is a summary of the discussion on Hacker News:
+
+**Utility vs. Speed**
+The primary debate centered on whether "crawling" speeds (0.3 tokens/second for 70B models) are actually useful. while some users dismissed sub-1 t/s speeds as useless for interactive chat, others argued this capability is transformative for background tasks, overnight batch processing, and privacy-focused workflows where the alternative is the application crashing entirely. As one commenter put it, the trade-off is "crashing vs. finishing overnight."
+
+**Technical Constraints & MoE**
+Technical discussion focused on the bottleneck of NVMe bandwidth (5-7 GB/s sequential vs. drastic drops for random reads). Users noted—and the author confirmed—that this approach significantly favors Mixture of Experts (MoE) models (like Mixtral). Because MoE inference only activates a fraction of the parameters per token, it avoids the bandwidth saturation that cripples dense models, making specific expert streaming viable where dense streaming is not.
+
+**Hardware Safety & Nostalgia**
+A sub-thread emerged regarding hardware health, with users worrying that thrashing the SSD would degradation lifespan. The author and others clarified that inference is a read-only workload, meaning flash cell durability isn't a concern, though potential controller heating remains a factor. This prompted nostalgia for Intel Optane, with commenters noting that the defunct low-latency storage tech would have been the perfect hardware solution for this specific architecture.
+
+**Comparisons & Context**
+Users compared Hypura to existing solutions, noting that macOS's native virtual memory pager usually fails to handle these workloads gracefully (triggering OOM kills or system freezes) and that Ollama struggles with memory mapping large models. The author (ttf) participated actively, framing the project as a Proof of Concept intended to make oversized models runnable rather than breaking speed records.
+
+### Show HN: AI Roundtable – Let 200 models debate your question
+
+#### [Submission URL](https://opper.ai/ai-roundtable/) | 85 points | by [felix089](https://news.ycombinator.com/user?id=felix089) | [68 comments](https://news.ycombinator.com/item?id=47507666)
+
+I’m ready to summarize—but I don’t have the submission details yet. Please share one of the following:
+- Hacker News link or item ID
+- Article URL (or paste the text)
+- Optional: a few top HN comments you want reflected
+
+Preferences (optional):
+- Length: ~80 / ~150 / ~250 words
+- Tone: neutral / punchy / analytical
+- Include HN comment takeaways: yes/no
+- Include quick TL;DR and key takeaways: yes/no
+
+Sample format I’ll use:
+- Headline
+- The gist (2–3 sentences on what happened)
+- Why it matters (1–2 bullets)
+- HN chatter (1–2 takeaways from comments, if provided)
+- Link(s)
+
+Based on the discussion text provided, here is the summary of the submission.
+
+**Headline:** Show HN: Roundtable – Watch LLMs debate and change each other's minds
+
+**The Gist:**
+This project allows users to submit questions to a "roundtable" of different Large Language Models (LLMs)—such as Claude 3 Opus, Gemini, and others—to debate answers among themselves. Rather than providing a single zero-shot response, the models critique one another's reasoning, allowing them to refine their arguments or even change their stance based on the discussion before reaching a final consensus.
+
+**Why it matters:**
+*   **Ensemble Reasoning:** It demonstrates whether "multi-agent" debate systems produce higher accuracy or better nuance than asking a single model, essentially checking the crowd wisdom of AI.
+*   **Persuadability:** It serves as a live experiment in model robustness, testing whether models are grounded in facts or if they can be gaslit or persuaded by other models into providing incorrect answers.
+
+**HN Chatter:**
+Key takeaways from the comments:
+*   **Fun Stress Tests:** Users are rigorously testing the system with "dungeon exit" riddles, ethical dilemmas, and complex theoretical physics debates (e.g., simulating Edward Witten vs. Grothendieck).
+*   **Model Dynamics:** Commenters noted specific behaviors, such as Claude Opus being willing to change its mind (sometimes up to 100% agreement shifts) and Gemini occasionally stumbling into correct answers.
+*   **UI vs. Utility:** While the UI was praised as "slick," some users debated the commercial utility, comparing it to local multi-agent tools or suggesting it is currently more of a "fun toy" than a business workflow.
+
+**Link:**
+[Roundtable / Oppera AI](https://oppera.ai/roundtable) *(Deriving URL from comment text "httpsopperaiai-rndtbl")*
+
+### Show HN: ProofShot – Give AI coding agents eyes to verify the UI they build
+
+#### [Submission URL](https://github.com/AmElmo/proofshot) | 140 points | by [jberthom](https://news.ycombinator.com/user?id=jberthom) | [93 comments](https://news.ycombinator.com/item?id=47499672)
+
+ProofShot: an open-source, agent-agnostic CLI that gives AI coding agents “eyes” by driving a real browser, recording proof, and bundling artifacts for review.
+
+What it does
+- Closes the loop for AI-generated UI work: launches Chromium, runs your dev server, navigates the app, captures screenshots/video, and collects console/server errors.
+- Produces a shareable proof bundle: video (webm), an interactive viewer (with scrub bar, action markers, and log tabs), screenshots, a summary report, action timeline JSON, and logs.
+
+How it works
+- Three-step flow:
+  1) proofshot start — optionally boots your app (e.g., npm run dev --port 3000), opens the browser, and starts recording.
+  2) “agent-browser” commands drive the UI (open URLs, fill inputs, click, screenshot).
+  3) proofshot stop — bundles artifacts.
+- Installs a “skill” so popular AI coding tools can run the workflow automatically when you say “verify this with proofshot.”
+
+Integrations and commands
+- Works with Claude Code, Cursor, Codex, Gemini CLI, Windsurf, GitHub Copilot, or any agent that can run shell commands.
+- proofshot exec wraps agent-browser commands and logs them to the timeline.
+- proofshot diff compares screenshots against a baseline for visual regression.
+- proofshot pr uploads artifacts and posts an inline, media-rich verification comment to a GitHub PR (via gh; converts to mp4 if ffmpeg is present).
+- Local-first, no vendor lock-in; ships with headless Chromium.
+
+Why it matters
+- AI agents can generate UI, but they’re blind to what actually renders. ProofShot adds verifiable feedback: was the flow reachable, did errors fire, and does it look right?
+- Speeds code review: maintainers get a video, key screenshots, and logs aligned to timestamps.
+- Useful beyond agents too: quick visual regression checks and reproducible demos for human-authored changes.
+
+Caveats and notes
+- Currently centered on Chromium; cross-browser coverage isn’t mentioned.
+- PR upload requires GitHub CLI; mp4 conversion needs ffmpeg.
+- Still early but already practical for closing the “it works on my machine” gap for AI-driven changes.
+
+Repo: github.com/AmElmo/proofshot
+
+**ProofShot: An open-source CLI for verifying AI-generated UI**
+https://github.com/AmElmo/proofshot
+
+Discussion Summary:
+
+The discussion largely focuses on how ProofShot compares to existing tools like Playwright or the Chrome DevTools MCP. While some users questioned why `playwright-cli` isn't sufficient for this task, the creator explained that ProofShot is designed specifically for agent consumption: it handles the full lifecycle (booting the app, recording, and bundling artifacts) and uses an underlying driver (`agent-browser`) that consumes significantly fewer tokens than raw Playwright scripts.
+
+Commenters highlighted the distinction between DOM-based verification and visual verification; while Playwright confirms an element exists structurally, it might miss rendering issues like overlapping text or wrong colors—scenarios where AI agents often "gaslight" developers by claiming a fix is working when it visually isn't. Users also praised the tool's focus on generating "evidence bundles" (videos and screenshots) for Pull Requests, noting that visual regression artifacts significantly speed up human code review by removing the need to pull branches locally to verify UI changes. The creator noted that while the tool currently relies on headless Chromium, support for mobile driving (iOS/Android simulators) is a top request.
+
+### ARM AGI CPU: Specs and SKUs
+
+#### [Submission URL](https://sbcwiki.com/docs/soc-manufacturers/arm/arm-silicon/) | 107 points | by [HeyMeco](https://news.ycombinator.com/user?id=HeyMeco) | [36 comments](https://news.ycombinator.com/item?id=47506641)
+
+Arm unveils AGI CPU: 136-core Neoverse V3, 3nm, 96x PCIe Gen6, built for AI datacenters
+
+- Arm announced its first production silicon, the ARM AGI CPU, aimed at large-scale AI and “agentic” workloads in modern data centers.
+- Specs: up to 136 Neoverse V3 cores (Armv9.2 with bfloat16/INT8), up to 3.7GHz boost, dual-chiplet design, 3nm process, up to 420W TDP.
+- Memory and I/O: 12x DDR5-8800 channels for up to 6TB RAM; 96 lanes of PCIe Gen6 plus CXL 3.0 Type 3 for accelerators and memory pooling.
+- SKUs: SP113012 (136-core flagship), SP113012S (128-core TCO-optimized), SP113012A (64-core with max memory bandwidth per core).
+- Density targets: reference 10U, 2-node blades pack 272 cores each; 30 blades in an air‑cooled 36kW rack total 8,160 cores. A Supermicro liquid‑cooled 200kW design fits 336 CPUs for 45K+ cores.
+
+Why it matters
+- Marks a strategic shift: Arm moving beyond IP licensing into datacenter-grade CPUs.
+- High PCIe Gen6/CXL and huge memory capacity target AI control planes, retrieval, and accelerator-heavy deployments.
+- Rack-level density and 3nm/420W envelope aim to compete on perf/W and TCO in AI-era servers.
+
+What to watch
+- Real-world perf/W vs AMD/Intel and Arm-based rivals, accelerator attachment scaling, availability/pricing, and ecosystem adoption (boards, servers, software).
+
+Here is a summary of the discussion on Hacker News:
+
+**Performance and Technical Skepticism**
+*   Commenters challenged Arm’s claim of delivering 2x performance per rack compared to x86, calling it "obviously false" when compared to state-of-the-art rivals.
+*   Users pointed out that Intel’s *Clearwater Forest* (based on Darkmont E-cores) offers significantly higher density (288 cores per socket vs. Arm's 136) and likely better rack-level performance. AMD’s Zen 5 and upcoming Zen 6 were also cited as having superior core counts and performance-per-watt metrics.
+*   There was criticism regarding the use of Neoverse V3 cores, which are based on the 2023 Cortex-X4 architecture rather than the newer C1/Ultra designs. However, others noted that validating silicon for server standards takes years, necessitating older core IP.
+
+**Business Strategy and Market Conflict**
+*   Meaningful discussion focused on Arm shifting from an IP licensor to a silicon vendor, directly competing with its own major customers like AWS (Graviton), Microsoft (Cobalt), and Ampere.
+*   The relationship with Ampere was a focal point; users noted that SoftBank (which owns Arm) is in the process of acquiring Ampere. Speculation suggested this chip—reportedly co-developed with Meta—might signal a future consolidation of Arm and Ampere's product lines.
+*   Users observed that this specific chip puts pressure on Ampere by offering matrix math extensions (SME/SME2) that current AmpereOne chips lack, making the "AGI" CPU more viable for AI workloads.
+
+**Branding and Marketing**
+*   The "AGI" naming convention faced widespread ridicule as marketing fluff. Users debated whether it stood for "Agentic AI" or was a misleading attempt to capitalize on "Artificial General Intelligence" hype.
+*   Several comments characterized the launch as a mix of solid technical specs (memory bandwidth and density) wrapped in necessary but aggressive marketing to boost valuation or IPO context.
+
+### Epoch confirms GPT5.4 Pro solved a frontier math open problem
+
+#### [Submission URL](https://epoch.ai/frontiermath/open-problems/ramsey-hypergraphs) | 467 points | by [in-silico](https://news.ycombinator.com/user?id=in-silico) | [682 comments](https://news.ycombinator.com/item?id=47497757)
+
+AI-assisted math result: LLMs tighten bounds in a Ramsey-style hypergraph problem
+
+Epoch AI reports that an open problem from its FrontierMath: Open Problems benchmark has been solved with key ideas proposed by GPT‑5.4 Pro, guided by Kevin Barreto and Liam Price, and confirmed by problem contributor Will Brian. The task was to improve known lower bounds for H(n), a quantity tied to avoiding large “partitions” in hypergraphs—a Ramsey-theoretic construct—by giving an explicit construction that beats the standard recursive bound by a constant factor (already effective at n=15) and scales algorithmically.
+
+Brian says the approach “eliminates an inefficiency in our lower-bound construction and in some sense mirrors the intricacy of our upper-bound construction,” leading to matching lower/upper bounds that are “quite good for Ramsey-theoretic problems.” He plans a formal write-up, potentially with Barreto and Price as coauthors. Epoch links a full transcript of the model interaction and the model’s final write-up.
+
+Notably, after Epoch finished a general testing scaffold for the benchmark, several other models reproduced the result: Opus 4.6 (max), Gemini 3.1 Pro, and GPT‑5.4 (xhigh). That suggests the method isn’t a one-off quirk of a single run but a reproducible line of reasoning across systems.
+
+Why it matters:
+- Substantive math: The solution refines hypergraph constructions that forbid large partition structures, improving asymptotic lower bounds and aligning them with known upper bounds.
+- New role for LLMs: Beyond checking proofs, the model contributed a novel construction idea that a domain expert finds publication-worthy.
+- Reproducibility: Multiple models achieved the solve within a standardized scaffold, a promising sign for systematic evaluation of frontier LLMs on open problems.
+
+Links to the transcript, the model’s write-up, and future papers will be added to the Epoch page.
+
+Here is a summary of the discussion:
+
+**Deduction, Novelty, and the Philosophy of Mind**
+The discussion begins with skepticism regarding whether LLMs generate truly novel ideas or simply remix training data. User *qnlgh* initially cites simple arithmetic hallucinations as proof of structural limitations but acknowledges that recent results (like Math Olympiad performance and this hypergraph solution) challenge the "stochastic parrot" argument, suggesting Reinforcement Learning may allow models to surpass human-like stumbling blocks.
+
+User *scfy* frames the result through the lens of philosophy, arguing that LLMs force a sharper distinction between **deductive** and **inductive** knowledge. They posit that mathematics is the ideal domain for AI because it is axiomatic and deductive; unlike empirical science, which requires slow physical experimentation, math allows AI to thrive at the speed of pure computation.
+
+The thread then devolves into a heated debate regarding the Philosophy of Mind and the validity of evaluating AI understanding:
+*   **The Turing Test:** Users discuss whether the Turing Test is obsolete, with *scfy* calling it "philosophically regressive" and citing **Searle’s Chinese Room** and the concept of **Philosophical Zombies** to argue that functional output does not equate to understanding or consciousness.
+*   **The Counter-Argument:** User *jbl* vehemently pushes back, arguing that the Chinese Room and Zombie thought experiments are "extraordinarily bad argumentation" that set the philosophy of mind back by decades. Citing Daniel Dennett and Larry Hauser, *jbl* contends that these concepts have been thoroughly refuted in the literature and that continuing to cite them is a "monstrosity of misdirection."
+
+### So where are all the AI apps?
+
+#### [Submission URL](https://www.answer.ai/posts/2026-03-12-so-where-are-all-the-ai-apps.html) | 426 points | by [tanelpoder](https://news.ycombinator.com/user?id=tanelpoder) | [396 comments](https://news.ycombinator.com/item?id=47503006)
+
+HN: Where’s the “AI effect” in software output? PyPI says: mostly in AI packages, not overall
+
+What they looked at
+- PyPI as a public, consistently measured proxy for software output.
+- Two lenses: new package creation and update frequency (releases) for the 15,000 most-downloaded packages as of Dec 2025, cohorting by birth year, then splitting by “about AI” vs not, and by popularity.
+
+Key findings
+- No surge in new packages post-ChatGPT. Total packages keep compounding to ~800k; monthly new packages hover ~5–15k with spikes that map to spam/malware floods, not real creation.
+- Overall update frequency hasn’t jumped either. First-year release cadence has been rising since ~2019 (likely CI/CD adoption), not a clear post-ChatGPT break. Packages still slow their release cadence as they age.
+- The exception: AI-related packages. New AI packages after ChatGPT ship far more frequently. 2023 AI packages hit a median ~20 releases in their first year—nearly 2x non-AI peers.
+- Strongest effect in popular AI packages. Among the top 7,500 by downloads, AI packages jump to ~21–26 median releases/year post-ChatGPT vs ~10 for popular non-AI; less popular AI packages also rise, but less.
+
+What this suggests
+- No broad “2x more software” glut. The AI productivity bump doesn’t show up as more packages or a universal cadence lift.
+- It concentrates where the ground is shifting fastest: popular AI libraries and tooling iterating to keep pace with volatile models, APIs, and demand.
+- Bottlenecks for “more apps” likely lie outside coding speed—distribution, product-market fit, integration, security/compliance, and user needs—so extra coding capacity gets absorbed as faster iteration in hot AI areas rather than net-new app volume.
+
+Bottom line
+- If you expected a visible, economy-wide output spike, PyPI doesn’t show it.
+- There is a clear >2x “AI effect,” but it’s localized: popular AI packages are shipping much faster; the rest of software looks business-as-usual with a pre-existing CI-driven uptick.
+
+**Summary of Submission: HN: Where’s the “AI effect” in software output? PyPI says: mostly in AI packages, not overall**
+
+**What they looked at**
+- PyPI as a public, consistently measured proxy for software output.
+- Two lenses: new package creation and update frequency (releases) for the 15,000 most-downloaded packages as of Dec 2025, cohorting by birth year, then splitting by “about AI” vs not, and by popularity.
+
+**Key findings**
+- No surge in new packages post-ChatGPT. Total packages keep compounding to ~800k; monthly new packages hover ~5–15k with spikes that map to spam/malware floods, not real creation.
+- Overall update frequency hasn’t jumped either. First-year release cadence has been rising since ~2019 (likely CI/CD adoption), not a clear post-ChatGPT break. Packages still slow their release cadence as they age.
+- The exception: AI-related packages. New AI packages after ChatGPT ship far more frequently. 2023 AI packages hit a median ~20 releases in their first year—nearly 2x non-AI peers.
+- Strongest effect in popular AI packages. Among the top 7,500 by downloads, AI packages jump to ~21–26 median releases/year post-ChatGPT vs ~10 for popular non-AI; less popular AI packages also rise, but less.
+
+**What this suggests**
+- No broad “2x more software” glut. The AI productivity bump doesn’t show up as more packages or a universal cadence lift.
+- It concentrates where the ground is shifting fastest: popular AI libraries and tooling iterating to keep pace with volatile models, APIs, and demand.
+- Bottlenecks for “more apps” likely lie outside coding speed—distribution, product-market fit, integration, security/compliance, and user needs—so extra coding capacity gets absorbed as faster iteration in hot AI areas rather than net-new app volume.
+
+**Bottom line**
+- If you expected a visible, economy-wide output spike, PyPI doesn’t show it.
+- There is a clear >2x “AI effect,” but it’s localized: popular AI packages are shipping much faster; the rest of software looks business-as-usual with a pre-existing CI-driven uptick.
+
+***
+
+**Summary of Discussion**
+
+The discussion looked past the raw data to explore why increased coding speed hasn't translated into an explosion of finished software packages.
+
+**Prototype vs. Production**
+The most prominent theme was the distinction between writing code and shipping products. Contributors argued that while AI makes the "prototype stage" incredibly fast, the "last mile" needed to make software production-ready still consumes the majority of time and effort. Commenters noted that AI is excellent for building personal solutions ("houseplant programming" or CLI tools to solve specific problems), but turning those scripts into robust products requires UI polish, maintenance, distribution, and debugging—tasks AI struggles to fully automate.
+
+**The "Build vs. Buy" Cycle and Shadow IT**
+A debate emerged regarding enterprise software cycles. Some users suggested AI encourages a shift back toward "building" custom internal tools rather than buying vendor software. However, skeptics feared this will repeat the history of "shadow IT," comparing AI-generated code to the unmaintainable Visual Basic, Microsoft Access, or FoxPro "messes" of the 1990s and 2000s. The consensus leaned toward the idea that AI helps generate logic, but often lacks the context to build maintainable, long-term enterprise architecture.
+
+**Deployment Complexities: Desktop vs. SaaS**
+A significant sidebar explored why software maintenance is difficult enough to stifle output. Users contrasted the "DLL hell" and registry management of legacy desktop applications with modern SaaS/Kubernetes environments. Most developers agreed that while modern cloud apps have high complexity, the SaaS model is preferable because it allows engineers to support a single version in a controlled environment, rather than debugging unique client-side configurations or supporting a matrix of legacy versions.
+
+**Cost and Sustainability**
+Finally, the thread touched on the economics of AI coding assistants. While some argued that current pricing models (e.g., $20/month) yield massive productivity returns, others debated whether these costs are artificially low due to VC subsidies. Comparisons were drawn to historical hardware costs, with some users predicting long-term price drops for inference, while others worried about potential price hikes once market dominance is established.
+
+### Is anybody else bored of talking about AI?
+
+#### [Submission URL](https://blog.jakesaunders.dev/is-anybody-else-bored-of-talking-about-ai/) | 691 points | by [jakelsaunders94](https://news.ycombinator.com/user?id=jakelsaunders94) | [495 comments](https://news.ycombinator.com/item?id=47508745)
+
+A developer laments that AI discourse has swallowed the maker zeitgeist. While AI is undeniably useful and a daily part of their workflow, they argue the conversation has become repetitive and tool-obsessed, crowding out posts about actual products, problems, and outcomes.
+
+Key points:
+- The “product engineer” ethos—focusing on delivering value—has given way to obsessing over AI workflows that mostly speed up the easiest part of engineering.
+- Feeds like Hacker News and Kagi’s Small Web feel saturated with near-identical posts about using the same AI tools in the same ways.
+- Management has joined the hype, pushing “use more AI” objectives and dubious metrics like tokens-per-dev—echoing the old lines-of-code fallacy.
+- Call to action: talk less about hammers, more about the tables—i.e., share the projects, users served, and value created.
+- The author notes the irony of complaining about AI posts with… another AI-adjacent post.
+
+Why it matters: Tooling is important, but shipping valuable products is the point. Re-centering on outcomes over instruments could restore signal to dev communities and keep teams from optimizing vanity metrics instead of impact.
+
+**Discussion Summary:**
+
+The discussion branched into a philosophical debate regarding the changing nature of software engineering, the location of actual bottlenecks in development, and the capabilities of non-technical founders.
+
+**The "Identity Crisis" of Engineering**
+A prompt-driven thread of discussion—spearheaded by user *_doctor_love* and expanded by *AbanoubRodolf*—suggested that the current angst in the industry stems from an "identity crisis." They argued that AI is automating the "incidental" parts of the job (syntax, framework quirks), which threatens engineers who built their careers on memorizing obscure technical knowledge rather than high-level "systems thinking." However, this view faced pushback from *dglsh*, who argued that framing valid skepticism as an "identity crisis" is a way to dismiss professional criticism using corporate-friendly language.
+
+**The Code Bottleneck vs. Verification**
+Users debated whether AI accelerates the right parts of the workflow:
+*   **Skeptics** (*mrc, ok_dad*) argued that writing code is rarely the actual bottleneck; designing correct solutions is. They contended that the time required to verify and debug unreliable AI code often negates any speed gains, sometimes taking longer than doing it manually.
+*   **Proponents** (*kkndv, hprdz*) countered that implementation is still a significant labor cost. They noted AI allows developers to finally tackle "back-burner" projects and assists those tasked with porting code or working in languages they are less familiar with.
+
+**Barrier to Entry and "The Weekend App"**
+The community discussed the author’s point about "builders" versus "prompt engineers." While some users celebrated that smart people can now write software without spending years learning syntax (*mkkpkk*), others were skeptical of the resulting quality. User *strkn* noted that using AI is simply a new form of learning software engineering, while *bstmm* cautioned that there is a massive difference between prompting a CRUD app into existence and building software that is scalable, secure, and maintainable.
+
+### LLM Neuroanatomy II: Modern LLM Hacking and Hints of a Universal Language?
+
+#### [Submission URL](https://dnhkng.github.io/posts/rys-ii/) | 135 points | by [realberkeaslan](https://news.ycombinator.com/user?id=realberkeaslan) | [36 comments](https://news.ycombinator.com/item?id=47500709)
+
+LLM Neuroanatomy II: RYS still works on modern models — and the “thinking space” looks language-agnostic
+
+- The gist: The author revisits RYS (Repeat Your Self) — literally duplicating middle transformer layers with no retraining — and finds it still boosts performance on modern open models. They also present new evidence that LLMs share a universal, language-agnostic “reasoning space” in their middle layers.
+
+- What’s new
+  - Validates RYS beyond Qwen2-72B: On Qwen3.5-27B, relayering “survives,” suggesting the effect isn’t a one-off but a broader transformer property.
+  - Large search effort: 3,024 beam-search candidates, a surrogate model scoring ~2M configurations, and unified validation to identify which relayering motifs actually help.
+  - Code and new RYS variants released.
+
+- Why Qwen3.5-27B
+  - Community-friendly sweet spot: small enough to run, big enough to show interesting internal structure.
+  - Scientific angle: If RYS works in a 27B model (where functions are more entangled), that strengthens the case for robust, modular circuit structure.
+  - Bigger models (e.g., MiniMax, GLM, >200B targets) are in the pipeline.
+
+- Anatomy you can see
+  - Confirms a three-phase structure: early layers encode, middle layers reason, late layers decode.
+  - New experiment: Across multiple languages and topics, layerwise cosine similarity shows:
+    - Early layers quickly converge (encoding).
+    - Middle layers become near-identical across languages (reasoning in a format-agnostic “thinking space”).
+    - Final layers diverge again as the model decodes back to surface form.
+  - Crucially, content similarity can outweigh language similarity in the middle layers, supporting a universal intermediate representation.
+
+- Why it matters
+  - Practical: You can get real gains by rearranging layers rather than retraining — a powerful, compute-cheap tuning knob for open models.
+  - Scientific: Strengthens the case that transformers implement modular phases and a shared, language-agnostic reasoning substrate.
+  - Ecosystem: Offers a systematic, open methodology (search + surrogate scoring) for architecture-level hacks without new data.
+
+- Open questions
+  - Which relayering motifs generalize best across model families?
+  - Do multiple helpful motifs stack additively, or are there diminishing/conflicting interactions?
+  - How far does the universal “thinking space” extend across modalities and tasks?
+
+- Releases
+  - Scanning/search code and new RYS models are available from the author.
+
+Here is the summary of the discussion:
+
+**Confirming the "Thinking Space"**
+The author (@dnhkng) engaged actively, explaining the experiments utilized to validate the "thinking space." Using cosine similarity, they found that in the middle layers (the "reasoning" phase), representations of identical content across different languages (e.g., English vs. Mandarin) are nearly identical, whereas representations of different content within the same language diverge significantly. This suggests the model converts inputs into a universal, language-agnostic format for processing before decoding them back to the target language.
+
+**The "RYS" Mechanism and Methodology**
+Commenters discussed *why* duplicating layers (Repeat Your Self) works without retraining. The consensus—supported by the author—is that the middle layers form a coherent internal loop with compatible input/output distributions.
+-   **Neural ODEs:** Users drew parallels to Neural Ordinary Differential Equations and the Euler method, suggesting the middle layers act as iterative refinement steps (like time steps in an RNN) rather than distinct hierarchical features.
+-   **Search vs. Vibes:** While "Frankenmerges" (like Solar 10.7B or Goliath) have used layer duplication before, the author emphasized that this research utilized a massive beam search (scoring ~2 million configurations) to scientifically identify the optimal "organs" to duplicate, rather than relying on trial and error.
+
+**Efficiency and Hardware Implications**
+The discussion touched on the practical utility of RYS for local and edge inference:
+-   **VRAM Usage:** While duplicating layers increases memory usage, the author suggested a promising inverse approach: deleting redundant layers to save VRAM, then duplicating highly efficient middle layers to recover the lost performance.
+-   **Implementation:** Several users expressed interest in implementing this in inference engines like Llama.cpp, and the author mentioned ongoing work to integrate these finding with ExLlamaV3.
+
+**Scientific Analogies**
+The conversation sparked theoretical comparisons to other fields:
+-   **Linguistics:** Users compared the language-agnostic middle layers to Noam Chomsky’s theory of "Deep Structure" or Universal Grammar.
+-   **CNNs:** One user likened the early layers to Convolutional Neural Networks learning generalized basis functions (edges/shapes) before passing them to higher-order recognition layers.
+-   **Human Cognition:** The "universal space" reminded some of how polyglots or savants might abstract concepts independent of the language used to express them.
+
+### I created my first AI-assisted pull request
+
+#### [Submission URL](https://nelson.cloud/i-created-my-first-ai-assisted-pull-request-and-i-feel-like-a-fraud/) | 86 points | by [nelsonfigueroa](https://news.ycombinator.com/user?id=nelsonfigueroa) | [77 comments](https://news.ycombinator.com/item?id=47497679)
+
+AI helped me ship, but it stole the joy
+
+A developer used Claude Code to add ERB syntax highlighting to Chroma (Hugo’s default highlighter). The PR was approved and merged—objectively valuable work the author doubts they could’ve done alone given time and context constraints. Subjectively, it felt like “flinging slop,” learning nothing, and deepening impostor syndrome. The post echoes a broader mood: AI gets results, but can make coding feel hollow—“as fun as hiring a taskrabbit to solve my jigsaw puzzles.” With AI use increasingly expected at work and rewarded in performance reviews, the author worries craftsmanship and understanding are being displaced by speed and output. They’re left questioning an identity long tied to learning and building, while acknowledging AI’s real utility.
+
+Why it matters:
+- Captures a growing tension in software: productivity vs. pride-in-craft.
+- Highlights OSS maintainers’ new reality—merging useful AI-assisted contributions that may not teach contributors much.
+- Underscores cultural shifts at work: incentives favor shipping fast, even if it “feels like slop.”
+
+HN discussion gravitates around whether this is just a new tool (like compilers and frameworks) or something that outsources the part many of us found meaningful.
+
+**AI helped me ship, but it stole the joy**
+A developer recounts using Claude Code to implement ERB syntax highlighting for Chroma, a task they admit they wouldn't have completed otherwise due to time and context constraints. While the pull request was merged and objectively valuable, the author describes the process as hollow—likening it to "flinging slop" or hiring a Taskrabbit to solve a jigsaw puzzle. The post explores a growing tension in software development: while AI provides speed and output that satisfies performance reviews, it strips away the learning, identity, and craftsmanship that drew many to the profession in the first place.
+
+**Hacker News Discussion**
+The comment section revolves around metaphors attempting to define the developer's changing relationship with code, oscillating between "using a better tool" and "outsourcing the hobby."
+
+**The "Director" vs. The "Carpenter"**
+A significant portion of the debate focuses on appropriate analogies for AI coding.
+*   **Power Tools:** Some argue this is the natural evolution of the craft, similar to a woodworker moving from hand saws to power saws. The argument is that while motorized tools remove manual labor, they introduce their own complexity that must be managed.
+*   **Film Direction:** One user likened the shift to becoming a film director—you don't hold the camera or build the set, but you have the vision. 
+*   **The Intern:** Others pushed back hard on the "tool" and "director" analogies. They argue that using an LLM feels more like "directing an intern" or "hiring a kid." The user noted that while a director manages humans (which has its own rewards), managing an LLM feels isolating. As one commenter put it, "Directors work with people... using an LLM is like saying 'make me a movie'."
+
+**The Tomato Analogy (Outcome vs. Process)**
+A massive thread diverged into a debate about gardening, triggered by a comment comparing AI coding to buying tomatoes versus growing them.
+*   **The illogical joy:** Users pointed out that while buying a tomato (using AI) is rational and efficient, the "irrational" act of growing them (coding manually) provides the joy.
+*   **Quality control:** This sparked a passionate debate on the quality of "supermarket tomatoes" (generated code) versus "heirlooms" (hand-crafted code). Commenters argued that the "store-bought" version is often bland and unripe, whereas the difficult, manual process yields a superior result (better flavor/understanding).
+*   **Identity:** This highlighted the core conflict: if the goal is just *having* a BLT (shipping a feature), the store is fine. If the goal is *gardening* (learning/mastery), the store defeats the purpose.
+
+**"The Exosuit" and Imposter Syndrome**
+Several users addressed the feeling of fraudulence described by the author. One suggested an "exosuit" analogy: if you use a powered suit to lift a heavy weight, you achieved the lift, but you cannot claim to have the muscle mass. The fraudulence comes from confusing the output with personal capability. Another commenter noted that if the OP had phrased it as "I paid a service to implement this," the guilt would vanish; the tension arises because the developer still views themselves as the builder.
+
+**Historical Parallels**
+Finally, veteran engineers drew comparisons to the evolution of the Database Administrator (DBA) role. In 1999, DBAs dealt with physical disk geometry and low-level tuning; by 2010, abstraction layers and better hardware automated those tasks. The suggestion is that the "joy" of low-level manipulation often gets automated away, forcing the role to evolve into higher-level architecture—whether the practitioner likes it or not.
+
+### Sandboxing AI agents, 100x faster
+
+#### [Submission URL](https://blog.cloudflare.com/dynamic-workers/) | 44 points | by [kentonv](https://news.ycombinator.com/user?id=kentonv) | [9 comments](https://news.ycombinator.com/item?id=47502448)
+
+Cloudflare is opening up Dynamic Worker Loader, a way to spin up per-request JavaScript sandboxes (V8 isolates) to run AI‑generated code safely—aimed at “Code Mode” agents that write code instead of making tool calls.
+
+Key points:
+- Why: Running AI‑generated code needs a true sandbox; containers are heavy (hundreds of ms to boot, hundreds of MB RAM) and encourage risky reuse.
+- What’s new: From a Cloudflare Worker, you can instantiate another Worker at runtime with provided code, inject only specific capabilities via RPC stubs, and even block or intercept internet access (e.g., globalOutbound: null). Open beta for paid Workers users.
+- Performance claims: Isolates start in a few milliseconds and use a few MB—about 100x faster and 10x–100x more memory‑efficient than typical containers. Dynamic Workers usually run on the same machine/thread as the caller for near‑zero added latency, and inherit Workers’ global scalability with no special concurrency limits.
+- Fit with Code Mode/MCP: Cloudflare previously showed converting MCP servers to TypeScript APIs can cut token usage by 81%, and even exposed the full Cloudflare API via an MCP server using just two tools and under 1,000 tokens. Dynamic loading lets those agent‑written snippets run safely on demand.
+- Constraints: JavaScript‑first. While Python/WebAssembly are possible, JS is recommended for tiny, on‑the‑fly snippets. Tools/APIs are best expressed as concise TypeScript interfaces so LLMs get strong typing with minimal tokens.
+
+Why it matters: If isolates deliver the claimed startup and memory profile at Cloudflare’s edge, this could make per‑request, capability‑scoped execution of AI‑written code practical at consumer scale—without the container tax. Potential trade‑offs to watch: JS‑only bias and the usual platform lock‑in considerations.
+
+The discussion contrasts these V8 isolates with the difficulty of securing native Python environments; a user's attempt to share a "safe" Python `eval` method was quickly debunked with multiple exploits, illustrating the complexity of reliable sandboxing without heavy containers. Technical exchanges clarified that Dynamic Workers lack a native filesystem, instead relying on RPC interfaces or Durable Objects (SQLite) to provide data access to the AI. Regarding dependencies, it was noted that while full Linux VM flexibility is absent, specific bundlers utilize a "harness" architecture to allow AI agents to import and run arbitrary npm modules.
+
+### Claude-Code Automode
+
+#### [Submission URL](https://claude.com/blog/auto-mode) | 21 points | by [marginalx](https://news.ycombinator.com/user?id=marginalx) | [5 comments](https://news.ycombinator.com/item?id=47506708)
+
+Anthropic adds “auto mode” to Claude Code for safer unattended runs
+
+Link: https://claude.com/blog/auto-mode
+
+TL;DR: Claude Code now has an “auto mode” that automatically approves or blocks tool calls using a safety classifier, letting longer tasks run with fewer prompts. It’s meant to be a middle ground between per-action approvals and the risky --dangerously-skip-permissions.
+
+How it works
+- Before each file write or shell command, a classifier checks for risky patterns (mass deletes, data exfiltration, malicious exec).
+- Safe actions run automatically; risky ones are blocked and Claude is redirected. Repeated blocks trigger a permission prompt.
+- Expect fewer interruptions than default, but far less risk than skipping all permissions.
+
+Why it matters
+- Enables long-running workflows without babysitting.
+- Reduces foot-gun risk versus fully bypassing permissions—useful outside throwaway sandboxes.
+
+Caveats
+- Not foolproof: ambiguous intent or missing context can still allow risky actions or block benign ones.
+- Slight overhead in tokens/cost/latency.
+- Still recommended for isolated environments.
+
+Availability
+- Research preview now for Team; rolling out to Enterprise and API “in the coming days.”
+- Works with Claude Sonnet 4.6 and Opus 4.6.
+
+How to try it
+- CLI: claude --enable-auto-mode (then cycle modes with Shift+Tab).
+- VS Code/Desktop: Settings -> Claude Code -> toggle Auto Mode, then select it in the permission mode dropdown.
+- Admins: can disable via managed setting "disableAutoMode": "disable". Auto mode is off by default on Desktop; toggle via Organization Settings -> Claude Code.
+
+**Anthropic adds “auto mode” to Claude Code for safer unattended runs**
+
+Discussion regarding Anthropic's new "auto mode" for Claude Code was relatively light, with one user noting the stark contrast between the quiet comment section on Hacker News and the viral engagement the announcement received on X (Twitter).
+
+In terms of technical feedback:
+*   One user suggested that maintaining a massive allowlist for parsing and tokenizing commands—rather than relying on a classifier or raw bash execution—is a safer approach, sharing a personal GitHub project that attempts to implement this.
+*   Another commenter welcomed the feature as a safer alternative to the current defaults but admitted they would likely continue using the `--dangerously-skip-permissions` flag for non-critical projects, as they are already comfortable with that workflow.
+
+### Slowing Down in the Age of Coding Agents
+
+#### [Submission URL](https://the.scapegoat.dev/slowing-down-in-the-age-of-coding-agents/) | 17 points | by [larve](https://news.ycombinator.com/user?id=larve) | [3 comments](https://news.ycombinator.com/item?id=47504904)
+
+Slowing Down in the Age of Coding Agents (Mar 21, 2026)
+Hook: In a world racing to stack agents on agents, this piece argues the real bottleneck isn’t code—it’s thought.
+
+Key idea: Coding agents have turned software into a factory floor, rewarding throughput. But LLMs simply accelerate whatever you feed them. If your abstractions, notation, and prompts are mediocre, you’ll get fast, scalable mediocrity. The leverage is upstream: better ideas, clearer representations, tighter architectures.
+
+What the author changed:
+- Optimized for thinking time: 2–3 quiet morning hours reading books, papers, and Deep Research outputs instead of writing code.
+- Embraced analog friction to think deeper: e‑ink typewriter for drafting, e‑ink tablet + pen for reading/annotating, sketchbooks for system diagrams.
+- Used LLMs and tools like Kagi to avoid search rabbit holes and surface niche blogs with richer ideas.
+- Let slow agent runs create space to reflect; resisted running fleets of parallel tasks to avoid task-switching costs.
+
+Workflow (“annotation cycle”):
+- Start every feature with an agent‑generated design doc: problem analysis, plan, file/symbol refs, API signatures, code snippets—essentially literate programming for each commit.
+- Organize everything with a small tool (docmgr) and keep agent “diaries” to preserve session memory.
+- Read design docs on e‑ink with a pen, tracing each claim to the original prompt, flagging unknown symbols/jargon, and correcting prompts or direction before writing code.
+
+Why it matters: Agents remove the typing bottleneck, not the thinking one. Durable systems come from sharpening concepts and notation first—then letting the model go fast on a well-shaped problem.
+
+**Slowing Down in the Age of Coding Agents**
+In a world racing to stack agents on agents, this piece argues the real bottleneck isn’t code—it’s thought. The author shifted their workflow to prioritize quiet reading and e-ink drafting over maximizing agent throughput, using LLMs only after concepts are rigorously defined.
+
+**Discussion Highlights**
+
+*   **The cost of parallelism:** Commenters resonated with the difficulty of managing "fleets" of agents, noting that maximizing parallelism incurs a heavy "task-switching cost" for the human operator. One suggestion for future interfaces was a UI that enforces a "singular work stream" rather than scattering focus across multiple asynchronous windows.
+*   **Architecture for non-determinism:** A technical thread explored using tools like `systemd` and file locks to build test harnesses for agents. The user noted that because agent outputs are non-deterministic, rigor is required in the environment (e.g., locking directories) to prevent execution loops.
+*   **"Grunt work" as the killer app:** While the article focuses on high-level design, users argued that agents are still best at "copy-paste-find-replace" tasks—like fixing Docker builds or upgrading dependencies—which effectively buys back the "full focus time" the author prizes.
+*   **Analog validation:** Readers validated the "measure twice, cut once" approach, confirming that moving planning to an "analog-ish" medium improves final project outcomes (with one user spotting a Pentax 17 camera in the OP's setup).
+
+### LiteLLM PyPI has been compromised an hour ago, do not update
+
+#### [Submission URL](https://futuresearch.ai/blog/litellm-pypi-supply-chain-attack/) | 27 points | by [Bullhorn9268](https://news.ycombinator.com/user?id=Bullhorn9268) | [4 comments](https://news.ycombinator.com/item?id=47501431)
+
+Litellm PyPI supply‑chain attack: malicious 1.82.7/1.82.8 auto‑executes on Python start, steals secrets, tries K8s takeover; yanked after discovery
+
+What happened
+- On Mar 24, 2026 (10:52 UTC), litellm 1.82.8 was uploaded directly to PyPI (no matching GitHub tag), containing a litellm_init.pth file that runs on every Python interpreter start. Version 1.82.7 was also compromised.
+- The .pth spawns a child Python process on import; because .pth executes at startup, this caused an inadvertent fork bomb that crashed machines—how the malware was discovered.
+- Payload stages:
+  - Collection: scrapes SSH keys/configs, .env files, cloud creds (AWS/GCP/Azure), kube configs/tokens, DB passwords, shell history, crypto wallets, env vars, and cloud metadata endpoints.
+  - Exfiltration: bundles data, encrypts with AES-256 and a hardcoded 4096-bit RSA key, then POSTs to https://models.litellm.cloud/ (not part of legitimate litellm infra).
+  - Lateral movement/persistence: if a Kubernetes SA token exists, reads all secrets cluster‑wide and tries to schedule privileged alpine:latest pods on each node in kube-system to install a backdoor at /root/.config/sysmon/sysmon.py via a systemd user service; also attempts local persistence at ~/.config/sysmon/sysmon.py.
+- Discovery came from FutureSearch engineers when litellm was pulled as a transitive dependency in a Cursor MCP plugin. No FutureSearch user data was affected.
+- After initial chaos—including a GitHub issue closed as “not planned” amid bot spam and signs the maintainer account was compromised—the malicious releases were yanked and PyPI quarantine lifted. Maintainers are handling cleanup. A community thread tracks it (litellm #24512). FutureSearch published a follow‑up analysis and an interactive checker.
+
+If you might be affected
+- Check versions: If you installed/upgraded litellm on or after Mar 24, 2026, look for 1.82.7 or 1.82.8 (pip show litellm). Inspect caches/venvs, including CI/CD.
+- Remove and purge caches: Uninstall litellm and clear package caches (e.g., pip cache purge or rm -rf ~/.cache/uv) to avoid reinstalling cached wheels.
+- Hunt persistence:
+  - Local: ~/.config/sysmon/sysmon.py and ~/.config/systemd/user/sysmon.service
+  - Kubernetes: privileged pods named like node-setup-* in kube-system; review cluster secrets for unauthorized access
+- Rotate credentials: Treat any secrets on affected hosts as compromised—SSH keys, cloud creds/tokens, kubeconfigs, .env/API keys, DB passwords.
+- Monitor egress: Block/alert on exfil to models.litellm.cloud and review logs for unusual Python startup behavior.
+
+Why it matters
+- A single .pth in a widely used ML tooling package became a universal auto‑exec vector across any Python process, showing how easy it is for PyPI compromises to become full host and cluster breaches—especially in AI/dev tooling chains where transitive deps are common.
+
+**Discussion Summary:**
+
+The conversation is brief and focuses on prevention via package management. One user notes their switch to **pnpm** for its supply chain security features and inquires if **uv** requires specific configuration (specifically referencing the `exclude-newer` setting) to provide similar protections. Other comments link to the active GitHub issue (#24512) tracking the incident.
+
+---
+
 ## AI Submissions for Sun Mar 22 2026 {{ 'date': '2026-03-22T17:25:34.485Z' }}
 
 ### Flash-MoE: Running a 397B Parameter Model on a Laptop
@@ -442,228 +1031,3 @@ Users discuss how these specific quoting errors occur.
 Commenters examine how this specifically happened within a journalism context.
 *   **The "Substack" Loophole:** In response to questions about how this passed editorial review (*ashwinnair99*), users point out that the fabricated quotes were published in the journalist's newsletters/Substack, which likely sit outside the strict editorial controls of the main newspaper (*mcrtnl*, *clydthfrg*).
 *   **The State of Media:** *ntndd* notes the irony of the modern media landscape: firms penalize journalists for errors but have stripped away the resources (copy editors, fact-checkers) that traditionally prevented them, all while demanding higher velocity content.
-
----
-
-## AI Submissions for Fri Mar 20 2026 {{ 'date': '2026-03-20T17:11:32.337Z' }}
-
-### OpenCode – Open source AI coding agent
-
-#### [Submission URL](https://opencode.ai/) | 1089 points | by [rbanffy](https://news.ycombinator.com/user?id=rbanffy) | [539 comments](https://news.ycombinator.com/item?id=47460525)
-
-OpenCode releases cross‑platform desktop beta for its open‑source AI coding agent
-
-- What it is: An open source coding agent that now runs as a desktop app on macOS, Windows, and Linux, alongside a terminal UI and IDE extensions.
-- Why it matters: It aims to be model‑agnostic and privacy‑first, letting developers use free/local models or plug in existing AI subscriptions, while auto-configuring language servers and enabling collaborative debugging.
-
-Highlights
-- Model choice: Use included free models or connect 75+ providers via Models.dev (supports Claude, GPT, Gemini, local models). Log in with GitHub Copilot or OpenAI (ChatGPT Plus/Pro).
-- Dev UX: LSP auto-setup, multi-session agents in parallel on the same project, and shareable session links for reference/debugging.
-- Privacy stance: Claims it does not store your code or context data.
-- Adoption stats: Claims 120K GitHub stars, 800 contributors, and 5M monthly developers.
-- “Zen” option: Access to a curated set of models benchmarked specifically for coding agents to reduce quality variance across providers.
-- Install: curl -fsSL https://opencode.ai/install | bash (also mentions npm, bun, brew, paru).
-
-Questions you might have
-- How privacy is handled when routing to third‑party model APIs
-- License specifics and which components are open source
-- Desktop beta stability and feature parity vs. terminal/IDE
-- How “Zen” is billed and whether it’s required or optional
-
-Links
-- Homepage and installer: opencode.ai (per the install script)
-
-**Discussion Summary**
-
-The discussion focuses heavily on performance trade-offs, security defaults, and the choice of technology stack.
-
-*   **Performance & Stack Wars:** A significant portion of the comments criticize the use of TypeScript (specifically React + Ink for the TUI) for this and similar tools like pure-software Claude Code. Users report high resource usage (gigabytes of RAM, high CPU) and "sluggish" interfaces compared to Rust-based alternatives, which are praised for being "snappy" and resource-efficient (e.g., ~80MB RAM). While some argue TypeScript makes the project more accessible to contributors, others contend that performance is a critical feature for dev tools and suggest Go or Rust would be superior choices for shipping single binaries.
-*   **Privacy & "Leakage" Concerns:** Users identified specific privacy risks regarding default configurations.
-    *   **Title Generation:** One user noted that even when the main coding agent is set to a local model, the "small model" used to generate session titles/summaries may silently default to a cloud provider (like Grok or OpenAI) or the "Zen" endpoint, inadvertently sending prompt data to the cloud.
-    *   **Remote Config:** Concerns were raised about the tool fetching configuration/provider URLs by default, which some users view as a potential RCE vulnerability.
-*   **Stability & Release Cadence:** Early adopters described the experience as "buggy," citing a rapid release cycle that frequently breaks existing features or introduces regressions. The "move fast and break things" approach is causing friction for those attempting to use it for serious work.
-*   **Windows Issues:** Users reported that Windows Defender and other AV software are flagging the desktop installer/app as a trojan or malicious, likely due to how it executes shell scripts and handles remote URLs.
-
-### Attention Residuals
-
-#### [Submission URL](https://github.com/MoonshotAI/Attention-Residuals) | 216 points | by [GaggiX](https://news.ycombinator.com/user?id=GaggiX) | [29 comments](https://news.ycombinator.com/item?id=47458595)
-
-MoonshotAI’s “Attention Residuals” (AttnRes): make residuals attend over depth
-
-- What it is: A drop-in replacement for standard Transformer residual connections. Instead of uniformly adding every previous layer’s output, each layer uses a learned, input-dependent softmax over all earlier representations (attention over depth).
-- Why it matters: Uniform accumulation in PreNorm can dilute signal and blow up hidden-state magnitudes as depth increases. AttnRes aims to keep magnitudes bounded and distribute gradients more evenly across layers, improving training stability and efficiency.
-- How it works: For layer l, h_l is a weighted sum of all prior outputs, with weights computed from a single learned “pseudo-query” per layer. A practical “Block AttnRes” variant attends over block-level summaries (not every layer) to cut memory from O(Ld) to O(Nd); ~8 blocks reportedly recover most gains with marginal overhead.
-- Results:
-  - Scaling: Matches the loss of a baseline trained with ~1.25x more compute.
-  - Downstream (Kimi Linear 48B / 3B activated, 1.4T tokens): broad improvements, notably GPQA-Diamond +7.5 (36.9 → 44.4) and HumanEval +3.1 (59.1 → 62.2). Also modest lifts on MMLU, BBH, TriviaQA, Math, MBPP, CMMLU, and C-Eval.
-- Implementation: PyTorch-style pseudocode provided; apply AttnRes before both attention and MLP; block boundaries handled by simple bookkeeping.
-
-Takeaway: A lightweight architectural tweak that treats depth like a sequence, trading uniform residual sums for content-aware aggregation—and delivering consistent quality and compute-efficiency gains in reported tests.
-
-**The Author:** A significant portion of the discussion focuses on the revelation that the lead author is a high school student. This sparked a geopolitical debate regarding STEM education systems, comparing the output of engineering talent in China, India, and the West, alongside arguments about the reliability of Chinese demographic and enrollment statistics.
-
-**Performance & Efficiency Interpretations:**
-*   **Training vs. Inference:** Users debated the paper’s performance claims. While some initially interpreted "1.25x compute efficiency" as faster training or reduced inference bandwidth, others clarified that this metric refers to **training efficiency** (achieving the same loss with less compute).
-*   **Inference Overhead:** Commenters noted that inference is strictly simpler (and potentially faster) in standard Transformers; AttnRes introduces slight overhead. The claim of "1/6th memory bandwidth" was debunked by some as a specific comparison to DeepSeek’s mHC architecture, rather than a general improvement for consumer hardware.
-
-**Technical Details:**
-*   **Mechanism:** Users compared the architecture to LSTM input gates, noting that it replaces the "uniform addition" of standard residual connections with a mechanism that lets the model "decide" how much of the previous signal to use via attention.
-*   **Block AttnRes:** Commenters highlighted the "Block" variant as essential for implementation, explaining that it partitions layers to reduce memory complexity from $O(Ld)$ to $O(Nd)$, making the method practical with only marginal overhead.
-
-### NumKong: 2'000 Mixed Precision Kernels for All
-
-#### [Submission URL](https://ashvardanian.com/posts/numkong/) | 45 points | by [ashvardanian](https://news.ycombinator.com/user?id=ashvardanian) | [4 comments](https://news.ycombinator.com/item?id=47459447)
-
-SimSIMD is reborn as NumKong: a CPU-first, mixed-precision tensor math library with ~2,000 SIMD kernels across 200k lines, spanning C, C++, Rust, Swift, JavaScript, Go, and Python. It aims to bring GPU-era numeric formats and tiled compute to mainstream CPUs, with a strong emphasis on correctness, portability, and developer UX.
-
-What’s new
-- Broad ISA coverage: RISC-V Vector (RVV), Intel AMX, and Arm SME tiles, plus classic SIMD backends.
-- Mixed-precision everywhere: BF16, FP16, FP8, and even “Float6” (E3M2/E2M3) on any CPU; native Int4/UInt4 dot products via nibble algebra.
-- Numerics you can trust: compensated sums (Neumaier, Dot2), Ozaki scheme for Float64 GEMM using Float32 tile hardware, validated against in-house 118‑bit floats.
-- End-to-end ops: from GEMM-like batched dots to geospatial (Haversine/Vincenty, claimed up to 5,300x faster than GeoPy), 3D alignment (Kabsch/Umeyama, ~200x over BioPython), and ColBERT-style fused MaxSim for GPU-free late interaction.
-- WebAssembly SIMD backend for sandboxes, edge, and browsers.
-- Lean delivery: ~5 MB binaries and wheels for 7 languages.
-
-Performance snapshot (single-thread, Intel Xeon4)
-- Trades speed for accuracy in FP64/FP32 (e.g., tighter FP64 error ~1e‑16), but shines in low-precision:
-  - FP16: approaches PyTorch MKL speed with lower error.
-  - FP8 and Int8: very large speedups with “0% err” claims (exact/overflow-safe accumulation), e.g., Int8 ~1,279 gso/s vs 50 gso/s in PyTorch+MKL.
-- Much smaller binary size than PyTorch+MKL (5 MB vs ~705 MB shown).
-
-RISC-V state of play (and why NumKong cares)
-- No public cloud RVV 1.0 yet; Scaleway’s C910 is stuck at 0.7.1 (binary-incompatible with 1.0, missing key features like fractional LMUL and some BF16 support).
-- No ratified RVV matrix extension yet, unlike AMX/SME.
-- Still, RVV offers standout instructions NumKong exploits: segment loads (deinterleave AoS), compact/scan (viota+vcompress), widening reductions (vfwredusum), and unique widening FMAs (e.g., f64 += f32×f32 without intermediate rounding), enabling robust, high-precision kernels.
-
-Why it matters
-- Pushes CPU-only inference and data processing forward with modern formats and tight error control.
-- Portable, small-footprint kernels across seven languages and WASM open up edge and browser scenarios.
-- Offers an alternative design point to BLAS/MKL: accuracy-first where it matters, plus aggressive low-precision throughput with correctness guarantees.
-
-Caveats
-- Benchmarks are single-threaded on Sapphire Rapids; multi-thread and cross-hardware results will vary.
-- RISC-V support is constrained by ecosystem maturity and spec fragmentation.
-- Some headline numbers (e.g., “0% err” in FP8/Int8) reflect author-provided tests/settings; broader validation will be of interest to users.
-
-**Discussion Summary**
-
-The discussion focused on the project's documentation style and hardware compatibility:
-
-*   **Documentation style:** User `jmlck` expressed frustration with the README, suggesting it felt artificial and difficult for humans to understand ("hype building"). The author (`shvrdnn`) clarified that while the core text was written by a human, they used AI models extensively to refine the content.
-*   **Hardware support:** User `Archit3ch` asked about the library's ability to process Apple's implementation of SME (Scalable Matrix Extension).
-
-### AI (2014)
-
-#### [Submission URL](https://blog.samaltman.com/ai) | 77 points | by [bjornroberg](https://news.ycombinator.com/user?id=bjornroberg) | [69 comments](https://news.ycombinator.com/item?id=47453010)
-
-Sam Altman: AI is underhyped, AGI would be the biggest tech shift ever
-
-- The pitch: Despite its spotty history and bad reputation, AI—especially AGI—deserves far more optimism. If it works, it will eclipse every prior tech breakthrough.
-- Progress so far: We already have superhuman performance in narrow domains (chess, aviation, etc.), but we tend to downplay these as “not real AI.” Serious efforts exist, often behind closed doors.
-- Why optimism: Andrew Ng’s “single learning algorithm” hypothesis suggests one general method could learn across modalities (ears, eyes, etc.). We understand neurons well; intelligence might emerge from scale—even if modeling 100B of them is like “reverse engineering an Intel chip knowing only transistors” (Nick Sivo).
-- The hard part: Not capability, but autonomy and creativity. How do we build systems that decide what they want—care to learn to drive, or to write a novel—without being explicitly told?
-- Possible endgame: Maybe we don’t want conscious machines. A healthy equilibrium could be computers excelling at doing while humans specialize in thinking and creativity—an intuitive division of labor if machine creativity never truly emerges.
-
-Why it matters: If AGI arrives, it’s the biggest technological discontinuity in memory; if it doesn’t, AI still reshapes work by turbocharging execution while keeping human judgment and desire at the center.
-
-**Human vs. Machine: The Division of Labor**
-The most active debate clustered around Altman's suggestion that machines will handle "doing" while humans specialize in "thinking" and creativity. User `Jensson` was optimistic about this shift, suggesting that while humans currently train LLMs, a future equilibrium could let humans focus on "figuring things out" while AI handles execution. However, `pldfj` argued the exact opposite is happening: AI is progressing rapidly in "thinking" tasks (coding, management) while physical "doing" (robots/manual labor) remains difficult, potentially leaving humans with the physical grunt work.
-
-**The Nature of Creativity and Work**
-Several users pushed back on the idea that humans want to be purely creative thinkers.
-*   **The value of routine:** `lbk` questioned if losing "doing" is actually positive, arguing that routine work allows for a sense of mastery and helps humans recover mental energy. `mbddng-shp` disagreed, viewing routine work as energy-draining rather than restorative.
-*   **The "Prompter" depression:** `mfn` expressed existential dread at the prospect of the "thinking vs. doing" split, noting that if humans only provide the prompt while AI executes, the human contribution feels negligible and depressing.
-*   **Creativity in the workplace:** `aleph_minus_one` and `Jensson` discussed whether a lack of creativity is innate or a learned behavior, suggesting that schools and employers often punish creative workers in favor of compliant checklist-followers.
-
-**Economic Cynicism**
-The discussion took a bleak turn regarding the economics of AGI. `jry` and `Loughla` predicted that if AI decouples labor from value, the result won't be a shared utopia but a consolidation of wealth among the owners of the compute. `Loughla` argued historically that power is rarely shared voluntarily, predicting potential violence or extreme inequality rather than a smooth transition to Universal Basic Income.
-
-**Side Note: The "Visionary" Debate**
-In a tangent about the definition of "thinkers vs. doers," a heated sub-thread emerged regarding Steve Jobs. Users debated whether Jobs was a true "visionary" who directed the creation of products (the "thinker" role Altman describes) or simply a talented salesman who marketed the work of others.
-
-### MacBook M5 Pro and Qwen3.5 = Local AI Security System
-
-#### [Submission URL](https://www.sharpai.org/benchmark/) | 167 points | by [aegis_camera](https://news.ycombinator.com/user?id=aegis_camera) | [150 comments](https://news.ycombinator.com/item?id=47457107)
-
-HomeSec-Bench v1: local 9B model nears GPT-5.4 on domain tasks, fully offline
-
-Aegis-AI released HomeSec-Bench v1, a domain-specific benchmark for AI home security assistants (96 LLM + 35 VLM tests across 16 suites). Headline result: Qwen3.5-9B, running entirely on a MacBook Pro M5 Pro via llama.cpp, scores 93.8%—within 4.1 points of GPT-5.4 (97.9%) and 2 points of GPT-5.4-mini—while beating GPT-5.4-nano by 1 point. The pitch: near–frontier accuracy on real workflows with zero API cost and full data privacy.
-
-Key numbers
-- Qwen3.5-9B (local): 93.8% pass, 25 tok/s, 765 ms TTFT, ~13.8 GB memory
-- Hardware: MacBook Pro M5 Pro, 18 cores, 64 GB unified memory, macOS 15.3
-- TTFT standout: Qwen3.5-35B-MoE averages 435 ms—lower than OpenAI’s GPT-5.4-nano (508 ms), mini (553 ms), and GPT-5.4 (601 ms)
-- Decode speeds: cloud models still lead (GPT-5.4-mini 234 tok/s; nano 136 tok/s), while local Qwen tops at 41.9 tok/s (35B-MoE) and 25 tok/s (9B)
-
-What it tests (selected)
-- Tool use and parameter selection
-- Security triage (Normal → Critical), prompt-injection resistance
-- Event/person dedup across cameras, multi-turn context carry-over
-- JSON compliance, PII redaction, alert routing
-- VLM-to-alert end-to-end triage (fixture images are AI-generated)
-
-Why it matters
-- Strong evidence that a well-tuned 9B local model can deliver near–frontier accuracy on a concrete vertical (home security), with privacy and predictable cost.
-- Practical latencies: some local MoE models show faster time-to-first-token than cloud, though cloud still dominates throughput.
-
-Caveats
-- It’s a creator-made, domain-specific benchmark; results may not generalize to open-ended chat.
-- Vision fixtures are synthetic; real-world noise and edge cases may differ.
-- One cloud baseline (GPT-5-mini) underperformed due to API temperature constraints, noted by the authors.
-
-Code/benchmark: available on GitHub; live run video included.
-
-Based on the submission about a local 9B model performing near GPT-5.4 levels for home security, the discussion on Hacker News pivots to the feasibility of long-term, local AI hardware for consumers.
-
-**The "Forever Server" vs. Obsolescence**
-The central debate stems from user `psyclb` envisioning a future where families make a major, one-time purchase of a "big ass server" that lasts for decades as a purpose-built AI home security appliance. `nateb2022` pushes back strongly, comparing the Apple M1 to the M5 (a 5-year gap) to highlight massive leaps in AI and video processing performance (6x-77x faster). Critics argue that buying an AI server now hoping it lasts a generation is akin to handing down a Commodore 64; hardware evolves too quickly, and a 10-year-old server today would lack the necessary GPU/NPU architecture to run modern local LLMs efficiently.
-
-**The "Good Enough" Plateau**
-Some users (`Melatonic`, `wtlls`) argue that computing eventually hits a "good enough" point—similar to how 13-year-old NAS drives or 1080p monitors serve many users perfectly well today. They suggest AI might reach a saturation point where current high-end hardware remains sufficient for home tasks for a long time. However, `vrcmrt` counters that expectations always scale with technology (e.g., moving from 1080p to 4K), suggesting we will always find new, heavier workloads for home AI.
-
-**Appliance vs. Homelab**
-There is skepticism regarding whether average consumers will embrace a local server. `bbrh` and `j45` suggest that unless the hardware is a turnkey "appliance" (like a toaster) rather than a "homelab" project requiring maintenance, most people will stick to cloud services for convenience. `sbrr` argues that privacy concerns and rising cloud costs are slowly making the "local appliance" route more attractive to non-technical families, provided the software experience is seamless.
-
-**Economic Incentives**
-`jggd-chsl` and `trout_scout` note that the industry is incentivized against this "forever hardware" model. Companies prefer recurring revenue (subscriptions) over one-time hardware sales, though some hybrid models (subscription security updates for local hardware) were proposed.
-
-### Google Search is now using AI to replace headlines
-
-#### [Submission URL](https://www.theverge.com/tech/896490/google-replace-news-headlines-in-search-canary-coal-mine-experiment) | 65 points | by [imartin2k](https://news.ycombinator.com/user?id=imartin2k) | [14 comments](https://news.ycombinator.com/item?id=47455224)
-
-Google Search is now testing AI‑written titles for classic “10 blue links,” not just in Google Discover. The Verge says it has repeatedly seen its own headlines replaced in Search without any labeling — sometimes changing meaning. Example: “I used the ‘cheat on everything’ AI tool and it didn’t help me cheat on anything” was shortened to “‘Cheat on everything’ AI tool,” which reads like an endorsement.
-
-Google calls it a “small,” “narrow” experiment aimed at better matching titles to queries and boosting engagement, and says it’s not limited to news sites. It confirmed generative AI is involved in the test but oddly added that any broader launch “would not be using a generative model.” Google also appears to be ignoring headline identifiers it has long encouraged publishers to use.
-
-Why it matters:
-- Undermines publishers’ editorial control and branding; increases risk of misrepresentation and clickbait.
-- Continues a pattern from Discover, where AI titles have been misleading.
-- Signals Google is willing to override title tags broadly, affecting SEO and trust.
-
-Context note: The Verge’s parent company, Vox Media, is suing Google over its ad tech business.
-
-**The Discussion:**
-
-*   **The Search Engine "Contract":** A central debate emerged regarding whether Google rewriting titles violates a fundamental trust between the user and the search engine. While one user suggested this could be a net benefit if limited to fixing "clickbait" headlines, others pushed back strongly. Critics argued that there is a massive difference between a publisher A/B testing their own headlines and a third-party aggregator unilaterally altering them.
-*   **Distortion of Meaning:** Users emphasized the specific danger cited in the article: that AI rewrites can strip necessary nuance. Commenters noted that shortening a title can flip the intended meaning entirely—for example, making a skeptical review appear to be an endorsement—which was described as "paternalistic thought policing."
-*   **Search for Alternatives:** The news prompted a discussion about finding a "neutral layer" or an "unadulterated" web experience. This led users to swap recommendations for alternative aggregators and tools (such as Murmel and Sol), while reminiscing about defunct services like Nuzzel.
-
-### Microsoft confirms a major Windows 11 update with faster Explorer, less Copilot
-
-#### [Submission URL](https://www.windowslatest.com/2026/03/21/microsoft-confirms-a-major-windows-11-update-with-faster-explorer-reduced-copilot-and-more/) | 35 points | by [thunderbong](https://news.ycombinator.com/user?id=thunderbong) | [12 comments](https://news.ycombinator.com/item?id=47460191)
-
-Microsoft outlines 2026 course correction for Windows 11: taskbar freedom, less Copilot, saner updates, faster Explorer
-
-- What’s happening: Windows president Pavan Davuluri says Windows 11 “went off track” and lays out a quality-first plan. Immediate changes are rolling out to Insiders now and in April, with a broader push through 2026.
-- Taskbar is back on your terms: You can finally move it to the top or sides again (a long-requested reversal of a Win11 removal), with options exposed via the taskbar right-click menu. Big win for vertical monitors and multi-display setups.
-- Copilot pullback: Microsoft will be “more intentional” about AI. Copilot buttons and hooks are being removed from core apps like Snipping Tool, Photos, Widgets, and Notepad unless they add clear value—addressing UI clutter and forced AI complaints.
-- Updates made less disruptive: Skip updates during setup (OOBE), restart or shut down without being trapped in updates, and pause updates for longer. Goal: fewer restarts and clearer behavior.
-- File Explorer gets faster: Quicker launch, reduced UI flicker, and smoother navigation target long-standing performance pain.
-
-Why it matters: This directly answers power-user and enterprise gripes—reversing removals, dialing back intrusive AI, and reducing update friction. Caveat: features land in Insider builds first; timing for stable-channel availability will vary through 2026.
-
-Based on the discussion, users are skeptical that these changes address the root causes of Windows 11 dissatisfaction.
-
-*   **The Microsoft Account friction:** The most prominent critique is that while taskbar changes are welcome, the "course correction" ignores the forced requirement to create an online Microsoft Account during setup—a sticking point users prioritize over UI customizations.
-*   **AI quality vs. cost:** Commenters argue that the specific inclusion of Copilot has been "poor quality" largely because superior models (like those from OpenAI or Anthropic’s Claude) are too expensive to bundle freely in an OS. Users perceive the pullback not just as a UX decision, but as a reaction to the high cost of inference for decent models.
-*   **Bubble sentiment:** The retreat from forced AI integration in core apps is interpreted by some as evidence of the "AI bubble popping" or Microsoft questioning the return on investment regarding their OpenAI partnership.
