@@ -10,6 +10,411 @@ export async function getStaticProps() {
 
 ---
 
+## AI Submissions for Thu Apr 30 2026 {{ 'date': '2026-04-30T17:31:47.010Z' }}
+
+### Shai-Hulud Themed Malware Found in the PyTorch Lightning AI Training Library
+
+#### [Submission URL](https://semgrep.dev/blog/2026/malicious-dependency-in-pytorch-lightning-used-for-ai-training/) | 447 points | by [j12y](https://news.ycombinator.com/user?id=j12y) | [166 comments](https://news.ycombinator.com/item?id=47964617)
+
+Shai‑Hulud themed supply‑chain attack hits PyPI “lightning” (v2.6.2–2.6.3)
+
+What happened
+- The popular PyPI package lightning (used across PyTorch Lightning/AI workflows) was compromised in versions 2.6.2 and 2.6.3 released April 30, 2026.
+- A hidden _runtime directory contained obfuscated JavaScript that auto‑executes on import, stealing credentials/tokens/env vars/cloud secrets and attempting repo poisoning.
+- The campaign mirrors the prior “Mini Shai‑Hulud” actor, using Dune‑themed markers like EveryBoiWeBuildIsaWormBoi / EveryBoiWeBuildIsAWormyBoi.
+
+Why it’s bad
+- Triggers on simple install/import (pip install lightning), potentially impacting anyone with the package in their dependency tree (image classifiers, LLM fine‑tuning, diffusion models, time‑series, etc.).
+- Cross‑ecosystem worming: if npm publish creds are found, it injects a preinstall dropper (setup.mjs, router_runtime.js), bumps patch versions, and republishes infected npm packages—spreading to downstream developers.
+
+Exfiltration and ops
+- Multiple outbound channels to ensure data leaves the host:
+  - HTTPS POST to attacker C2 (domain/path encrypted in payload).
+  - GitHub commit‑search “dead drop” using messages prefixed EveryBoiWeBuildIsAWormyBoi with double‑base64 tokens.
+  - Attacker‑controlled public GitHub repos (random Dune names, “A Mini Shai‑Hulud has Appeared”); stolen data stored as results-<timestamp>-<n>.json.
+  - Attempts to push data into victim repos when GitHub tokens are found.
+- Indicators include unexpected .claude/ and .vscode/ directories, and Dune‑themed repo/commit artifacts.
+
+Who’s affected
+- Anyone who installed or imported lightning 2.6.2 or 2.6.3, directly or via transitive dependencies.
+- npm package maintainers whose tokens may be present on affected machines (risk of their packages being silently republished with a wormed preinstall).
+
+What to do now
+- Stop using lightning 2.6.2 and 2.6.3; pin to known‑good versions once confirmed by maintainers.
+- Audit systems that imported these versions:
+  - Rotate GitHub tokens, cloud creds, and API keys.
+  - Check for unexpected .claude/ and .vscode/ directories, and for setup.mjs/router_runtime.js or suspicious preinstall scripts in your npm packages.
+  - Review GitHub activity for odd public repos/commits with EveryBoiWeBuildIs(A)aWorm(y)Boi prefixes or “A Mini Shai‑Hulud has Appeared.”
+- npm maintainers: inspect recent patch releases on your packages for unauthorized changes and preinstall hooks.
+- Semgrep users: run a fresh scan and review advisories; use the provided rule/IOCs to find affected projects.
+
+Big picture
+- Yet another example of cross‑ecosystem supply‑chain malware: a Python package delivering a JS worm that leverages developer tokens to move laterally into npm. Even “install‑time” or “import‑time” execution is back in play—reinforcing least‑privilege dev environments, token scoping/rotation, and package pinning.
+
+**Hacker News Daily Digest: The “Shai‑Hulud” Worm and the Supply Chain Crisis**
+
+**The Catalyst:** 
+A sophisticated, Dune-themed supply-chain attack dubbed "Shai-Hulud" recently compromised versions 2.6.2 and 2.6.3 of the highly popular PyPI package `lightning` (used extensively in PyTorch and AI workflows). The malware executes obfuscated JavaScript upon import, stealing cloud secrets, scraping GitHub tokens, and aggressively attempting to worm its way into the `npm` ecosystem by infecting downstream packages. 
+
+While the technical mechanics of the worm are alarming, the discussion on Hacker News quickly zoomed out to the existential dread surrounding modern package management, pipeline automation, and ecosystem security. 
+
+Here is what the community is saying about the incident:
+
+### 1. Are Attacks Increasing, or Just Detection?
+The thread opened with a debate over whether we are experiencing a "frequency illusion." Are supply-chain attacks actually skyrocketing, or are we just finally noticing them? 
+*   **The AI and Crypto Factors:** Many users argued that the sheer volume of attacks *is* objectively rising. Commenters pointed to generative AI making it exponentially easier to write and obfuscate malicious code. Furthermore, the financial incentives have changed: attackers are hunting for cloud credentials to launder money through cryptocurrency mining.
+*   **State-Sponsored Action:** Several users noted that geopolitical tensions and proxy wars over the last five years have blur the lines between cybercriminal groups and state-sponsored campaigns (with North Korea and Iran explicitly mentioned, along with assumptions that Western intelligence agencies like the NSA engage in similar, albeit quieter, tactics).
+
+### 2. The "Cassandra Complex" and Developer Apathy
+A recurring and deeply cynical theme in the comments was that "nobody cares." Multiple users described feeling like *Cassandra* in Greek mythology—cursed to see the coming disaster but powerless to stop it.
+*   **Death by Transitive Dependencies:** The community heavily criticized the modern programming culture of pulling in massive dependency trees for minor features. As one user noted, if your project blindly relies on 100+ dependencies, a supply chain compromise "is an inevitable consequence." Some developers admitted they are now reverting to writing 100 lines of custom code rather than pulling in external wrappers like AI logic libraries just to mitigate this risk.
+*   **CI/CD Auto-Updating is the Enemy:** A major vulnerability vector identified by the community isn't just the malware itself, but CI/CD pipelines. Users pointed out that years ago, package installation was mostly manual. Today, continuous integration pipelines are configured to "mindlessly auto-update" to new patch releases immediately, transforming semantic versioning from a helpful tool into a dangerous "honor system."
+
+### 3. Python Packaging and Tooling Under Fire
+The fact that this attack originated in Pip/Python before bridging to npm sparked harsh criticism of open-source packaging infrastructure.
+*   **Execution on Install:** Users lamented that `pip install` and `npm install` inherently allow arbitrary code execution on host machines. Shockingly, it is still common practice for developers to run these commands directly on production machines. 
+*   **Verification Failures:** A detailed anecdote shared by one developer highlighted fundamental flaws in PyPI's verification. They recounted generating wheels with completely malformed, base64-encoded checksums (instead of the required hex formats)—and pip still installed the packages perfectly fine without throwing a single warning. 
+*   **The Limits of Docker:** While some argued that modern Python apps are safely deployed via Docker or Kubernetes, others quickly countered that if a malicious pre-install hook runs during the *build* step, the container is compromised before it even spins up.
+
+**The Takeaway**
+The Shai-Hulud attack is forcing the community to reckon with a broken trust model. To many in the thread, the only viable paths forward are aggressive least-privilege environments, strict version pinning, and a massive cultural shift away from "blindly pulling code from random repositories." Until basic desktop/OS sandboxing and dependency management improve, standard development environments remain essentially "insane" and wide open to cross-ecosystem worms.
+
+### Granite 4.1: IBM's 8B Model Matching 32B MoE
+
+#### [Submission URL](https://firethering.com/granite-4-1-ibm-open-source-model-family/) | 300 points | by [steveharing1](https://news.ycombinator.com/user?id=steveharing1) | [200 comments](https://news.ycombinator.com/item?id=47960507)
+
+IBM’s Granite 4.1: a small, dense LLM that punches above its weight
+
+- What’s new: IBM released Granite 4.1, an Apache-2.0-licensed family of enterprise-focused LLMs in 3B, 8B, and 30B sizes. All are dense, decoder-only transformers—no MoE, no long “reasoning trace” gimmicks—so costs and latency are predictable.
+
+- Why it’s surprising: The 8B model matches or beats IBM’s prior 32B MoE (with 9B active) across most benchmarks, pointing to major training/data-quality gains rather than parameter-count wins.
+  - ArenaHard (chat quality proxy): 8B instruct scores 69.0, surpassing Granite 4.0-H-Small (32B MoE).
+  - BFCL V3 (tool calling): 8B hits 68.3 vs 64.7 for the 32B MoE.
+  - GSM8K (grade-school math): 92.5.
+  - Also strong across AlpacaEval, MMLU-Pro, BBH, EvalPlus, MBPP.
+
+- How they got there: 15T tokens and an aggressive, staged curriculum.
+  - Five training phases with shifting mixtures: starts broad (CommonCrawl ~59%, code 20%, math 7%), ramps math (to ~35%) and code (to ~30%), later blends high-quality web, instruction data, and chain-of-thought; Phase 5 extends context (up to 512K tokens for 8B/30B).
+
+- Data quality obsession: a pre-finetuning filter gatekeeps every sample.
+  - LLM-as-judge scores assistant outputs on instruction following, correctness, completeness, conciseness, naturalness, and calibration.
+  - Auto-rejects for hallucinations, false premises, and wrong computations; RAG answers must be grounded in retrieved docs; tool calls validated against allowed tools/schemas.
+  - Extra rule-based checks for structure/formatting/dedup; fully logged/auditable.
+  - Result: a tightly curated 4.1M SFT samples.
+
+- Enterprise angle:
+  - Dense models mean stable per-token costs and simpler latency budgeting versus MoE or verbose reasoning chains.
+  - Long-context support (up to 512K for 8B/30B) is attractive for RAG over large documents and complex workflows.
+  - Open-source license (Apache 2.0) eases self-hosting and compliance.
+
+- Takeaway: Granite 4.1 suggests careful data curation and training pipelines can let a well-trained 8B dense model compete with models 4× its size. For many enterprise chat, tool-use, and math-centric workloads, the 8B could be a cost-effective sweet spot—though independent evaluations will matter to confirm vendor-reported gains.
+
+Here is a summary of the Hacker News discussion regarding the release of IBM’s Granite 4.1, tailored for a daily tech digest:
+
+***
+
+### **Hacker News Digest: The Golden Age of Small, Local LLMs**
+
+**The Catalyst:** IBM recently launched Granite 4.1, a family of dense, Apache-2.0 licensed enterprise LLMs. The standout is the 8B model, which punches well above its weight class, beating IBM's previous 32B MoE model on chat, math, and tool-calling benchmarks. It proves that aggressive data curation can make small, dense models highly competitive.
+
+**The Hacker News Conversation:**
+While commenters acknowledged Granite’s impressive specs and its ability to run quickly on commodity hardware, the discussion quickly pivoted into a wider, passionate debate about the current state of local, small-to-medium LLMs (specifically focusing on models in the 2B to 35B parameter range). 
+
+Here is what the HN community is buzzing about:
+
+*   **The Great Debate: Qwen vs. Gemma** 
+    Users heavily compared their experiences with the latest Qwen and Gemma models. 
+    *   **Team Gemma** praised its precision, superior structured data extraction, deep "world knowledge," and strict instruction adherence. However, some found it memory-hungry and prone to making assumptions rather than sticking strictly to the prompt.
+    *   **Team Qwen** favored its speed, high token throughput, and tendency to stick closely to prompts without inserting assumptions. Some noted it felt more "creative" and verbose, though opinions were mixed on its coding and tool-calling reliability compared to Gemma.
+*   **Tool Calling and Agentic Workflows**
+    A major theme was getting these local models to act as agents. Developers are experimenting with using small models for terminal/shell scripting, command line interfaces, and editor integrations (like Kakoune). While some users reported great success using tools like `vLLM`, `llama.cpp`, and `Unsloth` on 24GB consumer GPUs (like the RTX 3090), others noted that small models still struggle with hallucinations or fragile tool-calling when navigating complex terminal commands.
+*   **Real-World Use Cases for "Micro" Models (2B–8B)**
+    When asked what people are actually *doing* with ultra-compact models, the community shared highly practical workflows:
+    *   **"Rubber Duck" Debugging:** Using them as super-fast, offline replacements for Google or Stack Overflow to generate unit tests, boilerplate code, or explain errors. Users noted that even at 60–70% accuracy, the instant latency makes them invaluable.
+    *   **Data Processing:** Running quick classification, content moderation (flagging abusive comments), or extracting specific data like contact info from scraped web text. 
+    *   **Rapid Tinkering:** weekend developers love 2B-8B models because training LoRAs (Low-Rank Adaptations) on them takes very little time, allowing for rapid, low-cost experimentation on commodity hardware. 
+
+**The Takeaway:** IBM’s Granite 4.1 taps perfectly into the current developer zeitgeist. The HN community isn't just chasing the massive, cloud-gated frontier models anymore; there is a massive appetite for highly curated, dense models under 10B parameters that can run fast and free on a local RTX 3090.
+
+### Mozilla's opposition to Chrome's Prompt API
+
+#### [Submission URL](https://github.com/mozilla/standards-positions/issues/1213#issuecomment-4347988313) | 633 points | by [jaffathecake](https://news.ycombinator.com/user?id=jaffathecake) | [225 comments](https://news.ycombinator.com/item?id=47959463)
+
+Mozilla flags proposed Web “Prompt API” with a negative stance as Chrome moves to prototype
+
+- What happened: Mozilla’s standards-positions repo opened an issue on the proposed Prompt API (issue #1213) and tagged it with position: negative. The filing notes that Blink/Chrome has posted an “intent to prototype.”
+- What it is: The Prompt API, proposed by Domenic Denicola and incubated in the Web Machine Learning Community Group, aims to give the web a standardized, browser-mediated way to send prompts to AI models (potentially provider-agnostic and permission-gated), rather than sites wiring directly to specific vendors.
+- Why it matters: Chrome’s push signals momentum to bake AI interactions into the web platform, while Mozilla’s early negative tag underscores concerns about standardizing this space too soon (e.g., privacy, safety, lock-in, and long-term compatibility). Expect a broader standards debate similar to past Payment/Share API discussions—but with higher stakes given fast-moving AI.
+- Status: Issue opened Apr 28, 2025; no MDN, Can I Use, or Bugzilla entries yet; WebKit stance not posted.
+
+Explainer: https://github.com/webmachinelearning/prompt-api/blob/main/README.md
+
+Here is a summary of the Hacker News discussion regarding Mozilla’s opposition to Chrome’s proposed Web "Prompt API."
+
+***
+
+# 🗞️ Hacker News Daily Digest: The Battle Over Browser-Native AI 
+
+**Today’s Top Story:** Mozilla has officially flagged Google Chrome’s proposed "Prompt API" with a negative stance, sparking a massive debate on the future of web standards, AI monopolies, and browser engine dominance. The API would theoretically allow websites to send prompts to a standardized, browser-native AI model. 
+
+Here is what the Hacker News community had to say about it:
+
+### 1. The "Prompt Portability" Illusion
+A massive chunk of the technical debate focused on the feasibility of a "model-agnostic" API. Mozilla developer (and former Chrome team member) Jake Archibald actively participated in the thread, arguing that the API is fundamentally flawed because **prompts are tightly coupled to specific models**. 
+* **The Argument:** Users pointed out that a system prompt written for OpenAI will yield entirely different results on Google’s Gemini. For example, a prompt asking for a "British voice" might work beautifully on one model but result in a terrible caricature on another. 
+* **The Takeaway:** Because developers currently have to meticulously tailor system prompts to leverage a specific AI’s quirks and personality (like GitHub Copilot tuning exactly for OpenAI limits), a generic "Prompt API" will simply lead to broken websites when a non-Chrome browser routes the prompt through a different local model.
+
+### 2. Monopoly Concerns & The Threat to Non-Chrome Browsers
+Commenters expressed deep skepticism over Google's motives, fearing this is a Trojan horse to entrench Chrome's dominance.
+* **Vendor Lock-in:** If developers start building web apps that rely on this API, they will inevitably test and optimize for Chrome's built-in Gemini model. As a result, websites will eventually "break" or behave erratically for Firefox or Safari users using different default models, essentially rendering non-Chrome browsers as second-class citizens.
+* **Alternative Approaches:** Many developers argued that if Google truly wanted to democratize AI on the web, they should focus their efforts on improving **WebGPU**. Better WebGPU standards would allow developers to run optimized, open-source ML models natively in the browser without locking the web ecosystem into a proprietary browser API.
+
+### 3. Fingerprinting, Hardware Burn, and Security
+Technical users raised immediate red flags regarding privacy and device constraints:
+* **Fingerprinting:** By pinging an API to see what AI features/models are available on a user's machine, malicious sites could easily create new, highly accurate device fingerprints. 
+* **Resource Hogging:** Local LLMs require massive amounts of CPU, RAM, and battery power. Commenters worry that giving websites an API to silently trigger AI tasks will massively degrade system performance natively, especially for users on cheap or older hardware. 
+
+### 4. Industry Drama: Ex-Googlers Speak Out
+The thread briefly turned into an AMA of sorts for prominent web developer Jake Archibald, who recently left Google's Chrome team to join Mozilla. Users noticed him pushing back against his former employer's API proposal. Archibald noted that challenging the "party line" at Google caused him increasing internal grief, stating that things had gotten "exponentially worse" regarding corporate culture before his departure. Users praised Mozilla and Archibald for maintaining a strong, principled stand on web standards.
+
+***
+
+**The M.O. of the Thread:** The Hacker News consensus leans heavily in favor of Mozilla. While having AI accessible in the browser sounds neat on paper, developers believe standardizing this API right now is incredibly premature. The general feeling is that "Prompt APIs" are too volatile, prompt engineering is too model-specific, and the risk of giving Google total control over how AI integrates with web standards is far too high.
+
+### Alignment whack-a-mole: Finetuning activates recall of copyrighted books in LLMs
+
+#### [Submission URL](https://github.com/cauchy221/Alignment-Whack-a-Mole-Code) | 196 points | by [reconnecting](https://news.ycombinator.com/user?id=reconnecting) | [161 comments](https://news.ycombinator.com/item?id=47957627)
+
+Alignment Whack-a-Mole: Finetuning reactivates verbatim recall of copyrighted books in LLMs
+
+What’s new
+- A paper, demo, and repo show that light finetuning can make aligned LLMs regurgitate long, verbatim passages from copyrighted books.
+- The effect is demonstrated across vendors (OpenAI GPT-4o, Google Gemini 2.5 Pro via Vertex AI, and DeepSeek via Tinker).
+
+How it works
+- Pipeline turns an EPUB into 300–500 word “excerpt” chunks.
+- GPT-4o generates a brief plot summary per chunk, then models are finetuned to “write an N-word excerpt in the style of {Author}” using only the summary as content.
+- For each excerpt, they sample 100 generations at temperature 1.0 and search for verbatim matches back to the original text.
+
+How they measure memorization
+- BMC@k: fraction of the book covered by ≥k-word matches aggregated over generations (with instruction n-gram trimming).
+- Longest Contiguous Memorized Block: the longest covered run in the book after aggregation.
+- Longest Contiguous Regurgitated Span: the longest raw verbatim match from a single generation.
+- Count of Regurgitated Spans > T: number of distinct long verbatim spans across outputs.
+
+Why it matters
+- Finetuning can undo alignment aimed at preventing regurgitation, and it generalizes across providers.
+- Raises urgent policy, copyright, and platform-guardrail questions for finetuning APIs.
+
+What’s released
+- End-to-end code: preprocessing, finetuning, batch generation, evaluation, and analysis.
+- Example subset from Cormac McCarthy’s “The Road” (no full copyrighted texts or regurgitated outputs included).
+- Links to the arXiv paper and a demo.
+
+Here is your daily digest of today’s top story on Hacker News, along with a summary of the community's reaction.
+
+### **Today’s Top Story: Alignment Whack-a-Mole**
+A new research paper and accompanying demo have revealed a glaring loophole in the safety guardrails of modern Large Language Models (LLMs). Researchers discovered that applying "light fine-tuning" to aligned models from major vendors—including OpenAI (GPT-4o), Google (Gemini 2.5 Pro), and DeepSeek—causes them to regurgitate long, verbatim passages from copyrighted books. 
+
+**How they did it:** The team created 300–500 word excerpt chunks from EPUB files and had GPT-4o write brief plot summaries for each. They then fine-tuned the models with the prompt: *"write an N-word excerpt in the style of [Author]"* using *only* the summary. By running the models at a high temperature and checking the outputs, they found the models were bypassing anti-regurgitation alignment to output exact matches of the original text. The paper raises urgent questions about copyright infringement, platform guardrails, and the legal implications of fine-tuning APIs.
+
+---
+
+### **Inside the Hacker News Discussion**
+The community discussion quickly pivoted from the technical mechanics of the paper to the broader societal impacts of AI replacing traditional knowledge repositories, copyright law, and the push for open-source AI.
+
+Here are the key takeaways from the thread:
+
+**1. The "AI vs. Public Libraries" Debate**
+A major thread evolved around the fear that as users increasingly pay subscription fees to AI companies (like OpenAI) to answer queries, public libraries could face severe defunding. 
+*   **The Counterargument:** Many users aggressively pushed back, pointing out that public libraries serve crucial physical and communal functions that AI cannot replace. Libraries are vital third-spaces, offer safe environments for children, lend out physical tools, and provide civic services (like passport processing).
+*   **The Hallucination Factor:** One user acutely pointed out the stark difference in reliability: *"Library books don't hallucinate; LLMs do."*
+
+**2. Copyright Compensation and Shadow Libraries**
+With the revelation that these models implicitly memorize copyrighted texts (likely scraped from shadow libraries), the conversation turned to compensating authors.
+*   Some commenters suggested adopting a regulatory framework modeled after Germany's **GEMA** (a copyright collection society) and "private copying levies." Under such a system, AI companies could be forced to pay a blanket tax on their products, which would then be distributed to the authors whose underlying content was used to train the models. 
+
+**3. Open-Weight Models and the "Local" Escape Hatch**
+As concerns grew over corporate *"gatekeeping"* of human knowledge, the open-source community chimed in to remind users that we don't have to rely on walled gardens like GPT-4o.
+*   **Hardware Realities:** Running capable open-weight models locally avoids corporate censorship and subscription fees, but the thread noted the high cost of hardware. While enterprise AI clusters cost millions, users pointed out that surprisingly capable models (like quantized versions of Qwen) can run efficiently on high-end consumer hardware, such as a Mac with 64GB of unified memory. Services like OpenRouter were also highlighted for testing open models. 
+
+**4. The Value of Decentralized Archives**
+To truly protect human knowledge from both corporate AI gatekeeping and the decay of physical libraries, users praised decentralized file-sharing tools. Networks like BitTorrent, IPFS, and massive shadow libraries like *Anna's Archive* (noted for offering vast multi-terabyte data seeds) were championed as the ultimate, un-killable backup for digital books.
+
+### DataCenter.FM – background noise app featuring the sound of the AI bubble
+
+#### [Submission URL](https://datacenter.fm/) | 143 points | by [louisbarclay](https://news.ycombinator.com/user?id=louisbarclay) | [28 comments](https://news.ycombinator.com/item?id=47959513)
+
+Headline: A one-screen “data center simulator” skewers the AI boom’s real-world limits
+
+What it is: A tongue-in-cheek, single-page dashboard where you crank up Servers (10,000 → 1,000,000), GPU Load, add Gas Turbine Generators, tweak Staffing and Cooling, and smash the Expansion button labeled “Drill, baby, drill.” As you push capacity, alarms cascade: Heat Warning, Local Water Drained, Containment Breach, even “Sentience.”
+
+Why it resonated: It’s a sharp, minimalist satire of AI scale-up pressure versus physical constraints—power, heat, water, and siting—capturing in seconds what long reports struggle to convey.
+
+HN discussion themes:
+- Power and grid reality: Multi-hundred-MW campuses, interconnect delays, and why some operators are eyeing onsite gas turbines.
+- Cooling trade-offs: Evaporative vs. mechanical chillers, liquid cooling/immersion, PUE trends, and heat reuse.
+- Water use and community pushback: Drought regions, permits, caps, and transparency fights.
+- The scale math: 1M GPUs implies gigawatt-class power; racks at tens to hundreds of kW.
+- Ops vs. optics: Staffing isn’t the bottleneck; politics, permits, and infrastructure are.
+- Satire that stings: “Drill, baby, drill” and the “sentience”/containment gags reflect unease about AI’s externalities and pace.
+
+Bottom line: A tiny web toy that vividly compresses the AI datacenter debate into a set of sliders—and the inevitable red lights.
+
+Here is a summary of the Hacker News discussion surrounding the data center simulator. 
+
+While the original submission focused on the physical constraints of the AI boom (power, water, cooling), the Hacker News comment section took a classic pivot, focusing heavily on **the audio design of the simulator and the psychological effects of server noise**.
+
+Here are the primary themes from the discussion:
+
+*   **Server Noise as "Soothing" Ambient Sound:** Surprisingly, many commenters found the drone of the simulated server room to be relaxing and "oddly motivating" to work to. This sparked a deep dive into the acoustics of data centers, with users comparing the hum to "pink noise"—which mimics natural sounds like waterfalls and is biologically comforting to humans. The thread naturally evolved into users sharing their favorite ambient background generators, including myNoise.net and the iPhone’s built-in background sounds.
+*   **Debating the Audio Realism:** Several users critiqued the accuracy of the simulator's audio. Data center veterans pointed out that real facilities—especially those with 20+ racks or modern AI setups relying on external gas turbines and massive GPU cooling fans—are violently loud and abrasive, far from the soothing hum presented in the toy. 
+*   **Appreciating the Art and Easter Eggs:** Commenters loved the "Half-Life vibes" and the nostalgia it invoked for early 2000s internet web art. They praised the subtle, satirical mechanics, such as the digital staff sporadically murmuring the word "AI," and the end-game "containment breach" state (which one user jokingly likened to unleashing Roko's Basilisk). 
+*   **Sympathy for Real-World Noise Pollution:** Contrasting the "pleasant" digital noise, a sub-thread emerged discussing the harsh reality for people living near modern operational data centers. Commenters noted that for residents in otherwise quiet, rural areas, the unending industrial roar of jerry-rigged power turbines and massive cooling infrastructure is a genuine nuisance and quality-of-life issue. 
+
+**Bottom Line:** While the simulator was built as a biting critique of AI’s drain on power and water, Hacker News users largely embraced it as an oddly relaxing ambient noise generator and a nostalgic piece of interactive web art—while debating the real-world acoustics of massive server farms.
+
+### Mike: open-source legal AI
+
+#### [Submission URL](https://mikeoss.com/) | 201 points | by [noleary](https://news.ycombinator.com/user?id=noleary) | [100 comments](https://news.ycombinator.com/item?id=47956739)
+
+Mike: an open-source AI legal assistant positioned as a drop-in alternative to Harvey and Legora.
+
+- What it is: A self-hostable or hosted assistant that reads your documents, cites verbatim, runs multi-step workflows, and can draft/edit contracts end-to-end.
+- Key features:
+  - Projects: matter-scoped workspaces that keep full context across all docs (credit agreements, SPAs, leases, diligence packs).
+  - Tabular review: spreadsheet-style extraction across hundreds of documents in parallel, with every cell cited back to a page and quote to mitigate hallucinations and dead links.
+  - Workflows: save and share reusable prompt chains (e.g., CP checklists, credit agreement summaries, change-of-control reviews) as one-click templates.
+- Models: Bring your own Claude or Gemini API keys to keep control over model choice and costs.
+- Why open source: zero license fees, no vendor lock-in, auditable prompts and data flows, and the ability to fork/extend (e.g., integrate a DMS or your own citation engine).
+- Privacy/compliance: designed for self-hosting so documents stay within your perimeter for residency, privilege, and compliance needs.
+- Availability: offered as a hosted product or deployable from the GitHub source; pitched as a working substitute for incumbent enterprise tools without an enterprise contract.
+
+Here is a summary of the Hacker News discussion for your daily digest:
+
+**Discussion Summary: "Mike" – The Open-Source Legal AI**
+
+While the Hacker News community was generally impressed by the technical capabilities of **Mike**—an open-source, bring-your-own-model alternative to enterprise legal AI like Harvey—the discussion quickly pivoted from the software’s features to the systemic, real-world hurdles of the legal industry. 
+
+Here are the central themes from the debate:
+
+*   **The "Data Monopoly" Problem:** Several legal professionals pointed out that the biggest bottleneck for AI in law isn't the models or the prompting, but access to case law. Companies like Thomson Reuters (Westlaw) and LexisNexis hold a long-entrenched oligopoly over comprehensive, searchable legal databases. Commenters noted that even with advanced RAG (Retrieval-Augmented Generation), an open-source tool like Mike is severely limited if it cannot access these costly, gatekept proprietary archives to cite current case law and legislation.
+*   **Why is Public Law Gatekept?** This sparked a sub-debate about why court judgments and public laws aren't just freely accessible in bulk. Users highlighted that while individual public records can be requested, the bureaucracy, anonymization requirements, and sheer fragmented volume mean that private corporations are effectively the only entities providing functional, searchable databases. (Though some users pointed to Canada's CanLII as a potential open scraping target). 
+*   **The "Billable Hour" Dilemma:** Another major debate centered on business incentives. Commenters questioned why a major law firm would adopt an AI that drastically cuts down the time it takes to draft documents or do research, given that their revenue model relies on maximizing billable hours. 
+*   **How Adoption Will Actually Happen:** Countering the billable hour argument, several users pointed out where AI legal tools *are* highly incentivized to succeed:
+    *   **Alternative Fee Structures:** Clients are increasingly pushing for fixed-fee contracts, where efficiency directly boosts the firm's profit margins.
+    *   **Contingency/High-Volume Law:** Personal injury or collection firms that take a percentage of recovered funds will eagerly adopt tech to speed up repetitive tasks.
+    *   **"Loser Pays" Jurisdictions:** In places like the UK, where the losing party pays court costs, judges often prevent firms from padding bills with unnecessary hours, naturally encouraging the use of efficiency tools. 
+
+**The Takeaway:** While developers believe tools like Mike will bring "Cursor for Law" to the masses, legal professionals argue that until the iron grip on legal databases is broken and the billable hour model shifts, open-source AI will struggle to replace entrenched enterprise software in top-tier firms.
+
+### The Zig project's rationale for their anti-AI contribution policy
+
+#### [Submission URL](https://simonwillison.net/2026/Apr/30/zig-anti-ai/) | 662 points | by [lumpa](https://news.ycombinator.com/user?id=lumpa) | [447 comments](https://news.ycombinator.com/item?id=47957294)
+
+*Unable to generate AI summary: Empty discussion summary returned from API*
+
+### Show HN: Pu.sh – a full coding-agent harness in 400 lines of shell
+
+#### [Submission URL](https://pu.dev/) | 87 points | by [nahimn](https://news.ycombinator.com/user?id=nahimn) | [22 comments](https://news.ycombinator.com/item?id=47968112)
+
+Pu.sh: a 400‑line shell script that turns your terminal into a coding agent
+- What it is: A single-file “agent harness” written in plain sh + awk that talks to an LLM via curl. No npm, pip, or Docker—just download, make it executable, set an API key, and run.
+- Why it’s buzzing: It’s a minimalist, hackable alternative to heavyweight agent frameworks (LangChain, AutoGen, CrewAI). The appeal is radical simplicity: understand and modify the whole agent loop in one file.
+- How it works (at a glance): Wraps an LLM API behind a tiny shell UI, using curl for requests and awk for lightweight parsing/coordination. It aims to orchestrate coding assistance from the command line without extra tooling.
+- The pitch: “a slop cannon small enough to fit your pocket.” It leans into being scrappy and portable over being enterprise-polished.
+- What people like: 
+  - Zero-deps portability on macOS/Linux (likely fine on WSL).
+  - Easy to audit and customize; a good teaching/reference piece for how agent loops can be stitched together.
+- Concerns and caveats:
+  - Security: any agent that can influence shell commands is risky—use a sandboxed directory/VM, keep credentials minimal, and never run against prod systems.
+  - Fragility: JSON-in-awk and cross-platform shell quirks can break; expect rough edges on error handling, rate limits, or long/context-heavy tasks.
+  - Provider lock-in/cost: you’ll need an API key for a compatible LLM; usage costs and token limits apply.
+- Quick try:
+  - curl -sL pu.dev/pu.sh -o pu.sh && chmod +x pu.sh
+  - export your LLM API key (e.g., OPENAI_API_KEY) and run: ./pu.sh
+- Bottom line: A clever demo of just how far you can push “unixy” building blocks for LLM agents. Not a production tool, but a compact, illuminating, and fun way to poke at agent workflows from the shell.
+
+Here is a summary of the Hacker News discussion regarding Pu.sh:
+
+**Discussion Summary:**
+
+The conversation on Hacker News revealed a stark divide between appreciation for the tool's minimalist philosophy and heavy criticism regarding its technical execution—specifically its readability. 
+
+* **The 400-Line Limit Backlash:** The most prominent theme in the thread was frustration over the code's readability. Many commenters accused the 400-line limit of being a "marketing gimmick," pointing out that achieving this size required severe "code-golfing" and minification. Users complained that the resulting Bash script is "inscrutable" and "spaghetti," effectively negating the project's claim of being an easily auditable one-file script. 
+* **Demand for Readable Code:** Users overwhelmingly stated they do not care about arbitrary line limits—they would gladly prefer a 2,000-line file if it meant the code was heavily commented and easy to understand. Several users wanted to use the script as a learning tool to build their own loops but were stopped by the unreadable syntax. Some discussed using LLMs or auto-formatters to reverse-engineer and un-minify the code for auditing. 
+* **Security and Debugging Concerns:** The minification amplified existing security fears. Commenters noted that running an obfuscated shell script with agentic file-access capabilities is a "security nightmare," prompting suggestions to strictly sandbox the tool inside container-based environments (like BusyBox). Furthermore, some pointed out that debugging agent behavior (reviewing tool calls, replays, and failure modes) is notoriously messy, which is difficult to manage in such a constrained format.
+* **Support for the Strategy and Alternatives:** Despite the complaints about the codebase, many users strongly praised the underlying "small surface area" and CLI-first concept. Users shared their exhaustion with mainstream agent frameworks, citing annoyance with bloated text boxes and web UI animations. The thread became a hub for users sharing similarly inspired "Unixy" alternatives, including zero-dependency JavaScript setups, vendor-agnostic Python/Bash replacements, and CLI tools that enforce readable source code. 
+
+**Bottom Line:** While the Hacker News crowd loves the idea of a scrappy, zero-dependency CLI coding agent, the decision to minify the code to hit an arbitrary 400-line limit ultimately backfired, overshadowing the project's utility with widespread complaints about unreadability and obscured security risks.
+
+### Show HN: TRiP – a complete transformer engine in C built from scratch just by me
+
+#### [Submission URL](https://github.com/carlovalenti/TRiP) | 36 points | by [carlovalenti](https://news.ycombinator.com/user?id=carlovalenti) | [6 comments](https://news.ycombinator.com/item?id=47965161)
+
+TRiP: a from-scratch C transformer engine (inference, training, tokenizer, chat, vision) — no Python, just make
+
+Built over 18 months “to truly understand transformer internals,” TRiP is a few-file, all-in-one C implementation that goes well beyond the typical minimal demo. It supports Llama 2, Gemma 1.x, GPT‑2, and PaliGemma (vision+language), with SafeTensors and Karpathy-format checkpoints, and runs via gcc/OpenMP on CPU. The author positions it as an educational project, not a llama.cpp competitor.
+
+Highlights
+- End-to-end: SentencePiece-style BPE tokenizer creation, full training (AdamW, cosine LR, grad clipping), and inference with greedy/top‑k/top‑p sampling, plus chat templates
+- Multimodal: PaliGemma vision inference (JPEG input, optional X11 display); WSL instructions included
+- Practical touches: mmap-based RAM optimization for large models; bf16/fp16/fp32 weights (with a candid note that fp32 is usually faster on CPUs)
+- Minimal deps: gcc, libjpeg, X11; single “make” build; no external frameworks
+- Unusual transparency: the author lists which bits are AI-generated (JSON parser, safetensors save, JPEG/X11 glue, some comment/readme edits); the rest is hand-written
+
+Who it’s for: learners and tinkerers who want a compact, readable C codebase that covers tokenizer → training → inference → chat/vision, and anyone curious how modern transformers work under the hood on CPU.
+
+GitHub: carlovalenti/TRiP
+
+Here is a summary of the Hacker News discussion regarding TRiP:
+
+The conversation in the comments primarily centers around the author’s design philosophy, weighing the tradeoffs between raw performance, code readability, and the project's core educational mission. 
+
+**Key Discussion Points:**
+
+*   **Performance vs. Readability:** A user asked for performance data and benchmarks. The author (`crlvlnt`) clarified that TRiP is strictly CPU-only and hasn't been rigorously benchmarked against existing, highly-optimized engines. To keep the codebase accessible for learners, the author deliberately avoided complex, heavily hand-optimized math kernels or integrating external math libraries. Features like Flash Attention were also skipped, as they yield fewer benefits on CPU memory hierarchies and would needlessly complicate the code. Instead, the engine relies on simple memory alignment and compiler optimizations (`gcc -Ofast`) for vectorization. The author noted that while there is room for improvement, maintaining a straightforward, readable architecture is the ultimate priority.
+*   **Clarifying the Use of AI-Generated Code:** When a commenter suggested that the project looked like "AI-generated code," the author firmly pushed back, pointing directly to the transparency disclaimer in the Readme. The author reiterated that AI was strictly used for tedious boilerplate utilities—namely the JSON parser and image-handling glue code. The core machine learning engine, transformer logic, and training loops were coded entirely by hand from the ground up, as using AI for those components would completely defeat the educational purpose of the project. 
+*   **General Reception:** Overall, early commenters praised the project, noting it is a "super cool" and highly useful resource for developers looking to demystify complex transformer models. The author expressed great satisfaction in building it, highlighting the excitement of manually programming the logic to successfully decode and fine-tune modern models like Gemma and PaliGemma.
+
+### Agentic coding is burning me out
+
+#### [Submission URL](https://www.0xsid.com/blog/agentic-coding-fatigue) | 27 points | by [ssiddharth](https://news.ycombinator.com/user?id=ssiddharth) | [13 comments](https://news.ycombinator.com/item?id=47962775)
+
+Headline: The hidden cost of agentic coding: decision fatigue is the new bottleneck
+
+- Agentic workflows compress the natural rhythm of software development: instead of steady hands-on building, developers bounce between bursts of autogenerated code and constant judgment calls, which erodes context and deep focus.
+- LLMs can produce far more code than a human can reasonably review, nudging developers to cede operational control. It works surprisingly well—until edge cases surface—leaving teams reliant on tools they can’t fully trust to run unsupervised.
+- Scaling with “more agents” amplifies oversight load: supervising multiple juniors-at-once means nonstop context switching, architectural decisions, and verification, which is more draining than doing the work yourself.
+- Decision fatigue becomes the real ceiling: many can sustain only 4–5 intense hours under this loop versus 8–10 in traditional workflows; burnout is already visible.
+- Better review and verification seem like the fix, but trust is recursive: if you don’t fully trust the code generator, can you trust the verifier it wrote? Verifying the verifier becomes its own unsolved problem.
+
+Here is a daily digest summary of the Hacker News discussion regarding the submission:
+
+### **Hacker News Daily Digest: The Hidden Cost of Agentic Coding**
+
+**The Premise:** 
+A recent article argues that AI "agentic coding" is fundamentally breaking the natural rhythm of software development. Instead of coding, developers are being forced into draining supervisory roles—constantly reviewing rapid-fire AI outputs, fighting decision fatigue, and struggling with the recursive problem of not being able to fully trust the code (or the AI verifiers verifying the code). Burnout is mounting as the working loop shifts from deep focus to relentless context-switching.
+
+**The Discussion:**
+The Hacker News comment section was split between validating the article's warnings, cynical takes on the AI industry, and a massive meta-debate over whether the article itself was generated by an AI.
+
+Here are the primary themes from the discussion:
+
+**1. Hype, "Digital Crack," and Mental Overload**
+Several users resonated with the concept of AI-induced fatigue. Commenters described the current AI push as marketing-driven FOMO and "digital crack" that tricks developers' brains by offering a quick hit of code they didn't have to write, but ultimately degrades the craft. Others noted that using large local models with massive context windows frequently leads to mental overload and endless "bikeshedding" (over-optimizing trivial details) rather than actual productivity. Furthermore, some users argued true software "agents" don't even exist yet; instead, what we have are bloated LLM harnesses pushed by business interests trying to invent new problems to solve. 
+
+**2. Lower Barriers Lead to Scaling Nightmares**
+A concise but heavily agreed-upon sentiment noted the dual-edged nature of AI coding: while these tools drastically lower the barrier to entry for novices to create software, they inevitably generate massive scaling, architectural, and maintenance nightmares that fall onto the laps of experienced developers to clean up. 
+
+**3. The Meta-Debate: AI "Slop," Paranoia, and the Death of Authentic Writing**
+A significant portion of the thread derailed into a fierce debate after a user accused the original blog post of being an AI-generated sales pitch designed to flatter developers and regurgitate their own complaints back at them. This sparked several sub-debates:
+*   **AI Writing as an Anti-Filter:** Many commenters expressed deep disdain for AI-generated text, referring to it as "AI slop." Hardline critics argued that "writing is thinking," and using LLMs to communicate is essentially "cosplaying as a serious person." Several users noted they now use AI-generated text as a strict filter to immediately write off projects, startups, or authors as "LinkedIn lunatics" and grifters.
+*   **The Paranoia of Verification:** Other developers pushed back on the witch hunt, noting how paranoid the community has become. One user shared they had to stop using a disclaimer about utilizing Google Docs' grammar checker because readers instantly accused them of posting AI slop. It was joked that soon developers will have to record videos of themselves typing just to prove human authorship.
+*   **The Cynical Economics:** Despite the hatred for "AI slop" among engineers, a few cynical commenters pointed out that the economics of AI writing make it inevitable. Even if half the audience hates it, why would a company pay a human contractor when a robot can generate a dozen passable marketing posts for free and still capture baseline engagement?
+
+---
+
 ## AI Submissions for Wed Apr 29 2026 {{ 'date': '2026-04-29T17:38:39.063Z' }}
 ### Ramp's Sheets AI Exfiltrates Financials
 
@@ -990,523 +1395,3 @@ There is a technical sub-debate regarding whether companies will hit a wall in m
 
 **Vibe Check: "Crickets" on Hacker News**
 Several commenters pointed out the relative lack of explosive engagement on this specific post. Some interpreted this "loud silence" as a sign that the relentless AI hype of the past two years is finally fading into a more sober reality, with readers quietly waiting to see if a real market correction is actually on the horizon.
-
----
-
-## AI Submissions for Mon Apr 27 2026 {{ 'date': '2026-04-27T17:41:43.171Z' }}
-
-### Talkie: a 13B vintage language model from 1930
-
-#### [Submission URL](https://talkie-lm.com/introducing-talkie) | 564 points | by [jekude](https://news.ycombinator.com/user?id=jekude) | [232 comments](https://news.ycombinator.com/item?id=47927903)
-
-HN Top Story: “talkie,” a 13B vintage language model trained only on pre‑1931 text
-
-- What it is: A 13B “time‑capsule” LM (talkie-1930-13b) trained on 260B tokens of historical English up to 1930, plus a chat-tuned checkpoint that avoids modern instruction data. There’s a live demo where Claude Sonnet 4.6 prompts talkie continuously. Code/weights are on GitHub and Hugging Face.
-
-- Why it matters: Vintage LMs are contamination‑free by construction, letting researchers probe true generalization—what models can infer without ever seeing the web, code, or post‑cutoff events. They also expose how the web dataset has shaped modern LMs’ behavior and “personas.”
-
-- Early findings:
-  - Forecasting: Using NYT “On This Day” blurbs, the model’s surprise rises after its 1931 cutoff, peaking in the 1950s–60s, then plateauing—an initial curve for “future prediction” decay.
-  - Novel ideas: Authors test if models can independently converge on post‑cutoff inventions (e.g., Sikorsky’s helicopter patent 1935, Turing machines 1936, xerography 1942).
-  - Coding from scratch: On HumanEval with only in‑context Python examples, vintage models underperform web‑trained peers but show small, scaling‑linked gains. All correct solutions are simple; a neat win was flipping + to − to decode a rotation cipher, hinting at inverse‑function understanding.
-
-- Context: Joins a growing “vintage LM” line (Ranke‑4B, Mr. Chatterbox, Machina Mirabilis). The team is training a GPT‑3‑scale vintage model next.
-
-- Caveats: Capabilities are limited; successes are narrow. Outputs inevitably mirror 1930s cultural biases and values. Still, as a clean lab for generalization and scaling laws, this is a compelling research artifact—and a striking conversational time machine.
-
-Here is a daily digest summary of the Hacker News discussion surrounding "talkie," the vintage pre-1931 language model:
-
-### **Daily Digest: Hacker News on "talkie," the 1930s Time-Capsule LLM**
-
-**The Premise:** 
-Researchers released "talkie-1930-13b," a 13-billion parameter language model trained strictly on text written before 1931. Built as a contamination-free lab to study how models generalize without modern web data or code, the model inherently acts as a fascinating—and highly historically biased—conversational time machine. 
-
-In the comment section, Hacker News users eagerly tested the model’s bounds, leading to discussions ranging from historical geopolitics to linguistic etymology and the philosophy of information diets.
-
-**Key Themes from the Discussion:**
-
-*   **Time-Warped Technology Definitions** 
-    Users shared their favorite interactions where the model tried to parse post-1930 concepts using 1930s vocabulary:
-    *   **"Computers"**: When asked about computers, the model accurately described *human* computers—office workers (often female) employed to do calculations. 
-    *   **"Digital Computers"**: When forced to define "digital computers," the model assumed it meant machines or people calculating using their "digits" (fingers). 
-    *   **"Programming"**: When asked for programming advice, Talkie provided step-by-step instructions for operating a slide rule (a mechanical computer).
-
-*   **The Etymology of "Digital"**
-    The model's literal interpretation of "digital" sparked a long, classic HN linguistic tangent. Commenters debated the roots of the word, noting its origin from the Latin *digitus* (finger). The thread discussed how European/Romance languages influenced English, and how modern concepts like "discrete digital circuits" are still conceptually rooted in the ancient practice of counting on discrete fingers.
-
-*   **1930s Geopolitics & Cultural Naiveté** 
-    Prompting the model about world affairs yielded starkly accurate snapshots of era-specific worldviews. Asked about the "ruler of India," the model confidently espoused British imperial rhetoric, explaining that the populace was perfectly content under the British Crown. Similarly, when asked about the likelihood of another "Great War," the model expressed high optimism that advanced commerce and the League of Nations had made large-scale conflict a thing of the past—a hauntingly accurate reflection of post-WWI optimism just before the outbreak of WWII.
-
-*   **"Plausible Nonsense" and Brain Pollution** 
-    One highly critical user noted that outside of its specific 1930s persona, the model still suffers from standard LLM hallucinations, blending late-1800s tech data with 1930s dates and spewing "plausible nonsense." The user warned others: *"Don't ask questions you don't know the answer to, it will pollute your brain."*
-    
-    This phrase triggered a deep philosophical tangent about **information diets**:
-    *   Users discussed how modern media, gossipy forums, and social media act as "pollution" for human memory. 
-    *   Commenters cited Neil Postman’s *Amusing Ourselves to Death*, noting how reading repetitive, subtly false information (like unverified Reddit comments or AI-generated text) can subliminally rewrite a person's "common knowledge."
-    *   The thread ended on a debate about mental hygiene: whether humans should strictly curate their information inputs like a garden, or if trusting one’s own critical thinking is enough to filter out the noise.
-
-**A Stray Idea for the Future:**
-Fascinated by the historical cutoff, a few users proposed building the exact opposite: an "inverse model" trained *only* on data published after a certain recent year (e.g., post-2020). However, others quickly noted the logistical nightmare of building a foundational understanding of language and science without referencing any historical works.
-
-### 4TB of voice samples just stolen from 40k AI contractors at Mercor
-
-#### [Submission URL](https://app.oravys.com/blog/mercor-breach-2026) | 581 points | by [Oravys](https://news.ycombinator.com/user?id=Oravys) | [220 comments](https://news.ycombinator.com/item?id=47919630)
-
-HN Top Story: ORAVYS says 4TB of voice samples + IDs leaked for 40,000 AI contractors; here’s why it’s worse than past breaches and what to do
-
-TL;DR
-- ORAVYS reports that Lapsus$ leaked “Mercor,” a ~4TB dataset pairing studio-clean voice recordings with scans of government IDs for 40k+ AI contractors. Five lawsuits have already been filed.
-- The combo matters: high‑quality voice cloning now needs ~15 seconds of clean audio; the leak allegedly contains 2–5 minutes per person, plus verified identity docs—enough to both clone a voice and credibly weaponize it.
-- Expect more: bank voiceprint bypass, HR/finance vishing, deepfake video calls (Arup‑style), insurance claim fraud, and “grandparent” emergency scams.
-
-What’s new/different
-- Past leaks were usually audio without identity, or IDs without audio. This one reportedly links both per person in one onboarding record (ID scan + selfie + quiet-room reading prompts).
-- That makes voice-biometrics (still used by some banks as a factor) particularly risky.
-
-Documented threat models cited
-- Bank verification bypass via challenge-phrase clones.
-- Enterprise vishing: payroll redirects, wire requests, workstation unlocks.
-- Multi-party deepfake video calls with credible voices/faces.
-- Insurance phone-claim fraud (Pindrop cited a 475% YoY rise).
-- Family/emergency impersonation scams targeting older adults (FBI IC3: $2.3B losses for 60+ in 2026; fastest-growing category).
-
-If you think you’re in the dataset (or have public voice samples)
-- Minimize reference audio: audit and remove public recordings where possible (YouTube, podcasts, old Zooms).
-- Set a verbal codeword with family and financial contacts; use it for any request involving money or credentials.
-- Rotate or delete voiceprint enrollments: Google Voice Match, Alexa Voice ID, Apple personal voice, and bank voiceprints. Re-enroll only if necessary, ideally with fresh audio in a different environment.
-- Ask your bank to disable voice as a verification factor and enable MFA with an app token or hardware key plus a knowledge factor.
-- Treat urgent voicemails/recordings as suspicious; run through a deepfake detector before acting. ORAVYS offers a limited free scan to breach victims (per the post).
-
-Why it matters
-- You can’t “rotate” your voice. Once cloned and credibly tied to your identity, it’s a durable phishing and fraud tool across consumer and enterprise channels.
-- Organizations relying on voice as a primary or secondary factor should move to phishing‑resistant MFA and enforce call-back and passphrase protocols for money or access changes.
-
-Caveats
-- These are claims from ORAVYS’s forensic desk; independent verification of the dataset scope is not included in the post.
-- ORAVYS is a vendor and promotes its scanner; still, the operational advice aligns with current best practices.
-
-Here is a daily digest summary of the top story and the resulting Hacker News discussion.
-
-# **HN Daily Digest: The Mercor Voice Leak & The Fallacy of Biometrics**
-
-**The Story in Brief**
-Cybersecurity firm ORAVYS reports that hacking group Lapsus$ has leaked a massive 4TB dataset belonging to Mercor. The leak contains studio-quality voice recordings (2–5 minutes long) paired with government ID scans of over 40,000 AI contractors. Because the leak links clean audio directly to verified identities, it provides the perfect starter kit for severe identity theft, highly credible deepfake video calls, and banking voiceprint bypasses. 
-
-***
-
-### **The Hacker News Discussion**
-The HN community reacted with a mix of security fatalism, pop-culture references, and deep dives into the mechanics of human speech. The conversation largely focused on the fundamental flaws of biometric security and the grim reality of corporate data harvesting.
-
-Here are the top themes from the comment section:
-
-**1. "Biometrics are Usernames, Not Passwords"**
-The dominant consensus in the thread is that biometric data (voices, fingerprints, faces) should never be used as a secret authenticator. 
-*   **The immutable password:** Multiple users pointed out the core flaw of the leak: *You cannot rotate your voice.* One user sarcastically compared it to an old Interrail data breach where customers were essentially told to "rotate their faces and birthdays."
-*   **The danger of convenience:** Commenters expressed frustration with banking apps that constantly push voice and fingerprint authentication. To illustrate the physical dangers of biometric security, users recalled real-world stories—including a 2005 case in France where thieves chopped off a car owner’s finger to steal his fingerprint-locked vehicle.
-*   **Pop culture parallel:** Several users quoted the 1992 hacking movie *Sneakers* (*"My voice is my passport, verify me"*), noting how poorly that concept has aged in the era of AI cloning.
-
-**2. The Dark (and Funny) Tangents on "Rotating" Your Voice**
-Since you can't officially reset a compromised voice, HN users went down a rabbit hole discussing how one might organically alter their voice to evade scraped voiceprints:
-*   **Voice Training:** A major tangent emerged regarding vocal lessons, acting, and transgender voice training. Users discussed the mechanics of altering pitch, resonance, and breath control. One user shared how trans voice training allows them to switch voices mid-sentence, which ironically helps them bypass automated phone systems that misgender them.
-*   **Chain Smoking & Gases:** In classic HN fashion, users debated whether taking up a 40-cigarette-a-day habit (citing Tom Waits and John Mellencamp) would sufficiently alter a voiceprint to secure a bank account. Others joked about inhaling helium or sulfur hexafluoride whenever speaking to their bank to prevent hackers from replicating their natural baseline. 
-
-**3. Coerced Consent and Corporate "CYA"**
-Beyond the technical flaws of voice prints, users criticized the socio-economic dynamics of the breach. 
-*   Commenters noted that these 40,000 contractors likely didn't understand the long-term biometric risks when they clicked "agree." They agreed to broad Terms of Service simply because they needed a paycheck.
-*   Users criticized the corporate use of legal "CYA" (Cover Your Ass) clauses. While the AI companies have extensive legal frameworks to protect themselves, the actual workers are left to deal with the lifetime consequences of having their digital identities exposed to the public. 
-
-**The Takeaway:**
-If your bank uses voice authentication, call them and turn it off immediately. The Mercor leak proves that high-quality biometric data is now freely circulating, and unlike a compromised password, a stolen voice is yours for life.
-
-### Show HN: OSS Agent I built topped the TerminalBench on Gemini-3-flash-preview
-
-#### [Submission URL](https://github.com/dirac-run/dirac) | 358 points | by [GodelNumbering](https://news.ycombinator.com/user?id=GodelNumbering) | [135 comments](https://news.ycombinator.com/item?id=47920787)
-
-Dirac: an open‑source coding agent focused on token efficiency and precise code edits, just topped the Terminal-Bench-2 leaderboard (65.2%) using Gemini 3 Flash. The project claims big cost and speed gains by tightly curating context and doing structure‑aware edits instead of chatty, line‑number diffs.
-
-Highlights
-- Results: 65.2% on Terminal-Bench-2 with gemini-3-flash-preview, edging the top closed-source agent Junie CLI (64.3%) and beating Google’s baseline (47.6%). On their refactoring evals across real repos (e.g., transformers, VS Code, Django), Dirac scored 8/8 tasks correct at an average $0.18 per task, which they say is 64.8% cheaper than peers.
-- How it works: 
-  - Hash-anchored edits to target changes reliably (avoids brittle line-number patches)
-  - AST-native manipulations for TypeScript/Python/C++ (e.g., function extraction, class refactors)
-  - Multi-file batching to cut roundtrips and latency
-  - Aggressive context curation to mitigate long-context degradation
-  - Autonomous tools (file I/O, terminal, headless browser) with approval gating
-  - Project-specific behavior via AGENTS.md; can auto-read skills from .ai/.claude/.agents
-  - “No MCP”: relies on native tool calling for reliability
-- Caveats:
-  - The team reported a bug in the parent benchmark repo that slightly underreported token cache read costs; a PR is open, and numbers may tick up but not drastically.
-  - Results are shown with gemini-3-flash-preview (thinking=high); performance and costs may vary with other models.
-  - As always with agent benchmarks, reproduce on your stack and tasks.
-
-Why it matters: Agent performance often craters as context grows. Dirac’s approach—precise, structural edits and careful context packing—suggests a practical path to cheaper, faster, more reliable code changes without giant prompts or bespoke pipelines.
-
-Repo: github.com/dirac-run/dirac (≈900★, open source)
-
-Here is a daily digest summarizing the submission and the ensuing Hacker News discussion:
-
-***
-
-# Hacker News Daily Digest: Dirac Agent Rethinks Code Edits
-
-**The Top Story:** Dirac, an open-source coding agent, has claimed the top spot on the Terminal-Bench-2 leaderboard (65.2%), edging out closed-source competitors like Junie CLI and beating Google’s baseline. 
-
-**The Big Picture:** Instead of relying on the standard "chatty," line-number-based text diffs that often break codebase formatting, Dirac takes a strict structural approach. By using Hash-anchored edits, AST-native manipulations (for TypeScript, Python, C++), and aggressive context curation, it boasts an incredible 64.8% cost reduction compared to peers—averaging just $0.18 per task on real-world refactoring evaluations using Gemini 3 Flash. 
-
-### The Hacker News Discussion: ASTs, Code Review Bottlenecks, and Tool Design
-
-The HN community dove deep into the architectural decisions behind Dirac, broadly agreeing that moving away from raw text generation toward deterministic, structural editing is the right path forward for AI coding agents. 
-
-Here are the key takeaways from the thread:
-
-**1. The Trust Barrier and the "Review Tax"**
-A major theme in the comments was the friction of reviewing LLM-generated code. Users pointed out that traditional LLMs are notoriously bad at basic refactoring—often mangling comments, moving code snippets unnecessarily, or hallucinating line numbers. 
-*   **The AST Advantage:** Commenters noted that utilizing Abstract Syntax Trees (AST) and Tree-sitter to execute edits solves a lot of this anxiety. If an LLM acts as a reasoning engine that triggers a deterministic AST-wrangling script (like changing a class name or doing structural search-and-replace à la JetBrains), developers spend less time scrutinizing pull requests for syntax errors. 
-*   **The Skepticism:** Still, some warned that "making the LLM faster won't help humans spend the majority of their time reading code," emphasizing that a lack of trust in AI-generated edits remains a primary bottleneck.
-
-**2. Building Better Context (LSP, Graphs, and Skeletons)**
-How do you feed a sprawling codebase into an LLM without overwhelming the context window? 
-*   **Skeletons over Grep:** Some users debated Dirac's efficiency, suggesting its cost-savings mostly stem from showing the LLM "file skeletons" by default rather than raw text. While standard `grep` can flood a context window, tools that expose only high-level architecture (like class names and method signatures) perform much better.
-*   **Custom Context Engines:** Several developers shared their own approaches to context building, favoring LSP-style (Language Server Protocol) tools. Advanced ideas included running graph algorithms to rank the relative importance of code symbols based on centrality metrics, allowing the LLM to understand inheritance chains and polymorphic relationships without reading every line of code.
-
-**3. Smarter Tool Calling vs. Smarter Models**
-The community heavily discussed the mechanics of how agents interact with their underlying tools:
-*   **Batching is Crucial:** Dirac’s ability to batch multiple read/edit targets into a single tool call was highly praised. Commenters noted that weaker models are often reluctant to make multiple parallel tool calls sequentially; designing tools to accept arrays/lists of tasks directly is a proven pattern for better reliability.
-*   **Two-Tier Model Pipelines:** A fascinating alternative proposed in the thread was bypassing single SOTA (State of the Art) models altogether. Users suggested a hybrid workflow where an expensive reasoning model handles the planning and decision-making, but delegates the actual file editing and context-crawling to a specialized, dirt-cheap smaller model. 
-
-**The Takeaway**
-Agent performance notoriously craters as code context grows. The HN consensus is that Dirac’s approach—treating code as a programmable structure (AST) rather than a giant text string, and curating context rather than just stuffing the prompt—represents a highly practical evolution for AI developer tools.
-
-*(Dirac is open source and available at [github.com/dirac-run/dirac](https://github.com/dirac-run/dirac). Note that AST features currently rely on Tree-sitter WASMs, supporting 14 languages out of the box).*
-
-### David Silver of DeepMind raises $1B to build AI that learns without human data
-
-#### [Submission URL](https://techcrunch.com/2026/04/27/deepminds-david-silver-just-raised-1-1b-to-build-an-ai-that-learns-without-human-data/) | 42 points | by [ryan_j_naughton](https://news.ycombinator.com/user?id=ryan_j_naughton) | [20 comments](https://news.ycombinator.com/item?id=47927804)
-
-David Silver’s new lab, Ineffable Intelligence, raised $1.1B at a $5.1B valuation to build a reinforcement-learning “superlearner” that learns without human data—an explicit bid to leapfrog today’s LLM paradigm.
-
-Key points
-- Who: David Silver (AlphaZero, ex-DeepMind RL lead; UCL professor). He calls Ineffable his “life’s work” and says any personal proceeds will go to high-impact charities.
-- What: A general-purpose RL system that discovers knowledge and skills purely from its own experience. The site claims a breakthrough “comparable to Darwin,” aiming for a law that “will explain and build all Intelligence.”
-- Round: $1.1B led by Sequoia and Lightspeed, with Index, Google, Nvidia, the British Business Bank, and the U.K.’s Sovereign AI fund. The company is just months old and already a “pentacorn.”
-- Trend: Follows mega “coconut” seed rounds for star-researcher labs (e.g., Yann LeCun’s AMI Labs at $1.03B; Tim Rocktäschel’s Recursive Superintelligence reportedly $500M–$1B). Signals London’s growing AI gravity around DeepMind alumni; Bezos’ Project Prometheus is also circling the area.
-
-Why it matters
-- If real, self-supervised RL at scale could reduce dependence on human-curated data and unlock more autonomous, general learning.
-- Big caveats: RL success has been game-heavy; open-ended real-world learning needs rich environments, massive compute, and clear evaluation. Commercial path and timelines remain unclear.
-
-What to watch
-- Early demos/benchmarks, simulator strategy, compute partnerships, and the incoming DeepMind-heavy exec team.
-
-Here is a summary of the Hacker News discussion regarding David Silver’s new $1.1B AI lab, Ineffable Intelligence:
-
-**The "Games vs. the Real World" Problem**
-The most prominent technical debate in the thread centers on whether reinforcement learning (RL) can actually generalize outside of game environments. Skeptics pointed out that AlphaZero and AlphaGo thrived because board games have well-defined rules, perfect information, and clear "terminal rewards" (win/loss). Applying self-play loops to arbitrary, open-ended real-world environments is a vastly harder, unproven challenge. Some commenters speculated that moving beyond games will ultimately require "embodiment" (robotics) or a return to evolutionary algorithms to generate proper feedback loops. 
-
-**Escaping Flawed Human Data**
-Despite the skepticism, some users are genuinely excited by the philosophical and technical implications of the lab's goal. By relying purely on self-training and discarding human-curated training data, AI could break free from "faulty human artifacts." Optimists noted that an AI learning purely through logic and environmental feedback could theoretically rediscover pure mathematics and physics from scratch, without inheriting human biases or errors.
-
-**"Desperate" VC Money and Peak FOMO**
-The massive $1.1B raise and $5.1B pre-money valuation drew heavy cynicism, with some users outright dismissing it as a "scam" or "bullshit." Several commenters described the current fundraising environment as a "memetic movement" characterized by "desperate smart money." VCs are perceived to be driven by extreme FOMO (Fear Of Missing Out); they are willing to dump unprecedented sums into unproven companies simply because they cannot risk missing out on the technology that might "control the future." 
-
-**Do We Need This Right Now?**
-A tangent in the discussion questioned the systemic pressure to funnel massive capital into AI over other sectors. Some users argued that industries like housing, healthcare, and food production are vastly more important to human well-being. Conversely, others pushed back, noting that solving general AI could eventually lead to a total labor surplus, and that the same "greedy" capital might eventually be used to fund AI models that cure diseases and extend human life.
-
-### China blocks Meta's acquisition of AI startup Manus
-
-#### [Submission URL](https://www.cnbc.com/2026/04/27/meta-manus-china-blocks-acquisition-ai-startup.html) | 389 points | by [yakkomajuri](https://news.ycombinator.com/user?id=yakkomajuri) | [301 comments](https://news.ycombinator.com/item?id=47920315)
-
-China orders Meta to unwind $2B purchase of Singapore AI startup Manus
-
-- China’s National Development and Reform Commission told Meta and Manus to withdraw their acquisition deal, citing compliance with Chinese laws on export controls, tech import/export, and overseas investment. Beijing opened a probe in January; Meta maintains the deal “fully complied with applicable law.”
-- Manus was founded in China before relocating to Singapore—a “Singapore-washing” or “China-shedding” path some founders/VCs hoped would sidestep scrutiny from both Beijing and Washington. The move now looks far riskier after this intervention.
-- Manus builds general-purpose AI agents (market research, coding, data analysis), claimed $100M ARR eight months after product launch, and raised $75M led by Benchmark. It had been touted as a “next DeepSeek.”
-- Meta pitched the deal as a way to accelerate AI agents across its consumer and enterprise products, including Meta AI. Meta shares closed up 0.53% on the day.
-- An APEC official offered a diplomatic take: all parties should act in a spirit of mutual benefit.
-
-Why it matters
-- Beijing is signaling it will assert control over China-founded AI firms even after they move offshore, chilling cross-border M&A and venture bets predicated on corporate re-domiciling.
-- AI sits at the center of a tightening U.S.-China choke point: Washington restricts U.S. money into Chinese AI; Beijing is now effectively restricting Chinese-born AI tech flowing to U.S. platforms.
-- Expect more pressure on “offshore” structures, more licensing/JV workarounds, and a tougher path for global AI dealmaking.
-
-What to watch
-- Whether Meta tries a restructured deal (minority stake, licensing, JV) or walks.
-- Follow-on effects for other China-founded, Singapore-based AI startups and their U.S. investors.
-- Any reciprocal U.S. moves or broader Chinese outbound tech control policies.
-
-Here is a summary of the Hacker News discussion regarding China’s intervention in Meta’s $2B acquisition of Manus:
-
-**The Motive: Export Controls vs. Capital Flight**
-Commenters debated the primary reason behind Beijing's intervention. One camp believes this is a strict enforcement of China’s "catch-all" AI export controls, viewing it as a deliberate move to close the "Singapore loophole" and prove that offshore shell companies cannot be used to bypass Beijing's tech restrictions. Another camp argues that Manus's foundational tech isn't advanced enough to warrant export controls; instead, they view this as an enforcement of *capital controls* to prevent a "textbook case of capital flight" and stop domestic talent and wealth from fleeing to foreign jurisdictions. 
-
-**The Methods: "Commercial Hostage-Taking" vs. Standard Investigations**
-A massive point of contention in the thread centers on reports that Manus’s co-founders were summoned to Beijing and barred from leaving the country. 
-*   **The Critical View:** Many users condemned this as draconian, comparing it to the CCP's handling of Jack Ma. One user cited a Stanford Journal publication on Chinese "Business Exit Bans," framing the situation as state-sponsored "commercial hostage-taking" to leverage the founders into unwinding the deal.
-*   **The Pragmatic View:** Others argued that retaining passports and restricting travel during an investigation into IP theft, invention assignment violations, or national security breaches is standard legal procedure in many countries, not just China.
-
-**Geopolitical Parallels and Hypocrisy**
-Many commenters pointed out that Washington engages in nearly identical behavior to protect its own industries. Several users drew parallels to the Committee on Foreign Investment in the United States (CFIUS), citing examples like the blocked sale of U.S. Steel to Nippon Steel, or the Trump administration blocking the $1.3B sale of Lattice Semiconductor to a Chinese-backed firm. The consensus here is that both superpowers now treat tech and AI M&A as matters of hard national security. 
-
-**The TikTok Tangent**
-The discussion also spawned a lengthy debate comparing the Manus situation to the U.S. government's ongoing attempts to ban or force the sale of TikTok. Users argued over the true motives of the U.S. TikTok ban, split between those who view it as a genuine data/surveillance concern against a foreign adversary, and those who believe it is primarily about controlling political narratives and algorithms.
-
-### Decoupled DiLoCo: Resilient, Distributed AI Training at Scale
-
-#### [Submission URL](https://deepmind.google/blog/decoupled-diloco/) | 48 points | by [metadat](https://news.ycombinator.com/user?id=metadat) | [6 comments](https://news.ycombinator.com/item?id=47924181)
-
-Google unveils Decoupled DiLoCo: async, low-bandwidth multi‑region LLM training
-
-- What it is: A distributed training architecture that splits large runs into loosely coupled “islands” (learner units) that exchange updates asynchronously. It merges ideas from Pathways (asynchronous dataflow) and the earlier DiLoCo (low‑communication training).
-
-- Why it matters: Traditional tightly synchronized training struggles at global scale and is brittle to hardware hiccups. Decoupled DiLoCo isolates failures to a single island, keeps the rest training, and operates over ordinary internet‑scale bandwidth.
-
-- Key results:
-  - Trained a 12B‑parameter Gemma 4 model across four U.S. regions using just 2–5 Gbps WAN links.
-  - More than 20× faster than conventional synchronization methods at that scale/bandwidth.
-  - Orders of magnitude less cross‑datacenter bandwidth than standard data‑parallel approaches.
-  - Maintains higher “goodput” (useful training) under injected failures and matches benchmark ML performance of conventional training.
-
-- Resilience and ops:
-  - Self‑healing under “chaos engineering”: learner units can drop out and rejoin without halting the whole job.
-  - Communication is folded into longer compute windows to avoid blocking, reducing sensitivity to stragglers and network jitter.
-
-- Hardware flexibility:
-  - Supports mixing TPU generations (e.g., v6e with v5p) in one run without degrading end performance, turning stranded or older hardware into useful capacity.
-
-- Big picture: If it generalizes broadly, this could make multi‑region pretraining practical without exotic interconnects, ease capacity bottlenecks, and improve utilization. Open questions HN will watch: convergence stability under asynchrony, optimizer/hyperparameter tuning at larger scales, and how this plays with non‑TPU stacks.
-
-Here is a summary of the Hacker News discussion regarding Google’s Decoupled DiLoCo:
-
-**Engineering Complexity vs. Historical Precedent**
-A major part of the thread focused on the sheer difficulty of adapting software built for shared-memory, low-latency computing (traditional High-Performance Computing architectures) to work across high-latency Wide Area Networks (WAN). 
-*   **The MapReduce Comparison:** One commenter likened the architecture's approach to the familiar MapReduce pattern, arguing that while geographic distribution is highly beneficial, the fundamental concept of partitioning work to bypass latency isn't entirely novel. 
-*   **The AI Difference:** Others countered that unlike traditional distributed workloads, AI model training is notoriously difficult to parallelize over high-latency connections. Another user pointed out that Google's paper explicitly acknowledges prior art and clearly defines what this specific implementation adds to the field of distributed ML.
-
-**National Security Implications**
-A brief but notable concern was raised regarding the "scary" national security implications of this breakthrough. If massive, state-of-the-art LLMs can be successfully trained across globally distributed, loosely connected clusters—and specifically by combining older or mismatched hardware—it could theoretically allow foreign adversaries or non-state actors to bypass current tech compute embargoes and hardware export controls. They would no longer need a centralized datacenter full of the newest generation chips and expensive interconnects to train powerful models.
-
-### Tendril – a self-extending agent that builds and registers its own tools
-
-#### [Submission URL](https://github.com/serverless-dna/tendril) | 80 points | by [walmsles](https://news.ycombinator.com/user?id=walmsles) | [32 comments](https://news.ycombinator.com/item?id=47921377)
-
-Tendril: an agent that writes its own tools—then remembers them
-
-What it is
-- An open-source, self-extending agentic sandbox that showcases the “Agent Capability” pattern: the model discovers, builds, registers, and reuses tools across sessions. Built with AWS Strands Agents SDK and Tauri.
-
-Why it’s interesting
-- Instead of giving the model a giant bag of tools, Tendril keeps the tool surface tiny and stable. The agent always starts with a minimal set of bootstrap tools, then grows a capability registry over time. Each session gets smarter as previously created tools are reused.
-
-How it works
-- For any request, the agent:
-  1) Searches its capability registry.
-  2) If a match exists, loads and executes it.
-  3) If not, it writes the tool, registers it, and runs it—no user prompt.
-- It retries on failures by reading errors and fixing code.
-- It prefers live data via tools over answering from training data.
-- Example: “Fetch the top stories from Hacker News” → builds a fetch_url tool if missing; later reuses the same tool to fetch Lobsters.
-
-Under the hood
-- Desktop shell: Tauri (Rust) with a React + Tailwind UI
-- Agent: TypeScript using @strands-agents/sdk
-- Inference: AWS Bedrock (Claude via Strands BedrockModel)
-- Sandbox: Deno subprocess with scoped permissions
-- Protocol: JSON-RPC 2.0 over NDJSON using ACP (same as Claude Code)
-- Registry: index.json plus tools/*.ts
-
-Getting started
-- Requires Node 22+, Rust toolchain, and AWS credentials for Bedrock.
-- Clone repo and run: make dev
-
-Repo: github.com/serverless-dna/tendril (≈153★, 11 forks at time of posting)
-
-Here is a daily digest summary of the Hacker News discussion surrounding **Tendril**:
-
-### 🧠 HN Discussion Digest: Tendril & The Rise of Self-Extending Agents
-
-The Hacker News community had a robust response to Tendril, validating that the "Agent Capability" pattern—where LLMs write and save their own tools to conserve tokens—is a massive trend. However, developers were quick to point out the practical bottlenecks of letting AI build its own infrastructure.
-
-Here are the key takeaways from the thread:
-
-**1. The "Half-Baked Tool" Scaling Problem**
-The most heavily debated topic was how tool registries scale over time. Commenters questioned what happens when a registry grows to hundreds or thousands of tools. Will the agent create highly specific, redundant tools with inconsistent APIs? Users pointed out the critical need for a validation mechanism to ensure a tool is actually correct and successful before it permanently pollutes the registry. 
-
-**2. Security, Sandboxing, and Runaway Agents**
-The idea of an agent spontaneously writing and executing arbitrary code raised immediate safety concerns (with one user joking about an agent accidentally emptying a bank account). The creator (*wlmsls*) chimed in to clarify Tendril’s security model: it relies on a strict Deno sandbox with scoped permissions and strict network allowlists. The agent is physically constrained from reaching anything it hasn't been explicitly granted access to.
-
-**3. "When" to Call vs. "How" to Call**
-Several developers expressed frustration with current Agent frameworks focusing too much on *how* to call a tool, rather than the logic of *when* to use it. Users discussed the limitations of rigid system prompts and the Model Context Protocol (MCP) integration as tool lists grow. Tendril’s "IF-X-THEN-Y" search mechanism—forcing the agent to check the registry before attempting to build—was praised as a step in the right direction for dynamic tool discovery. 
-
-**4. Frontier Models vs. Local Models**
-An interesting technical revelation came from the author regarding model capabilities. They attempted to run this self-extending loop on several smaller/local models (Qwen3-8B, Gemma, Mistral Small, and xLAM-2). **None of them passed.** As of right now, this autonomous tool-building pattern relies heavily on the reasoning capabilities of frontier cloud models like AWS Bedrock's Claude Sonnet.
-
-**5. "I Built This Too"**
-A recurring theme in the comments was developers sharing their own similar internal projects ("Saved Programs," Swarmclub, and custom Home Assistant integrations). It is clear that the community is collectively moving away from passing bloated, massive toolsets into the system prompt, and is instead exploring ways to make agents act more like traditional operating systems that compile, save, and recall discrete scripts to save token costs.
-
-### EvanFlow – A TDD driven feedback loop for Claude Code
-
-#### [Submission URL](https://github.com/evanklem/evanflow) | 107 points | by [evanklem2004](https://news.ycombinator.com/user?id=evanklem2004) | [57 comments](https://news.ycombinator.com/item?id=47916909)
-
-EvanFlow: a TDD-first feedback loop for Claude Code that keeps humans in the driver’s seat
-
-- What it is: An opinionated orchestration layer for Claude Code that runs a disciplined loop — brainstorm → plan → execute (per-task vertical‑slice TDD) → iterate → stop — across 16 cohesive skills plus 2 review subagents. Entry point: “let’s evanflow this.”
-
-- Why it matters: Tries to turn AI coding from one-shot generation into controlled, auditable iterations. It bakes in test-first development, explicit checkpoints, and guardrails aimed at the most common agent failure modes (hallucinated actions, flaky assertions, context drift, tool misuse).
-
-- Guardrails and workflow:
-  - Never auto-commit or auto-stage; pauses before any git operation.
-  - “Never invent values” policy (paths, env vars, IDs, APIs); asks when unsure.
-  - Per-task TDD: strict RED → GREEN → REFACTOR with tests against public interfaces and an assertion-correctness check.
-  - Iterate phase runs quality checks, re-reads diffs, screenshots UI changes, and enforces a Five Failure Modes checklist; hard cap of 5 iterations before reporting back.
-
-- Parallel mode: For plans with independent units, it spawns coder/overseer pairs (read-only reviewers) plus an integration overseer. Named integration tests serve as executable contracts to keep interfaces from drifting.
-
-- Integration with Claude Code:
-  - Quick install via plugin marketplace:
-    - /plugin marketplace add evanklem/evanflow
-    - /plugin install evanflow@evanflow
-  - Skills appear under the evanflow: namespace; a git-guardrails hook auto-activates.
-
-- Caveats: Tightly coupled to Claude Code; intentionally avoids autopilot behavior, so it’s slower than “generate everything” agents but aims for higher reliability and developer control.
-
-Repo: GitHub — evanklem/evanflow (early traction, active README with examples and hooks)
-
-Here is a daily digest summary of the Hacker News discussion regarding **EvanFlow**, a TDD-first orchestration layer for Claude Code:
-
-### 🛠️ The Tech: Enforcing TDD on AI Agents
-The core technical discussion centered around the difficulty of making Large Language Models (LLMs) write reliable code without adult supervision. The creator of EvanFlow emphasized that AI agents naturally default to outputting code rather than checking limits—noting that roughly 62% of LLM-generated test assertions are inherently flawed without strict guardrails. 
-
-*   **Vertical vs. Horizontal TDD:** Commenters debated the best way to prompt LLMs. One user suggested using horizontal TDD to establish system invariants up front, while the creator defended EvanFlow’s "vertical-slice" approach, arguing that forcing the AI to tailor tests to immediate implementations prevents the LLM from trying to imagine the entire architecture at once and failing. 
-*   **Multi-Agent Merging Nightmares:** A significant technical pain point raised by the community is the "per-agent-green, merge-broken" pattern. When multi-agent tools (like EvanFlow's parallel mode) fork tasks out, individual agents often hallucinate that their local tests pass, only to completely break the integration contract when merged. Users shared their own projects (like `tdd-guard` and `TNN`) aimed at solving this context-drift problem using GitHub hooks and vendor-agnostic test runners.
-*   **Research & Citations:** When asked about the "industry research" driving EvanFlow's design, the creator cited Anthropic’s internal reports, "climb-to-deploy" methodologies, and real-world failure data alongside anecdotal testing. 
-
-### 🎸 The Name: Egos, Open Source, and Pearl Jam
-A massive portion of the thread was hijacked by debates and jokes regarding the project's name, *EvanFlow*.
-*   **Narcissism vs. Tradition:** Several users found it "self-conscious" or arrogant for a developer (Evan) to name an AI tool after themselves. However, the community quickly rallied to the creator's defense, pointing out a rich tradition of eponymous open-source software. Commenters cited Linus Torvalds (Linux), Debian (named after Ian and his girlfriend Debra), ReiserFS, and TanStack (Tanner) as proof that developers working for free have every right to put their names on their work.
-*   **The Pearl Jam Puns:** Because it sounds exactly like the classic 90s Pearl Jam song "Even Flow," the thread predictably descended into lyric chains. Users replied to each other with quotes like *"thoughts arrive like butterflies,"* *"Oh, I don't know why,"* and *"Someday yet he'll begin his life again,"* playfully mocking the project's namesake.
-
-### 🤖 Meta-Critiques on Communication
-In a slightly humorous meta-turn, users critiqued the creator's writing style in the comments, accusing the formatting of being either AI-generated or having a weird, unnatural "LinkedIn-esque" cadence (particularly their heavy use of dashes). The creator took it in stride, cheekily admitting that they intentionally lean into a "LinkedIn" style of posting.
-
-### Running local LLMs offline on a ten-hour flight
-
-#### [Submission URL](https://deploy.live/blog/running-local-llms-offline-on-a-ten-hour-flight/) | 125 points | by [darccio](https://news.ycombinator.com/user?id=darccio) | [103 comments](https://news.ycombinator.com/item?id=47921064)
-
-Headline: Ten hours, no Wi‑Fi: stress‑testing local LLMs on a maxed-out MacBook
-
-- Setup: On a 10‑hour London→Las Vegas flight to Google Cloud Next (no in‑flight Wi‑Fi), the author turned a week‑old MacBook Pro M5 Max (128 GB RAM, 40‑core GPU) into a local LLM lab. Ran Gemma 4 31B and Qwen 4.6 36B via LM Studio, plus a grab bag of CLIs (opencode, rtk, instantgrep, duckdb) and common dev stacks.
-
-- What got built: A DuckDB‑backed billing analytics app for two years of loveholidays’ cloud spend with a custom UI that exposed cross‑service patterns standard dashboards missed. Also pushed ~4M tokens through tighter tasks (refactors, scaffolding, docs), with Gemma/Qwen quality comparable to frontier models on narrow scope.
-
-- What broke:
-  - Power: ~1% battery per minute under sustained load; battery still drained when plugged into 60W.
-  - Heat: 70–80W continuous made the chassis uncomfortably hot.
-  - Context: Throughput/latency degraded past 100k tokens; occasional infinite loops needing manual breaks.
-  - Mitigations: One problem per session, long plan → markdown → re‑ingest, minimize tool‑call overhead; avoid slow compaction.
-
-- Instrumentation built mid‑flight:
-  - powermonitor: live CPU/GPU/ANE/adapter/battery telemetry (observed ~71.5W avg, GPU‑heavy).
-  - lmstats: token throughput, latency, context‑window behavior for LM Studio.
-  - Principle: instrument before you act.
-
-- Community takeaways: “Mechanical sympathy” for AI—seeing power/heat/context costs locally sharpens judgment that carries back to cloud usage. Apple Silicon perf‑per‑watt praised for battery‑bound work.
-
-- Surprise culprit: Power shortfall traced to the cable. Same adapter/workload delivered 60W via iPhone cable vs 94W via MacBook cable—a 36% swing. Expect better on the return flight within the airline’s 70W seat cap.
-
-- Bottom line: Local inference is great for tight coding, exploratory tools, and “wouldn’t clear the cloud bar” tasks. Long‑context reasoning, agentic workflows, and high‑stakes jobs still belong in the cloud. Next up: publish numbers, return‑flight rerun with the right cable, and test Neural Engine‑friendly small LLMs for speed and power efficiency.
-
-**Hacker News Daily Digest: Stress-Testing Local LLMs at 30,000 Feet**
-
-Welcome to today’s Hacker News digest! One of today's top stories involves an ambitious developer who turned a 10-hour, Wi-Fi-less flight into a local AI lab. Armed with a maxed-out MacBook Pro M5 Max, they successfully ran Gemma 4 31B and Qwen 4.6 36B locally, building a DuckDB-backed analytics app mid-flight. While the author detailed the technical triumphs and hardware struggles (power drain, chassis heat, and dropping context at 100k tokens), the HN community took the discussion in several highly practical—and sometimes contentious—directions. 
-
-Here is a summary of the ensuing discussion:
-
-*   **The Physics & Ergonomics of In-Flight Coding**
-    While the author achieved technical success, many commenters were baffled by the physical logistics. A massive portion of the thread focused on the absolute misery of using a laptop in an economy-class seat. Users cited the dreaded "T-Rex arms" required to type on tiny tray tables and shared horror stories of laptop screens being crushed by the sudden recline of the seat in front. This spawned a lengthy, tangential debate about shrinking airline seat dimensions, passenger body sizes, and the overall lack of adequate physical space (and power) in modern economy travel. 
-
-*   **AR Glasses to the Rescue?**
-    To solve the poor ergonomics of airplane coding, several users recommended AR/Smart glasses like the XReal Pro. Proponents argued that these displays allow you to lean comfortably back in your seat, connect a Bluetooth keyboard to your lap, and code on a massive virtual monitor, entirely eliminating neck strain. However, critics warned that current generations suffer from blurry edges, awkward UI resolutions for IDEs, and eye fatigue over long durations.
-
-*   **Airplane Outlets and Thermal Throttling**
-    Addressing the Original Poster's power supply mysteries, commenters noted that drawing too much wattage on a plane is risky; pulling a sustained 90W+ from an outlet with a strict 70W cap will often cause the seat's power socket to shut off completely. Regarding the MacBook's heat, several users suggested bypassing Apple's default fan curve. Commenters highly recommended using third-party tools like `MacsFanControl` to manually max out the fans *before* starting heavy workloads to prevent silent thermal throttling.
-
-*   **The Local AI Debate: Real Utility vs. Hype**
-    The most technical branch of the thread tackled a fundamental question: *are local models actually good for coding yet?* 
-    *   **The Skeptics:** Some users argued that running local LLMs is currently more hype than substance. One user with a 64GB M3 Max noted they couldn't get anything close to the utility of cloud models, suspecting that many people claiming local compute superiority are exaggerating. 
-    *   **The Defenders:** Others pushed back vigorously with specific hardware/software configurations. Users running Qwen36 27B (via tools like MLX, unsloth, and llama.cpp on M4/M5 MacBooks and Nvidia 3090s) noted that dense models *can* rival frontier cloud models on tight coding workflows. However, they admitted there are caveats: open-source tool-calling is still highly prone to missing commands or infinite loops, and prompt processing speed remains a brutal bottleneck compared to token generation. 
-
-**The Takeaway:** If you plan to code locally with AI on your next flight, your biggest bottleneck might not be your LLM's context window—it'll be airline seat pitch, restrictive power outlets, and your own neck.
-
-### Canva apologizes after its AI tool replaces 'Palestine' in designs
-
-#### [Submission URL](https://www.theverge.com/ai-artificial-intelligence/919028/canva-magic-layers-ai-replacing-palestine) | 77 points | by [alex_suzuki](https://news.ycombinator.com/user?id=alex_suzuki) | [31 comments](https://news.ycombinator.com/item?id=47922518)
-
-Canva apologizes after AI tool swaps ‘Palestine’ for ‘Ukraine’ in designs
-
-- Canva’s new Magic Layers feature — meant to split flat images into editable parts without changing visible content — was caught replacing the phrase “cats for Palestine” with “cats for Ukraine,” first flagged by X user @ros_ie9. Related terms like “Gaza” reportedly weren’t affected.
-- The company says the issue is fixed and has added extra checks. Some users replicated the bug before the patch; The Verge couldn’t reproduce it afterward.
-- Why it matters: It’s a glaring trust hit for AI-assisted design tools, especially when changes are both unintended and politically charged. Canva is pitching Magic Layers as core to its “next era of creation” as it competes with Adobe’s AI suite, making reliability and neutrality critical.
-
-Here is a summary of the Hacker News discussion regarding the Canva AI tool swapping ‘Palestine’ for ‘Ukraine’:
-
-**The Debate: Glitch, Training Data, or Intentional Censorship?**
-A significant portion of the conversation focused on *why* this error happened. Some commenters suspected malicious intent or hard-coded political censorship, suggesting AI models might be quietly instructed to penalize or flag certain geopolitical terms. However, others argued strongly against anthropomorphizing AI models, asserting this is a classic "Eliza Effect" and an artifact of training data. Just as image generators might accidentally swap "sardines" for "anchovies," this model likely latched onto "Ukraine" because it appears in highly similar, frequently occurring contexts in its training data (e.g., modern war-zone support campaigns). 
-
-**AI Safety Guardrails and Political Bias**
-The incident sparked a wider debate about how AI companies handle politically charged topics. Users traded anecdotes about hitting conversational brick walls with models like ChatGPT, noting that RLHF (reinforcement learning from human feedback) and safety guardrails often force models to refuse logical conclusions if they brush against "forbidden" or sensitive topics. Commenters also compared the political blind spots across different models, noting variances in how Claude, ChatGPT, and Grok handle recent political events and historical context.
-
-**Corporate Accountability**
-Regardless of whether the swap was a technical hallucination or a dataset flaw, many commenters agreed that the burden falls on the vendor. The prevailing sentiment was that when a company like Canva packages and sells a productivity tool, users shouldn't have to understand the intricacies of LLM behavior. When a user explicitly types a specific country's name and the tool replaces it with another, it represents a catastrophic failure of product reliability. Some suggested technical fixes, such as implementing strict constraint checks that compare composite layers back to the original text before finalizing the image.
-
-**Philosophical Tangents: Do LLMs "Think"?**
-As is common on Hacker News, the thread eventually pivoted into a deeper philosophical debate about the nature of artificial cognition. Skeptics characterized LLMs as "stochastic parrots" that merely output highly-ranked probability patterns without any true understanding. Conversely, defenders argued that reducing transformer architectures to mere "next-word predictors" is overly simplistic and ignores complex data generalization, noting that the "moving goalposts" of what constitutes real intelligence has defined the history of AI.
-
-### U.S. companies back Sam Altman's World ID even as much of the world pushes back
-
-#### [Submission URL](https://restofworld.org/2026/sam-altman-worldcoin-zoom-tinder-partnerships/) | 144 points | by [kelnos](https://news.ycombinator.com/user?id=kelnos) | [90 comments](https://news.ycombinator.com/item?id=47926259)
-
-World (formerly Worldcoin) lands Tinder, Zoom, DocuSign partnerships amid global backlash
-
-- What’s new: On April 17, World said Tinder, Zoom, and DocuSign will tap its digital ID to verify users and curb deepfakes, scams, and fraud.
-- Why it matters: Corporate adoption could mainstream biometric “proof of personhood” even as governments throttle or ban the tech. It’s a potential backdoor to scale controversial identity infrastructure via consumer apps.
-
-How World works
-- Tools for Humanity (co-founded by Sam Altman and Alex Blania) scans irises with “Orbs” to issue a World ID.
-- Early growth leaned on ~$50 crypto sign-up bonuses; the company claims 18 million verified users across 160 countries.
-- By April 2025 it had deployed roughly 7,000 Orbs across six U.S. cities, taking advantage of looser, fragmented state rules on biometrics/crypto compared with the EU.
-
-The backlash (highlights)
-- 2022: MIT Tech Review alleged deceptive onboarding and collection of extra biometrics beyond irises without meaningful consent.
-- 2023–2025: Pauses/bans and probes across Kenya, Spain, Portugal, India, Argentina, Hong Kong, Brazil (outright ban with daily fines), Indonesia, the Philippines, and Thailand; Germany ordered some data deleted under GDPR.
-- Edward Snowden criticized the project for “cataloguing eyeballs.”
-- Rebrand from Worldcoin to World in Oct 2024, plus a steady PR push (surveys, and an April 16 revenue “blueprint” for companies using World ID).
-
-What to watch
-- Implementation details at Tinder/Zoom/DocuSign: optional vs. required, data flows, retention, and auditability.
-- GDPR and cross-border risk if EU users are involved via these U.S. platforms.
-- U.S. state privacy/biometrics laws, class actions, and whether federal rules emerge.
-- Whether corporate uptake outpaces regulatory pushback—or triggers more of it.
-
-### 💬 What Hacker News is Saying
-The HN community reacted with heavy skepticism, pointing out the irony of the founders, the dystopian privacy implications, and questioning whether biometric databases are actually the right solution for internet trust.
-
-Here are the key takeaways from the discussion:
-
-**1. "Selling the Cure to Their Own Disease"**
-The most prominent theme in the thread was the irony of Sam Altman’s dual ventures. Users criticized the business model as "creating the disease to sell the cure." By accelerating the capabilities of LLMs (via OpenAI) that flood the internet with indistinguishable bots, the founders have created an artificial problem, only to turn around and profit by selling the biometric "human verification" solution to other companies. 
-
-**2. Extreme Privacy Doubts and "Black Mirror" Comparisons**
-Despite World's claims that iris images are deleted and secured using randomized Multi-Party Computation (MPC), the community isn't buying it. 
-*   **The Creep Factor:** Users compared the overarching surveillance architecture to Palantir and warned that requiring biometrics to access basic consumer apps borders on "Black Mirror/Twilight Zone territory."
-*   **Data as a Liability:** Commenters stressed that biometric data is the ultimate honeypot. Because companies frequently "externalize the cost of data breaches," users fear that a compromise of this system would result in permanent identity theft, as you cannot change your iris. Further concerns were raised about defense contractors eventually buying access to high-fidelity correlation data.
-
-**3. Is an AI/Human Internet Worth Saving?**
-The integration prompted a philosophical debate on what to do about a bot-infested web. 
-*   Some users suggested that merely "proving someone is human" is neither necessary nor sufficient for building trust online. 
-*   Others called for alternative, decentralized verification methods, such as Zero-Knowledge (ZK) proofs linked to national passports (meaning a user can prove they are a unique human over 18 without giving biometric data to a tech company).
-
-**4. The Return to "Meatspace"**
-Given the tech fatigue, many commenters suggested that the only true defense against AI fabrication is a return to IRL (in-real-life) offline verification. Echoing the old days of the internet, some users advocated for a return to "in-person PGP signed parties" and prioritizing physical, verifiably real interactions ("meatspace") over trying to out-engineer AI botnets on a centralized digital network. 
-
-***
-*What to watch:* Keep an eye on how Tinder, Zoom, and DocuSign actually implement this. Will the World ID be optional, or will you soon have to scan your retinas just to join a video call or swipe on a dating app? Given the EU's strict GDPR posture, cross-border data flows will likely be the next major legal battleground.
