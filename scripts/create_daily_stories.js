@@ -52,6 +52,47 @@ async function retryWithBackoff(fn, retries = CONFIG.MAX_RETRIES, context = '') 
   }
 }
 
+// Normalize a URL for duplicate detection: drop protocol, "www.", trailing
+// slashes and tracking params, unify twitter/x/nitter hosts, and treat arxiv
+// abs/pdf as the same paper.
+function canonicalUrl(u) {
+  if (!u) return '';
+  try {
+    const url = new URL(u);
+    let host = url.hostname.replace(/^www\./, '').toLowerCase();
+    if (host === 'twitter.com' || host === 'mobile.twitter.com' || host === 'nitter.net') {
+      host = 'x.com';
+    }
+    let pathname = url.pathname.replace(/\/+$/, '');
+    pathname = pathname.replace(/^\/pdf\//, '/abs/').replace(/\.pdf$/, '');
+    return host + pathname;
+  } catch (error) {
+    return u.trim().toLowerCase();
+  }
+}
+
+// Drop stories that point at the same canonical URL, keeping the highest-scored
+// one. Conservative on purpose: only exact canonical-URL matches are merged, so
+// distinct stories on a shared topic are never collapsed.
+function dedupeStories(stories) {
+  const seen = new Map();
+  const out = [];
+  for (const story of stories) {
+    const key = canonicalUrl(story.url);
+    if (!key) { out.push(story); continue; }
+    const existing = seen.get(key);
+    if (!existing) {
+      seen.set(key, story);
+      out.push(story);
+    } else if ((story.score || 0) > (existing.score || 0)) {
+      const idx = out.indexOf(existing);
+      if (idx !== -1) out[idx] = story;
+      seen.set(key, story);
+    }
+  }
+  return out;
+}
+
 function isSameDay(date1, date2) {
   return date1.getFullYear() === date2.getFullYear() &&
          date1.getMonth() === date2.getMonth() &&
@@ -270,8 +311,12 @@ async function main() {
   }
   
   // Fetch and process stories
-  const stories = await fetchNewestStories();
-  
+  const rawStories = await fetchNewestStories();
+  const stories = dedupeStories(rawStories);
+  if (stories.length < rawStories.length) {
+    console.log(`[${new Date().toISOString()}] Removed ${rawStories.length - stories.length} duplicate-URL stories (${stories.length} remain)`);
+  }
+
   if (stories.length === 0) {
     console.log(`[${new Date().toISOString()}] No AI stories found for ${YESTERDAY_STRING}`);
     process.exit(0);

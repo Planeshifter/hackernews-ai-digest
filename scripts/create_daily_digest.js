@@ -7,21 +7,28 @@ const jsonSerializeCompressed = require('./serialize_compressed.js');
 
 // Configuration
 const CONFIG = {
-  MAX_CONTENT_LENGTH: 6000,
+  MAX_CONTENT_LENGTH: 6000,      // article body budget (chars)
+  COMMENT_MAX_LENGTH: 12000,     // comment thread budget (chars) — larger than the article
+  MIN_CONTENT_LENGTH: 200,       // below this, treat the article body as unavailable
   MAX_RETRIES: 3,
   RETRY_DELAY: 2000,
   REQUEST_DELAY: 1000,
-  REQUEST_TIMEOUT: 10000,
+  REQUEST_TIMEOUT: 10000,        // HTTP fetch timeout
+  LLM_TIMEOUT: 90000,            // LLM completion timeout (gpt-5/gemini are slow)
+  MAX_COMPLETION_TOKENS: 8000,   // generous — a low cap starves reasoning models and yields empty output
+  MIN_SUCCESS_RATIO: 0.5,        // abort (do not publish) if fewer than this fraction of attempts succeed
   MODELS: {
     SUMMARY: 'gpt-5',
     DISCUSSION: 'google/gemini-3.1-pro-preview'
   }
 };
 
-// Initialize OpenAI client
+// Initialize OpenAI client. maxRetries: 0 so retryWithBackoff is the single
+// retry authority (otherwise the SDK's internal retries nest and multiply).
 const openai = new OpenAI({
   baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: process.env.OPEN_ROUTER_API_KEY
+  apiKey: process.env.OPEN_ROUTER_API_KEY,
+  maxRetries: 0
 });
 
 // Date setup
@@ -36,10 +43,31 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function errorStatus(error) {
+  return error?.status || error?.response?.status;
+}
+
+// OpenRouter returns 402 (and/or a "requires more credits" message) when the
+// account balance is exhausted. This is fatal for the whole run — every
+// subsequent call will fail the same way.
+function isInsufficientCredits(error) {
+  const msg = (error?.message || '').toLowerCase();
+  return errorStatus(error) === 402
+    || msg.includes('requires more credits')
+    || msg.includes('insufficient credits');
+}
+
 async function retryWithBackoff(fn, retries = CONFIG.MAX_RETRIES, context = '') {
   try {
     return await fn();
   } catch (error) {
+    // Do not retry client errors (4xx) — e.g. 402 insufficient credits or a
+    // 404/403 on a fetch — they will not succeed on retry and only waste time
+    // and credits.
+    const status = errorStatus(error);
+    if (status && status >= 400 && status < 500) {
+      throw error;
+    }
     if (retries > 0) {
       console.log(`[${new Date().toISOString()}] Retry ${CONFIG.MAX_RETRIES - retries + 1}/${CONFIG.MAX_RETRIES} for ${context}`);
       await sleep(CONFIG.RETRY_DELAY);
@@ -66,6 +94,108 @@ function extractTextFromHtml(html) {
   return innerText.substring(0, CONFIG.MAX_CONTENT_LENGTH);
 }
 
+// Strip HTML/entities from a snippet (e.g. an HN self-post `text` field) to
+// plain text, without the element-removal/truncation that extractTextFromHtml
+// applies to full pages.
+function htmlToText(html) {
+  if (!html) return '';
+  return cheerio.load(`<body>${html}</body>`)('body').text().replace(/\s+/g, ' ').trim();
+}
+
+// Sentinel a model emits when it has nothing usable to summarize.
+const SKIP_SENTINEL = 'SKIP_STORY';
+
+// True when the output is empty or exactly the skip sentinel (matched as a
+// trimmed whole-string, tolerating stray markdown emphasis — NOT as a
+// substring, so a summary that merely mentions the word is never dropped).
+function isSkip(text) {
+  const t = (text || '').trim();
+  if (t === '') return true;
+  // Strip surrounding markdown emphasis/heading marks and whitespace (but NOT
+  // underscores — the sentinel itself contains one) before comparing.
+  return t.replace(/[*`#\s]/g, '').toUpperCase() === SKIP_SENTINEL;
+}
+
+// True when the output is a refusal / clarification request rather than a
+// summary. Anchored to the START of a SHORT output so it cannot false-positive
+// on a long, legitimate summary that happens to quote a call-to-action.
+function isRefusal(text) {
+  const t = (text || '').trim();
+  if (t.length > 400) return false;
+  const head = t.slice(0, 200).toLowerCase();
+  return /i (?:do not|don'?t|didn'?t|cannot|can'?t) (?:see|have|find|access) the (?:submission|article|discussion|content|comments|text)/.test(head)
+    || /please (?:share|provide|paste) (?:one of|the following|the submission|the article)/.test(head)
+    || /(?:could|can) you (?:please )?(?:share|provide|paste)/.test(head)
+    || /i'?m ready to (?:summarize|write|help)/.test(head)
+    || /sample output format/.test(head);
+}
+
+// Conservative safety net: strip a single leading conversational/preamble or
+// self-invented banner line if the model emitted one despite the prompt. Logs
+// nothing here; the caller logs when the result changes.
+function stripPreamble(text) {
+  let t = (text || '').trim();
+  // Drop a leading greeting/meta line ("Here is a summary:", "Certainly!", a
+  // "# Daily Digest" banner, or a "***"/"---" divider) followed by real body.
+  const patterns = [
+    /^\s*(?:certainly|sure|of course|absolutely|good morning|good afternoon|hello)[!,.:]?\s*\n+/i,
+    /^\s*here(?:'s| is| are)[^\n]*\n+/i,
+    /^\s*welcome[^\n]*\n+/i,
+    /^\s*#{1,3}\s+[^\n]*digest[^\n]*\n+/i,
+    /^\s*(?:\*\*\*|---)\s*\n+/,
+  ];
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const re of patterns) {
+      const next = t.replace(re, '');
+      if (next !== t && next.trim().length > 0) { t = next.trim(); changed = true; }
+    }
+  }
+  return t.trim();
+}
+
+// System prompt for the submission summary (gpt-5).
+const SUBMISSION_PROMPT = `You write ONE section of an automated Hacker News AI digest: the summary of a single linked submission (an article, repo, paper, tweet, or product). Your text is inserted verbatim beneath a "### {title}" header and a "#### {points/author/comments}" metadata line that the pipeline has ALREADY printed. You are an automated batch job — there is no human to reply to.
+
+OUTPUT CONTRACT
+- Output ONLY the summary body. Nothing before it, nothing after it.
+- Do NOT restate the title or open with a restated headline line; the title is already shown above. Begin directly with substance.
+- Do NOT reprint the URL, points, author, or comment count; the pipeline prints them. A single "Repo:"/"Paper:" pointer is allowed ONLY if it points to a resource not already in the metadata line.
+- No preamble ("Here is a summary…", "Sure", "Certainly"), no meta-commentary, no sign-off, no reading-time or "Source: …" footer.
+- Do NOT emit a digest-level title, banner, emoji header, or a "***"/"---" divider.
+- NEVER ask for the submission or for clarification, and NEVER describe or preview the format you will use.
+
+FORMAT & STYLE
+- Match the house style: start directly with the substance. Use bold section labels with "- " bullets when the source is rich (e.g. **What it is**, **What's new**, **How it works**, **Why it matters**, **Caveats**), or a short plain paragraph when it is thin.
+- Scale length to the source: a substantial article/repo/paper warrants several labeled sections; a minor item warrants a few sentences. Do not pad.
+- Plain Markdown only — bold inline labels and "- " bullets are fine, but NO "#", "##", or "###" headers inside your output.
+- Neutral, concrete, factual tone. No hype, no promotional adjectives, no editorializing.
+
+WHEN SOURCE CONTENT IS THIN OR MISSING
+- The article text may be short, empty, paywalled, or a JS-only/tweet page. Never refuse and never ask for it.
+- Summarize only what the provided material (title + any text) actually supports, at a high level if necessary. Do NOT invent facts, numbers, or quotes, and do NOT draw on outside knowledge of the topic beyond what the title plainly states.
+- If there is genuinely nothing usable to say, output exactly this and nothing else: ${SKIP_SENTINEL}`;
+
+// System prompt for the discussion summary (gemini).
+const DISCUSSION_PROMPT = `You write ONE section of an automated Hacker News AI digest: a summary of the COMMENTS on a single HN post. You are given the submission summary for context only, plus the comment thread. Your text is inserted verbatim beneath the submission summary. You are an automated batch job — there is no human to reply to.
+
+OUTPUT CONTRACT
+- Summarize ONLY the discussion. Do NOT re-introduce or recap the article under any label (e.g. "The Context:", "The Pitch:", "Background:") — it is already summarized directly above you.
+- Output ONLY the discussion body. No preamble or greeting ("Here is a summary…", "Good morning!"), no sign-off ("End of digest", "See you tomorrow"), no source links, no "***"/"---" divider.
+- Do NOT emit a top-level header, banner, or emoji title of your own; a "### " header for this story is already printed above you.
+- NEVER ask for the discussion or for clarification, and NEVER describe or preview the format you will use.
+
+FORMAT & STYLE
+- Begin directly with the themes. Present them as "- " bullets with short bold lead-ins, e.g. "- **Skepticism about the benchmarks:** commenters argued…". Report where people agreed, disagreed, and any consensus.
+- You may close with a single brief "**The takeaway:**" line if it adds signal.
+- Bold thematic sub-labels are fine; do NOT use "#", "##", or "###" headers.
+- Neutral, concise, analytical tone. No invented enthusiasm, no promotional framing ("triggered a massive wave of skepticism").
+
+WHEN COMMENTS ARE THIN OR MISSING
+- Summarize whatever real discussion exists in one or two bullets. Do NOT pad and do NOT fall back to recapping the article.
+- If there are effectively no substantive comments, output exactly this and nothing else: ${SKIP_SENTINEL}`;
+
 async function main() {
   const startTime = Date.now();
   
@@ -91,23 +221,28 @@ async function main() {
   // Initialize digest
   let digest = `## AI Submissions for ${YESTERDAY.toDateString()} {{ 'date': '${YESTERDAY.toISOString()}' }}\n\n`;
   let processedCount = 0;
-  let skippedCount = 0;
-  let errorCount = 0;
-  
+  let skippedCount = 0;   // stories with no URL
+  let droppedCount = 0;   // stories dropped because the model refused / had nothing usable
+  let errorCount = 0;     // stories dropped because a generation call errored
+  let fatalError = false; // set on credit exhaustion — abort without publishing
+
   // Process each story
   for (let i = 0; i < stories.length; i++) {
     const story = stories[i];
-    
+
     if (!story.url) {
       console.log(`[${new Date().toISOString()}] Skipping story ${i} (ID: ${story.id}): No URL`);
       skippedCount++;
       continue;
     }
-    
+
     console.log(`[${new Date().toISOString()}] Processing story ${i}/${stories.length} (ID: ${story.id}): ${story.title}`);
-    
+
+    // Fetch the article body. Failures are NON-fatal: we still summarize from
+    // the title (and any HN self-post text) so the model never has to refuse
+    // for lack of a submission.
+    let content = '';
     try {
-      // Fetch web content with retry
       console.log(`[${new Date().toISOString()}]   Fetching content from: ${story.url}`);
       const response = await retryWithBackoff(
         async () => axios.get(story.url, {
@@ -117,90 +252,122 @@ async function main() {
         CONFIG.MAX_RETRIES,
         `fetch ${story.url}`
       );
-      
-      const content = extractTextFromHtml(response.data);
+      content = extractTextFromHtml(response.data);
       console.log(`[${new Date().toISOString()}]   Extracted ${content.length} characters of text`);
-      
-      if (content.length < 100) {
-        console.log(`[${new Date().toISOString()}]   Warning: Very short content, may affect summary quality`);
+    } catch (error) {
+      console.log(`[${new Date().toISOString()}]   Could not fetch article (${error.message}); summarizing from title/metadata`);
+    }
+
+    const hnText = htmlToText(story.text);
+
+    try {
+      // ---- Submission summary (gpt-5) ----
+      const hasBody = content.length >= CONFIG.MIN_CONTENT_LENGTH || hnText.length > 0;
+      const submissionUser = hasBody
+        ? `Title: ${story.title}\nURL: ${story.url}\n\n` +
+          (hnText ? `Author's post text:\n${hnText}\n\n` : '') +
+          `Article text (may be truncated):\n${content || '(none extracted)'}`
+        : `Title: ${story.title}\nURL: ${story.url}\n\nThe article body could not be extracted (it is likely paywalled, JavaScript-only, or a media/tweet page). Summarize at a high level from the title alone; do not invent specifics. If the title alone is not enough to say anything useful, reply with ${SKIP_SENTINEL}.`;
+
+      console.log(`[${new Date().toISOString()}]   Generating submission summary with ${CONFIG.MODELS.SUMMARY}`);
+      const submissionCompletion = await retryWithBackoff(
+        async () => openai.chat.completions.create({
+          model: CONFIG.MODELS.SUMMARY,
+          max_tokens: CONFIG.MAX_COMPLETION_TOKENS,
+          messages: [
+            { role: 'system', content: SUBMISSION_PROMPT },
+            { role: 'user', content: submissionUser },
+          ]
+        }, { timeout: CONFIG.LLM_TIMEOUT }),
+        CONFIG.MAX_RETRIES,
+        'submission summary'
+      );
+
+      let submissionSummary = submissionCompletion.choices[0]?.message?.content || '';
+
+      // Drop the whole story if the model refused or had nothing usable.
+      if (isSkip(submissionSummary) || isRefusal(submissionSummary)) {
+        console.log(`[${new Date().toISOString()}]   ⤫ Dropping story ${i}: submission summary was ${isSkip(submissionSummary) ? 'empty/SKIP_STORY' : 'refusal-shaped'}`);
+        droppedCount++;
+        continue;
       }
-      
-      try {
-        // Generate submission summary
-        console.log(`[${new Date().toISOString()}]   Generating submission summary with ${CONFIG.MODELS.SUMMARY}`);
-        const submissionCompletion = await retryWithBackoff(
-          async () => openai.chat.completions.create({
-            model: CONFIG.MODELS.SUMMARY,
-            messages: [
-              { 
-                role: 'system', 
-                content: 'This AI will write a daily digest of the top stories on Hacker News; it will summarize the following submission in an engaging way.' 
-              },
-              { role: 'user', content: content },
-            ]
-          }, { timeout: CONFIG.REQUEST_TIMEOUT }),
-          CONFIG.MAX_RETRIES,
-          'submission summary'
-        );
-        
-        const submissionSummary = submissionCompletion.choices[0]?.message?.content;
-        if (!submissionSummary) {
-          throw new Error('Empty summary returned from API');
-        }
-        
-        // Generate discussion summary
-        const comments = jsonSerializeCompressed(story.comments || []).substring(0, CONFIG.MAX_CONTENT_LENGTH);
+      submissionSummary = stripPreamble(submissionSummary);
+
+      // ---- Discussion summary (gemini) ----
+      // Only attempt a discussion summary when there are actual comments — an
+      // empty array serializes to "[]", which is not worth a model call.
+      let discussionSummary = '';
+      if (Array.isArray(story.comments) && story.comments.length > 0) {
+        const comments = jsonSerializeCompressed(story.comments).substring(0, CONFIG.COMMENT_MAX_LENGTH);
         console.log(`[${new Date().toISOString()}]   Generating discussion summary with ${CONFIG.MODELS.DISCUSSION} (${comments.length} chars)`);
-        
         const discussionCompletion = await retryWithBackoff(
           async () => openai.chat.completions.create({
             model: CONFIG.MODELS.DISCUSSION,
+            max_tokens: CONFIG.MAX_COMPLETION_TOKENS,
             messages: [
-              { 
-                role: 'system', 
-                content: 'This AI will write a daily digest of the top stories on Hacker News; it will summarize the following discussion about the submission in the comments on Hacker News.' 
-              },
-              { role: 'user', content: `Summary of Submission: ${submissionSummary}.` },
-              { role: 'user', content: `Please summarize the following discussion: ${comments}` },
+              { role: 'system', content: DISCUSSION_PROMPT },
+              { role: 'user', content: `Submission summary (context only — do NOT recap it):\n${submissionSummary}` },
+              { role: 'user', content: `Comments to summarize:\n${comments}` },
             ]
-          }, { timeout: CONFIG.REQUEST_TIMEOUT }),
+          }, { timeout: CONFIG.LLM_TIMEOUT }),
           CONFIG.MAX_RETRIES,
           'discussion summary'
         );
-        
-        const discussionSummary = discussionCompletion.choices[0]?.message?.content;
-        if (!discussionSummary) {
-          throw new Error('Empty discussion summary returned from API');
+        discussionSummary = discussionCompletion.choices[0]?.message?.content || '';
+        // A thin/refused discussion omits ONLY the discussion section; it never
+        // drops an otherwise-good submission.
+        if (isSkip(discussionSummary) || isRefusal(discussionSummary)) {
+          console.log(`[${new Date().toISOString()}]   Discussion summary omitted (${isSkip(discussionSummary) ? 'empty/SKIP_STORY' : 'refusal-shaped'})`);
+          discussionSummary = '';
+        } else {
+          discussionSummary = stripPreamble(discussionSummary);
         }
-        
-        // Add to digest
-        digest += `### ${story.title}\n\n`;
-        digest += `#### [Submission URL](${story.url}) | ${story.score || 0} points | by [${story.by}](https://news.ycombinator.com/user?id=${story.by}) | [${story.descendants || 0} comments](https://news.ycombinator.com/item?id=${story.id})\n\n`;
-        digest += submissionSummary + '\n\n';
-        digest += discussionSummary + '\n\n';
-        
-        processedCount++;
-        console.log(`[${new Date().toISOString()}]   ✓ Successfully processed story ${i}`);
-        
-        // Rate limiting delay
-        await sleep(CONFIG.REQUEST_DELAY);
-        
-      } catch (error) {
-        console.error(`[${new Date().toISOString()}]   ERROR generating summaries:`, error.message);
-        
-        // Add partial entry to digest
-        digest += `### ${story.title}\n\n`;
-        digest += `#### [Submission URL](${story.url}) | ${story.score || 0} points | by [${story.by}](https://news.ycombinator.com/user?id=${story.by}) | [${story.descendants || 0} comments](https://news.ycombinator.com/item?id=${story.id})\n\n`;
-        digest += `*Unable to generate AI summary: ${error.message}*\n\n`;
-        errorCount++;
       }
-      
+
+      // ---- Append the entry ----
+      digest += `### ${story.title}\n\n`;
+      digest += `#### [Submission URL](${story.url}) | ${story.score || 0} points | by [${story.by}](https://news.ycombinator.com/user?id=${story.by}) | [${story.descendants || 0} comments](https://news.ycombinator.com/item?id=${story.id})\n\n`;
+      digest += submissionSummary + '\n\n';
+      if (discussionSummary) {
+        digest += discussionSummary + '\n\n';
+      }
+
+      processedCount++;
+      console.log(`[${new Date().toISOString()}]   ✓ Successfully processed story ${i}`);
+
+      // Rate limiting delay
+      await sleep(CONFIG.REQUEST_DELAY);
+
     } catch (error) {
-      console.error(`[${new Date().toISOString()}] ERROR processing story ${i}:`, error.message);
+      console.error(`[${new Date().toISOString()}]   ERROR generating summaries for story ${i}:`, error.message);
       errorCount++;
+      // Never write a placeholder into the digest — skip the story entirely.
+      // On credit exhaustion, abort the run: every later call will also fail.
+      if (isInsufficientCredits(error)) {
+        console.error(`[${new Date().toISOString()}]   FATAL: OpenRouter reports insufficient credits — aborting run.`);
+        fatalError = true;
+        break;
+      }
     }
   }
   
+  // Guard rails: never publish an empty or mostly-failed digest — a bad fetch
+  // day or credit exhaustion should fail loudly (non-zero exit) so the run is
+  // retried, not silently ship a broken/near-empty digest.
+  const attempted = processedCount + errorCount;
+  if (fatalError) {
+    console.error(`[${new Date().toISOString()}] Aborting without saving: fatal error during generation (processed ${processedCount}).`);
+    process.exit(1);
+  }
+  if (processedCount === 0) {
+    console.error(`[${new Date().toISOString()}] Aborting without saving: no stories were successfully summarized.`);
+    process.exit(1);
+  }
+  if (attempted > 0 && processedCount / attempted < CONFIG.MIN_SUCCESS_RATIO) {
+    console.error(`[${new Date().toISOString()}] Aborting without saving: majority of stories failed (${processedCount}/${attempted} succeeded).`);
+    process.exit(1);
+  }
+
   // Save digest
   const outputPath = path.join(__dirname, '..', 'data', `digest_${YESTERDAY_STRING}.md`);
   try {
@@ -210,15 +377,16 @@ async function main() {
     console.error(`[${new Date().toISOString()}] ERROR saving digest:`, error.message);
     process.exit(1);
   }
-  
-  // Summary statistics
+
+  // Summary statistics (a per-run quality report — watch these for prompt drift)
   const duration = ((Date.now() - startTime) / 1000).toFixed(2);
   console.log(`[${new Date().toISOString()}] ========================================`);
   console.log(`[${new Date().toISOString()}] Digest generation complete`);
   console.log(`[${new Date().toISOString()}]   Total stories: ${stories.length}`);
   console.log(`[${new Date().toISOString()}]   Processed: ${processedCount}`);
-  console.log(`[${new Date().toISOString()}]   Skipped: ${skippedCount}`);
-  console.log(`[${new Date().toISOString()}]   Errors: ${errorCount}`);
+  console.log(`[${new Date().toISOString()}]   Skipped (no URL): ${skippedCount}`);
+  console.log(`[${new Date().toISOString()}]   Dropped (refusal/empty): ${droppedCount}`);
+  console.log(`[${new Date().toISOString()}]   Errors (generation failed): ${errorCount}`);
   console.log(`[${new Date().toISOString()}]   Duration: ${duration} seconds`);
   console.log(`[${new Date().toISOString()}] ========================================`);
 }
