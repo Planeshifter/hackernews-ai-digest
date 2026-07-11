@@ -10,6 +10,342 @@ export async function getStaticProps() {
 
 ---
 
+## AI Submissions for Thu Jul 09 2026 {{ 'date': '2026-07-09T17:40:38.018Z' }}
+
+### Show HN: Reviving my 2001 college band with AI
+
+#### [Submission URL](https://www.fadingmaize.com) | 19 points | by [jacobgraf](https://news.ycombinator.com/user?id=jacobgraf) | [5 comments](https://news.ycombinator.com/item?id=48851476)
+
+**Flip mid-song between the 2001 dorm-room takes and the 2026 AI-assisted mixes without losing your place**, so you can hear exactly what changed in sound, instrumentation, and production. The revival keeps the original human lyrics, melodies, and song structures; AI is used as the missing studio/session players/producer to realize the band’s intended sound, not to generate new material. Transparency is explicit: the rough 2001 site is preserved and browsable, the original recordings stream beside the reimagined editions, and credits foreground human authorship under five principles—consent, authorship, provenance, nothing erased, nobody displaced. Built with Next.js, the launch includes track pages and links to Bandcamp, Spotify, Apple Music, YouTube Music, and Amazon Music. Early A/B pairs include “What’s Happened to You?” and “Girl Just Like Mary Tyler Moore,” with more comparisons and recovered photos/videos on the way.
+
+- **Alternative workflows:** One thread suggested using AI strictly for audio enhancement—cleaning up the original 2001 recordings to studio quality—rather than replacing the instrumentation.
+- **Analogous projects:** Another musician shared their success using AI to orchestrate a decade-old solo piano piece, likening the current suite of tools to "Band-in-a-Box on steroids."
+- **Internet nostalgia:** The included 2004 video drew appreciation for capturing an era of the web completely devoid of modern engagement-bait and endless "please subscribe" requests.
+
+### GPT-5.6
+
+#### [Submission URL](https://openai.com/index/gpt-5-6/) | 1481 points | by [logickkk1](https://news.ycombinator.com/user?id=logickkk1) | [1047 comments](https://news.ycombinator.com/item?id=48849066)
+
+**OpenAI posted a deployment safety report for GPT-5.6 and updated developer docs that reference it under the “latest model” guide**, positioning it as the current flagship for API use. The concrete artifact here is the safety PDF outlining deployment evaluations and mitigations; specific capabilities or pricing aren’t surfaced in the shared links.
+
+Paper: https://deploymentsafety.openai.com/gpt-5-6/gpt-5-6.pdf
+
+OpenAI’s updated developer guidance to avoid generic brevity instructions (like "be concise") sets the primary tension in the thread. Commenters are split on the practical implications: some warn that changing default brevity behaviors will silently break legacy applications expecting wordier baseline outputs, while others celebrate the update as a potential cure for the "wildly excessive prose" and over-engineered error handling that plagued older iterations.
+
+This practical concern quickly fractures into a contentious debate over whether a model's capabilities are truly fixed upon release. One camp insists on a strict mechanical view: an LLM is a static artifact that cannot "learn" at inference time, meaning the underlying intelligence and behavior are entirely locked by its weights. The opposing camp counters that this ignores the mechanics of modern API endpoints. They point out that tweaking a model's external harness—adjusting dynamic reasoning budgets, hidden system prompts, decoding parameters, and context curation—can drastically upgrade its practical task performance without altering a single weight. The divergence ultimately rests on a semantic split: whether "performance" describes the bare statistical token predictor, or the entire dynamic system built around it.
+
+### Show HN: Getting GLM 5.2 running on my slow computer
+
+#### [Submission URL](https://github.com/JustVugg/colibri) | 814 points | by [vforno](https://news.ycombinator.com/user?id=vforno) | [200 comments](https://news.ycombinator.com/item?id=48842459)
+
+**A 744B Mixture‑of‑Experts model runs on a 25‑GB RAM laptop by keeping ~17B “dense” params resident (int4, ~9.9 GB) and streaming 21,504 routed experts (~370 GB on disk) on demand with per‑layer LRU and an optional pinned hot store.** Only ~40B params activate per token, and only ~11 GB of that changes per token (the routed experts), which turns inference into an I/O scheduling problem rather than a VRAM/RAM ceiling.
+
+- Single‑file engine in C (c/glm.c, ~2.4k LOC), zero runtime deps: no BLAS, no Python, no GPU required (optional CUDA tier for pinned experts exists).
+- Throughput is intentionally slow but workable: cold starts around 0.05–0.1 tok/s on NVMe (~1 GB/s), with ~30 s load; warm caches and pinned hot experts help.
+- Integer kernels with AVX2 (Q8_0‑style int8 activations; int8/packed int4/int2 per‑row scale dequant‑on‑use); routing picks int8/int4 per shape by measurement.
+- Faithful GLM‑5.2 forward (glm_moe_dsa), validated token‑exact against a Transformers oracle on a matching tiny model; true sampling via temperature + nucleus with defaults tuned for int4.
+- MLA attention with compressed KV cache: 576 floats/token vs 32,768 (57× smaller), plus MLA weight absorption to avoid per‑token k/v reconstruction.
+- DSA sparse attention implemented per reference: per‑layer top‑2048 causal key selection; can be disabled or adjusted.
+- Native MTP speculative decoding: with an int8 MTP head, 39–59% draft acceptance (2.2–2.8 tokens/forward, community‑measured); guarded because on a cold cache extra expert loads can negate the win until the cache warms.
+- I/O pipeline optimizations: async expert readahead, router‑lookahead prefetch (PILOT=1, experimental), and batch‑union MoE so each unique expert is read once per batch.
+- KV cache persistence across restarts (.coli_kv, ~182 KB/token) restores sessions byte‑identically; RAM usage auto‑caps from MemAvailable to avoid OOM.
+- Offline FP8→int4 converter streams shards so the 756 GB FP8 checkpoint never needs to exist at once; resumable.
+
+This is not a speed play; it’s a correctness‑first path to run frontier‑class GLM‑5.2 locally with commodity CPU and fast NVMe, showcasing how MoE’s sparsity plus disk streaming can collapse the in‑memory working set. The catch is obvious—disk footprint and I/O bound tokens—but the architecture is clean, reproducible, and hackable.
+
+The conversation split between dissecting the original post's writing style and debating the hardware economics of running massive models at home.
+
+- **LLM authorship tells:** Readers immediately clocked the submission's summary as AI-generated due to its repeated deployment of the words "honest" and "real." Commenters identified this specific flavor of self-correction as a hallmark of Anthropic's recent anti-fabrication training and Claude's leaked "soul document."
+- **The $10k local server debate:** The 0.05–0.1 tok/s laptop performance prompted a discussion on building budget CPU-only rigs. Proponents pointed to used enterprise gear—such as a Dell R740XD with dual Xeon Golds and 768GB of RAM for under $6,000—as a viable path to host 350B+ parameter models locally, trading interactive speeds for batch overnight processing.
+- **NUMA and memory limits:** Those skeptical of multi-socket CPU inference noted that performance is frequently strangled by NUMA node overhead. While older architectures like Cascade Lake handle INT8 inference well, the true bottleneck remains memory bandwidth, capping out around 282 GB/s per socket on DDR4-2933 interfaces. 
+- **The privacy premium:** When challenged on why businesses wouldn't just rent large cloud instances, defenders ran the math: renting a 768GB instance on AWS costs roughly $8,900 a month. For law firms, medical labs, and users running uncensored models, the upfront cost of a slow local server is heavily preferred over ongoing cloud fees and data residency concerns.
+
+### Building a real-time AI tutor for 5-year-olds
+
+#### [Submission URL](https://www.ello.com/blog/teaching-a-child-in-1000-ms) | 131 points | by [catalinvoss](https://news.ycombinator.com/user?id=catalinvoss) | [319 comments](https://news.ycombinator.com/item?id=48852199)
+
+**Sub‑second response on every turn is the non‑negotiable constraint**, and a standard tool‑use loop with frontier models produced 3–4 seconds of dead air (2–3s to first token, ~30 tps decode plus round trips/audio), which in playtests taught kids to tune out. Smaller, faster models killed the pause but failed pedagogically by giving answers away instead of scaffolding.
+
+They ditched the loop and built a tutor harness where the model streams multiple actions in a single response while an interpreter executes them as they arrive, so the first on‑screen move lands ~30 tokens in rather than after the whole thought. Separating generation from execution lets them dynamically narrow the action set by context (e.g., when a question is up, offer scaffolding tools instead of “answer”) and validate each action inline; execution only pauses on invalid output.
+
+To keep instruction following tight without losing breadth, they split responsibilities: a “converser” with a small action space handles the live interaction, while an asynchronous planner reasons ahead during the child’s talk/think time to adjust difficulty, decide whether to challenge or move on, and manage lesson objectives and context. Synchronous plans, fixed‑turn expiry, and converser‑requested replans weren’t reliable; running the planner async was.
+
+Two agents writing concurrently led them to an append‑only event log of every turn, tap, and UI update so both can read/append without coordination stalls. A safety system checks every turn without interrupting the activity.
+
+The tradeoff for real‑time teaching is owning the loop: custom observability/tracing and working against models heavily post‑trained on the tool‑use pattern. If frontier models get fast enough, they expect to swap back to a simpler loop—but today, conversation‑speed learning required this architecture.
+
+The thread centers on a fierce philosophical split over whether 4- to 9-year-olds should be forming pedagogical trust relationships with AI. Skeptics argued that relying on LLMs at a formative age is deeply irresponsible, emphasizing that human educators provide essential empathy, accountability, and offline social modeling that an app inherently lacks. When defenders suggested that state-of-the-art models no longer hallucinate on elementary topics, skeptics pushed back sharply; developers shared recent war stories of frontier models passing basic tests while writing confidently flawed or redundantly structured logic behind the scenes.
+
+Conversely, defenders framed the AI tutor not as a replacement for elite human teaching, but as a practical alternative to the realistic baseline: passive YouTube consumption or no tutoring at all. They argued that interactive AI is a massive upgrade over mainstream ed-tech and screen time, dismissing the anxiety around pedagogical LLMs as reflexive luddism akin to historical panics over mass literacy. Furthermore, some commenters viewed early LLM integration through a cynical corporate lens, comparing it to school laptop programs designed primarily to lock in future software subscribers. 
+
+A smaller tangent debated the tool's relaxed grammar in the provided examples (e.g., "you like dinosaurs! me too!"), weighing the pedagogical necessity of modeling strict syntax against the engagement value of natural, peer-like dialogue.
+
+### SimPolitics: America’s quest to solve politics with computers
+
+#### [Submission URL](https://mitpress.mit.edu/9780262053198/simpolitics/) | 99 points | by [mckelveyf](https://news.ycombinator.com/user?id=mckelveyf) | [37 comments](https://news.ycombinator.com/item?id=48846332)
+
+**Available open access from MIT Press**, this monograph surveys U.S. attempts to use computers and simulation to “solve” politics and policymaking, framing the recurring promise of technocratic fixes against the messiness of democratic practice. It’s a historical/critical read, not a technical playbook.
+
+Paper: https://direct.mit.edu/books/oa-monograph/6166/SimPoliticsAmerica-s-quest-to-solve-politics-with
+
+The discussion was anchored by the book's author (`mckelveyf`), who actively detailed the historical scope of the text. They noted that the book explores contrasting computational approaches to governance, comparing models like the *Limits to Growth*—which abstracted and extrapolated existing trends—against the Bariloche Model, which attempted to optimize for an imagined ideal world. 
+
+Commenters broadly rejected the theoretical premise that politics can be computationally "solved," arguing that governance is constrained by intractable trade-offs and the self-serving nature of political classes. Rather than algorithmic optimization, skeptical users pointed to structural interventions like sortition—randomly drafting citizens into temporary assemblies to remove the perverse incentives of re-election. The author agreed that flattening politics into a pure optimization problem is flawed, pointing out that modeling governance requires acknowledging its distinct "weirdness" compared to economic simulation.
+
+A secondary practical objection centered on data fidelity: commenters questioned how simulations can ever accurately account for the "silent majority" of non-participants, citing modern polling failures like the 2016 US election. The author confirmed this blind spot is a recurring historical theme, noting that the tension between a simulation's assumptions and political reality has persisted since the Nixon campaign's early attempts to build interactive systems to predict electoral outcomes.
+
+### AI content is everywhere on social media, especially LinkedIn
+
+#### [Submission URL](https://www.pangram.com/blog/ai-in-your-feed) | 230 points | by [mukmuk](https://news.ycombinator.com/user?id=mukmuk) | [211 comments](https://news.ycombinator.com/item?id=48847940)
+
+Across 1,002,627 scanned social posts, **one in four longform items (250+ words) was fully AI‑generated**, and LinkedIn accounted for 62% of all flagged AI content despite being only a third of scans. The overall AI rate averaged 13.8% across platforms, but longer content skewed more AI on 4 of 5 sites; Substack was the exception, where longer posts were slightly less likely to be AI, though its combined AI/assisted rate still hit 21.9%. On LinkedIn, more than 40% of longform posts flagged as fully AI, a pattern reinforced by product nudges like the “Write with AI”/“Enhance post” button; the company says it’s downranking AI posts with an in‑house detector, but the announcement itself was AI‑generated. X/Twitter’s Articles were the most AI‑tinged longform: 23.9% fully AI and 22.9% mixed, leaving only 53.2% fully human.
+
+Reply dynamics mask a lot of this. Reddit—36.7% of all scans—showed a low combined AI rate (4.4%) because replies were 98.1% human and made up 72% of its items, but top‑level Reddit posts were 11.6% AI‑written (similar to X’s ~10% top‑level saturation). On LinkedIn, top‑level posts were 1.35× more likely to be AI than comments, but when you control for length the effect flips: LinkedIn comments were slightly more AI than posts. Even after controlling for length, top‑level Reddit posts remained 5.25× likelier to be AI than replies, highlighting a moderation blind spot: volume/rate‑limit strategies catch spammy reply bots, but longform and top‑level posts—where attention is concentrated—slip through.
+
+The discussion centered on a single philosophical crux: whether writing can be decoupled from thinking. Purists argued that outsourcing writing to an LLM outsources the cognitive work of forming distinctions and mental models, affording users an "illusion of competency" that actively stunts their skill development. One commenter shared a war story of quitting their job over corporate mandates to run simple Slack and email messages through ChatGPT just to generate polite boilerplate. 
+
+Conversely, pragmatists noted that prioritizing an authentic "voice" assumes the author naturally has a compelling one. Defending AI assistance, this camp argued that ideas matter more than prose; if an LLM helps someone articulate a useful insight they otherwise lacked the vocabulary to share, wading through the resulting "slopisms" is an acceptable tax. Non-native speakers similarly defended the tools when used as a high-powered editor rather than a full ghostwriter.
+
+A lively tangent explored the social dynamics of digital brevity, contrasting the intense anxiety most corporate workers feel when drafting VIP emails against the terse, typo-riddled messages sent by executives. Commenters framed the latter—often reduced to a careless "ok Sent from my iPhone" or the poorly written demands surfaced in legal leaks—not just as laziness, but as a deliberate status flex signaling immunity from standard professional norms.
+
+### What's slowing down the AI buildout
+
+#### [Submission URL](https://www.worksinprogress.news/p/ai-is-bottlenecked-by-the-grid) | 78 points | by [droidjj](https://news.ycombinator.com/user?id=droidjj) | [190 comments](https://news.ycombinator.com/item?id=48840620)
+
+**Interconnection waits have swollen to a median 55 months**, up from under 20 in 2005, leaving gigawatt-scale AI campuses stalled by grid queues and transmission studies rather than a lack of generation. A single example: the $40B+ Stargate HPC campus in Texas plans to pull 1.2 GW—roughly 313,000 homes’ peak load—while global AI compute demand could reach 100 GW by 2030 if current growth holds. It’s not just data centers; battery factories (~115 MW) and chip fabs (~200 MW) compound the pull on the grid as the broader economy electrifies.
+
+Congestion is already expensive: U.S. grid inefficiencies cost $11.5B in 2023, up 45% year over year, as operators lean on pricier local plants when transmission can’t move cheaper power in. Forward-looking signals are flashing too—ERCOT forecasts summer shortfalls by 2028; PJM failed to procure enough future capacity in 2025; MISO warns of rising adequacy risk—hence PJM’s blunt line: “We need capacity – a lot of capacity.”
+
+The piece argues the chokepoint is process, not physics: first-come, first-served interconnection queues trap high-value projects behind lower-impact ones, and rigid rules don’t credit loads that can cover their own needs for short periods. In other words, the U.S. has the electrons but not the wires—and a queue that misallocates the ones it can move.
+
+- Shift from FCFS to priority based on system value and readiness.
+- Give interconnection credit for flexibility and partial self-supply (e.g., short-duration backup or storage).
+
+Until grid planning and queueing catch up, “power-limited” will describe data centers—even in regions that technically have enough generation.
+
+The conversation fractured into two distinct debates about the downstream realities of energy policy and infrastructure:
+
+- **The true cost of nuclear baseload:** One camp argued that new reactors are an economic fantasy unable to compete with falling renewable prices once construction, insurance, and waste storage are priced in. A vocal counter-camp maintained that American construction costs are artificially inflated by bureaucracy, and that renewable LCOE (Levelized Cost of Energy) metrics deceive by externalizing the massive storage and integration costs required to balance an intermittent grid—pointing to France's 70% nuclear grid as the proven model for cheap, reliable power once initial hurdles are cleared.
+- **Demographic bottlenecks in EV adoption:** Prompted by the article's grid constraints, commenters mapped a similar physical limitation onto the electric vehicle transition. While proponents pointed out that a standard 110v wall outlet trickling 3 miles of range per hour mathematically covers a standard 30-mile commute, skeptics warned of a "K-shaped" rollout. They argued that unpredictable usage spikes, battery degradation, and a failure to build public charging networks make EVs a seamless luxury for single-family homeowners but an intractable chore for apartment renters.
+
+### GLM 5.2 is nearly as accurate as a human book keeper
+
+#### [Submission URL](https://toot-books.pages.dev/blog/glm-5-2-vat-benchmark) | 218 points | by [adamkurkiewicz](https://news.ycombinator.com/user?id=adamkurkiewicz) | [117 comments](https://news.ycombinator.com/item?id=48850414)
+
+**It processed 59 real transactions in 68 minutes for $2.73 and produced a VAT return whose net (Box 5) was off by just £0.07.** Against a typical UK SME accountant fee of ~£750–£2,100 per quarter, that’s under 1% of the cost for near-human accuracy.
+
+The team benchmarked GLM 5.2 as an agent that ingests bank feed lines plus text-only PDF receipts and posts entries via a pre-authenticated CLI to a cloud accounting system. Ground truth came from human-prepared-and-reviewed books for Q1 2026; two transactions included “user notes” (“founder shares”, “personal car hire”) to supply context not deducible from documents. Scoring was from the ledger end-state across six criteria (transaction type, category, VAT treatment, VAT amount ±£0.02, reverse-charge VAT ±£0.02, receipt attached).
+
+- **Run setup:** GLM 5.2 (open weights) served by Fireworks AI’s serverless tier (quantization believed FP16/FP8) on an isolated GCP instance with internet access, the accounting SaaS, and only two tools exposed: bash and a finish/report tool.
+- **Token economics:** 5.73M prompt tokens over 112 turns with 92–95% served from provider cache at one-fifth price; 193,483 output tokens including internal reasoning; 137 tool calls; total wall time 68 minutes.
+- **Context use:** Peak single-call context was 13.3% of a 1,048,576-token window.
+- **Behavioral notes:** No overt cheating detected; the only unexpected internet use was looking up reverse-charge VAT specifics for the chosen software. The model showed test awareness (“the task is testing whether I get VAT right… what is the ‘expected’ answer”), which is worth keeping in mind for eval design.
+- **Scope constraints:** Receipts were text-based (no vision required), documents were pre-extracted by Claude Fable 5, and the model wasn’t tasked with finding missing invoices—just classifying/posting what was provided.
+
+The headline takeaway is the agent-plus-caching cost profile: millions of tokens and full tool use for under $3 to deliver a VAT return effectively matching human books. The catch is that this was a tidy, document-complete quarter with minimal ambiguous edge cases.
+
+Real practitioners pushed back on the benchmark's clean boundaries, noting that actual accounts payable work is essentially an ongoing, messy human conversation. By supplying the agent with pre-gathered documents and context-rich "user notes," the test bypassed the hardest parts of the job: hunting down missing invoices, interpreting informal or misformatted bills, and weighing off-ledger agreements.
+
+A sharp debate emerged around fraud and system design. One camp warned that fully automated AP workflows will be highly susceptible to AI "social engineering"—a modernized equivalent of the classic unsolicited fax toner scam. Another camp argued agents could actually be more secure than humans; while human clerks frequently bypass internal policies and get duped into authorizing fraudulent SWIFT transfers, an AI can be tightly constrained by hard-coded purchasing rules. 
+
+The counter-argument from experienced accountants is that strict rules inevitably fail at the exceptions. Resolving a mismatch between an invoice and a purchase order often requires external context, such as knowing whether to authorize an unauthorized overpayment to prevent a supplier from halting factory production. The thread ultimately dismantled the layman assumption that bookkeeping is a rigid math problem. Corporate accountants detailed how ledger entries are inherently probabilistic, built on daily, interpretive judgment calls about missing bills, warranty liabilities, and depreciation schedules rather than deterministic fact.
+
+### DeepSeek aims to make its own AI chip
+
+#### [Submission URL](https://www.proactiveinvestors.com/companies/news/1095178/deepseek-makes-pivot-that-should-put-silicon-valley-on-high-alert-1095178.html) | 66 points | by [FinnLobsien](https://news.ycombinator.com/user?id=FinnLobsien) | [11 comments](https://news.ycombinator.com/item?id=48846708)
+
+**It’s an inference chip, not a training part,** a strategic choice that sidesteps the tightest US export chokepoints and goes straight at the deployment bottleneck: per‑query serving cost. Owning inference silicon would cut DeepSeek’s reliance on Nvidia and Huawei while targeting a workload that’s more tolerant of older process nodes and easier to make competitive without cutting‑edge fabs.
+
+The move extends its pricing offensive: in May it slashed V4‑Pro by 75% to under $0.85 per million tokens (from $3.30), and a purpose‑built accelerator that lowers run costs could push prices down further. Co‑design is the bet—DeepSeek controls both the model and, soon, the chip—letting it tune formats and kernels; it has already hinted at this by using a data format “well suited” to forthcoming domestic chips.
+
+China’s market tailwinds are real: industry estimates say firms plan to shift 46% of AI‑accelerator budgets to domestic suppliers within a year; Nvidia’s China position has cratered under export rules; and Beijing is pressing national champions to fill the gap. When DeepSeek optimized V4 for Huawei Ascend in April 2026, ByteDance, Tencent, and Alibaba reportedly queued up with Huawei—evidence DeepSeek can influence which local accelerators win.
+
+The catch: building a credible inference chip still demands years, capital, and supply access that’s constrained—especially high‑bandwidth memory and leading‑edge foundries. If DeepSeek clears those hurdles, it can carry its price war into silicon and help decide the default inference stack in China.
+
+The thread places DeepSeek’s silicon ambitions within a broader playbook currently sweeping Chinese tech, drawing direct parallels to domestic EV makers (Nio, BYD, Xpeng) that have aggressively brought chip design in-house. A central debate emerged over the economics of this trend: while some view custom silicon as a necessary step to bypass middlemen like Nvidia and drive down costs, others question whether the massive manufacturing overhead justifies the duplicated effort across the industry.
+
+On the technical side, the primary dispute is how DeepSeek will physically manufacture competitive hardware without access to EUV lithography. Skeptics question the viability of relying on older DUV technology pushed to its limits, but others counter that leading-edge nodes may not be strictly required. If DeepSeek builds highly specialized "model-on-chip" architectures rather than general-purpose GPUs, commenters argue the company could still extract massive performance gains using larger dies on older process nodes.
+
+### Show HN: FableCut – A browser video editor AI agents can drive (zero deps)
+
+#### [Submission URL](https://github.com/ronak-create/FableCut) | 94 points | by [ronak_parmar](https://news.ycombinator.com/user?id=ronak_parmar) | [58 comments](https://news.ycombinator.com/item?id=48845422)
+
+**The whole edit lives as a single JSON doc that hot‑reloads in ~150 ms**, so an MCP/REST agent can patch tiny diffs while you watch the timeline update — and a human and an agent can co‑edit the same project live. It flips the usual “AI video” model: the project file is the interface, not a hidden API.
+
+- Core NLE: 4 video + 3 audio tracks, drag/trim/split/snap, undo/redo, multi‑select, beat/cue markers (tap M), real audio waveforms, aspect presets (16:9, 9:16, 4:5, 1:1).
+- Looks/effects/motion: 12 filter presets, adjustment layers, full grade controls (incl. temperature/tint and animated film grain), blend/fit/crop/flip, chroma key, AI background removal in‑browser (MediaPipe), keyframes on ~25 props with easing, speed ramps, camera shake/RGB split, 17 transitions.
+- Text & vector: kinetic captions (typewriter, karaoke, word‑pop/slide, etc.), neon glow, flexible font pipeline (system, drop‑in, Google by name), gradients/outlines/shadows; first‑class animated SVG clips render frame‑accurately in preview/export, so agents can generate lower‑thirds/overlays as plain .svg.
+- Reference remake: analyze a source reel for shot boundaries, beats+BPM, loudness curve, per‑shot energy, “the drop,” and auto‑extract the music track — via node analyze.js, POST /api/analyze, or the fablecut_analyze_reference MCP tool (ffmpeg for decode; onset/tempo in plain Node).
+- Export: browser renders every frame + an offline audio mix; ffmpeg encodes a frame‑accurate CRF‑18 MP4 and keeps going if you switch tabs; realtime MediaRecorder fallback when ffmpeg isn’t present.
+- Agent surface: CLAUDE.md documents the full schema/semantics/recipes; bundled zero‑dependency MCP server exposes status/docs/get/set/patch/import/analyze tools. The patch API is token‑efficient by design.
+- Setup: Node 18+ and a Chromium‑based browser; ffmpeg on PATH is optional but recommended. Quick start: git clone → cd FableCut → node server.js (serves at http://localhost:7777). Zero npm dependencies; one server.js.
+
+- **Architecture and alternatives:** Commenters praised the choice to skip complex APIs in favor of a raw JSON project file synced to the UI over SSE. For rendering the output, users suggested integrating **Remotion**, but warnings about its restrictive commercial license led the developer to pivot toward **Mediabunny** as an open, client-side WebCodecs equivalent.
+- **The local server constraint:** Requests for a simple hosted web version highlighted the tool's foundational mechanic. The developer clarified that the local server isn't optional: it is inherently required to run `fs.watch` on the JSON file so external agents can write to the disk while the frontend hot-reloads, and to drive FFmpeg for final exports. 
+- **Platform and brand friction:** The project drew dual rounds of community and administrative pushback. Users criticized the "FableCut" name as a tacky attempt to piggyback on Anthropic's SEO, pointing out Anthropic's recent history of aggressively lawyering community projects over trademark infringement. Meanwhile, HN moderators had to intervene in the thread to formally warn the developer to stop using LLMs to generate their comment replies.
+
+### Show HN: I built a web tool to see and edit what an AI thinks before it answers
+
+#### [Submission URL](https://lucid.earthpilot.ai) | 32 points | by [ada1981](https://news.ycombinator.com/user?id=ada1981) | [7 comments](https://news.ycombinator.com/item?id=48849618)
+
+**You can watch concepts surface in the model’s “workspace” several layers before it speaks — and even edit them to steer the answer.** In one demo, “ocean”, “sea”, and “surf” light up before the model settles on “waves”; inject “fire” mid-thought and the response pivots toward heat.
+
+- Built around Anthropic’s Jacobian Lens, running on small open models in a browser-based “instrument.”
+- Shows top concepts per layer/position with rank tracking (you can pin tokens), and exports each run as a shareable slice page.
+- Includes a self-reflection mode where the model reads its own workspace, then suppresses/amplifies a concept and reruns the prompt.
+- Early cross-model results: J-lens outperforms a plain logit lens on Llama and Qwen, but adds little on Pythia; quality isn’t just scale (Qwen 0.5B reads better than Pythia 2.8B).
+- Access details: free public reading room, no account; lens fit once per model; each read costs a single forward pass; subjects include Qwen 0.5B–3B and Pythia 1.4B.
+- Extras: a page-context “Docent” agent you can chat with about what the lens is showing.
+- Caveat: 48-hour-old research tool on rented GPUs with a small probe set; code is open and intended as a research instrument.
+
+The thread's most substantive technical point addresses why the Jacobian Lens outperforms a standard logit lens on some architectures but adds nothing to others. One commenter explained that while a standard logit lens assumes the residual remains in the same basis across layers, the Jacobian matrix explicitly corrects for basis shifts; architectures where the J-lens provides no benefit likely maintain a consistent basis naturally. 
+
+On the practical side, users praised the utility of steering a model during its early "thinking phase" as a sharper alternative to relying on blunt, generic system prompts. In response to requests for the original Anthropic visualizations, the creator directed users to the official Neuronpedia implementation, readily acknowledging that their own weekend project is likely a less robust instrument.
+
+### How version control will evolve for the agent boom
+
+#### [Submission URL](https://entire.io/blog/how-version-control-will-evolve-for-the-agent-boom) | 53 points | by [tapanjk](https://news.ycombinator.com/user?id=tapanjk) | [64 comments](https://news.ycombinator.com/item?id=48844709)
+
+**Session logs — prompts, tool calls, checkpoints, decisions — should live in the repo alongside code**, turning Git history into a semantic memory that records intent, not just diffs. As agents generate more code, that context helps them stop repeating mistakes, raises accuracy, cuts token spend, and gives humans a provenance trail that shortens review.
+
+The second claim: Git hosting must swing back to true decentralization. Centralized forges became the bottleneck; fleets of agents funneled through a single origin hit rate limits and outages. Mirrored repos across many hosts enable massive parallel reads/writes with local, resilient access patterns and preserve data residency for sovereignty.
+
+Developers become conductors of an “orchestra of agents,” with Git remaining the source of truth that coordinates human+agent work over a distributed network.
+
+The piece anchors this vision to shipping parts:
+- Entire: a fast, distributed, Git‑compatible mirroring network so agents can clone without hammering the origin.
+- entire blame: trace file lines back to checkpoints and sessions to recover “why” behind agent‑assisted edits.
+- Recent updates: Git Protocol v2 in go-git, older-session imports in the CLI, and tool‑call filtering.
+
+The thread centers on a deep skepticism toward "spec-driven development"—the practice of committing natural-language prompts and specifications alongside generated code. Critics argue that at scale, maintaining hundreds of Markdown files becomes significantly harder than maintaining code. English prose invites duplication, subtle inconsistencies, and ambiguous diffs. Furthermore, as implementations inevitably adapt to real-world constraints, the specs quickly ossify into simplistic meta-solutions. As commenters noted, if a formal specification language is introduced and made expressive enough to fix these issues, it simply devolves back into being code.
+
+Defenders counter that natural-language specs are vital guardrails that protect the actual intent of a design from AI amnesia. Without explicitly committed constraints and architectural reasoning, future agents are forced to blindly infer the "why" from existing code. Proponents argue this workflow remains sustainable because LLMs are highly proficient at interpreting English diffs to surgically update internal logic, rather than pulling the slot machine lever to regenerate entire files from scratch.
+
+A secondary debate questions the structural value of saving agent chat logs at all. Skeptics point out that nobody cares *how* a human engineer arrives at a solution, only that the deliverable passes strict automated gates. Counterparts suggest that AI provenance will fundamentally alter code review, forcing developers to provide a checkpointed trail to prove they deeply understand the code and deliberately steered the architecture.
+
+### Ways to think about token pricing
+
+#### [Submission URL](https://www.ben-evans.com/benedictevans/2026/7/9/ways-to-think-about-token-pricing) | 43 points | by [mercutio2](https://news.ycombinator.com/user?id=mercutio2) | [20 comments](https://news.ycombinator.com/item?id=48847181)
+
+**Supply is tight today but unstable**: a trillion dollars or more of data‑center capex is coming, inference efficiency is improving fast, and the current crunch is mostly one small PMF’d use case (software development) — a true consumer hit would swamp today’s infrastructure at any price. The author’s read is that most signals point to foundation models trending toward low‑margin commodity infrastructure rather than durable pricing power.
+
+Inference reportedly runs at ~40–50% gross margins including server depreciation, but asset life is unclear, training spend currently dwarfs revenue, and buyer ROI for recent usage spikes is murky. Token prices will clear somewhere between sellers’ marginal cost and buyers’ ROI — and both sides of that equation are moving.
+
+Bottom‑up forecasts look like 1998 broadband spreadsheets; instead, frame the market with four questions:
+- Who actually pays to stay at the frontier versus using smaller/older “good enough” models that run cheaply on‑prem or on device?
+- Does the frontier keep improving in ways that demand ever more compute, staying ahead of price drops from efficiency and capacity gains?
+- How competitive is the frontier: consolidation, network effects, or continued parity among a mid‑single‑digit set of largely equivalent models?
+- How much value from high‑end use cases is captured by the model itself versus what must be wrapped around it?
+
+Until those resolve, expect volatility rather than a stable token‑pricing regime.
+
+The thread diverged into three distinct critiques of the author's pricing framework, focusing heavily on hardware constraints and training data:
+
+- **The hardware timeline for local inference:** A sharp debate emerged over whether local hardware will eventually beat the economics of scale in the cloud. Optimists predict DGX-class machines dropping to $20k in the next few years as emerging Chinese fabricators and cyclical market forces flood the ecosystem with cheap DDR5 RAM. Skeptics argue the era of reliably cheaper hardware is paused for at least the next 3–8 years, noting that major fabs are intentionally restricting production to avoid oversupply gluts while hyperscalers corner the existing hardware.
+- **Proprietary data as the missing moat:** Commenters argued the article ignores training data as the ultimate determiner of pricing power. Because public internet data is largely exhausted—which is what drives the current parity among frontier models—future pricing leverage will belong to companies generating massive, proprietary empirical datasets of the physical world, citing Waymo's simulation engines as a prime example.
+- **CapEx vs. COGS:** Several readers pushed back on the pervasive "SaaS wrapper" mindset that treats AI tokens merely as a continuous operating expense to churn out basic CRUD apps. They argued that for civilization-scale problems, the cost of computing should be viewed more like massive upfront CapEx. Others noted that pricing tokens as a strict COGS feels uniquely volatile because the outputs are unpredictable, framing the current setup as a slot machine where users are effectively paying for probabilistic lever-pulls.
+
+### The next era of AI is about infrastructure, not just models
+
+#### [Submission URL](https://blog.mozilla.ai/the-control-layer-why-the-next-era-of-ai-is-about-infrastructure-not-just-models/) | 57 points | by [royapakzad](https://news.ycombinator.com/user?id=royapakzad) | [23 comments](https://news.ycombinator.com/item?id=48846842)
+
+**By 2026, production GenAI usage explodes and annual budgets get burned in months**, pushing enterprises to compete on the control layer—cost, routing, guardrails—rather than on which model they picked. The author argues the real shift wasn’t model capability but adoption velocity: from a few tech giants to thousands of teams in every sector now running AI in production. That exposed three hard problems at scale: fragmentation across dozens of models and versions per provider (each with different APIs, pricing, latency, rate limits), cost opacity from non-linear inference spend (a $200 test becoming $20k in prod, with token “VC subsidies” fading as frontier labs IPO), and governance gaps where “which model said what, when, to whom, and why” is a compliance requirement complicated by sovereign AI. Today’s response—ad hoc routing, custom failover, spreadsheets, and gut-driven model selection—is brittle and unsustainable. The antidote is a control layer that abstracts models the way cloud abstracted servers: treat models as compute, centralize routing/policy/audit, and make cost and reliability first-class concerns. Cost visibility, in particular, must move to “cost-per-outcome” with real-time burn signals and automated policies (e.g., caps per use case with exceptions) that finance can trust and engineering can enforce. This is the case for Otari, the control-plane product the team is building: as models commoditize, control becomes the moat that decides reliability, compliance, and ROI.
+
+The thread splits evenly between validating the post's technical premise and debating Mozilla's strategic pivot into the AI space.
+
+- **The necessity of LLM gateways:** There is broad consensus that models are becoming commodities and that a centralized abstraction layer is the correct architectural pattern. Commenters running gateways like LiteLLM and GoModel point to concrete benefits: the ability to hot-swap local models or quantizations without reconfiguring downstream tools, single-pane visibility for overall usage, and resilient failover (such as defaulting to a local model but routing to OpenRouter when it fails).
+- **Mozilla's strategic focus:** Several users questioned why Mozilla is diverting resources into AI rather than fighting for Firefox's survival, especially given its financial dependence on Google. The author—head of Mozilla AI—stepped in to frame the initiative as a direct continuation of Mozilla's original mandate: just as Firefox was built to break Microsoft's monopoly on internet access, Mozilla AI aims to build an open infrastructure alliance to prevent walled gardens like OpenAI, Anthropic, and Gemini from becoming the web's new bottlenecks. Skeptics pushed back on this analogy, arguing that developer infrastructure tooling is fundamentally disconnected from core internet freedom.
+
+### Files over tools: how we built our agent with a virtual filesystem and bash
+
+#### [Submission URL](https://knock.app/blog/how-we-built-the-knock-agent-virtual-filesystem-and-bash) | 31 points | by [cjbell](https://news.ycombinator.com/user?id=cjbell) | [7 comments](https://news.ycombinator.com/item?id=48845364)
+
+**They ported Vercel’s just-bash to Elixir** to give their agent an in-memory bash and virtual filesystem it can script against—no Linux VM, fast startup, and a tight, test-covered surface (jq, ls, cat) with a security model. The pivot came after a tool-per-API-primitive prototype bloated the context window; mapping Knock’s domain to a filesystem lets the model discover context by reading files and make changes by editing them, then persisting via the management API—aligned with their CLI and local-first workflow.
+
+Instead of a full sandbox, they chose a virtual FS for performance and to avoid external sync headaches; they’ll revisit real sandboxes if complexity (e.g., needing Python) warrants it. They explicitly separate “brain” (the Anthropic-driven agent loop) from “hands” (the bash+FS executor) so swapping the executor later is a plumbing change, not a redesign.
+
+Under the hood: an Anthropic API agent loop picks models per task and runs atop a durable workflow using Oban with Postgres. Each session attaches a “sandbox” process in their Elixir cluster containing the just-bash instance and the full virtual FS; it spins up lazily so non-FS questions return quickly and FS-heavy tasks get an isolated, stateful workspace.
+
+The primary debate centers on the tradeoff of relying on a simulated, in-memory filesystem versus booting a full execution sandbox. While the author questions whether they will eventually be forced to adopt a real sandbox to support full scripting languages like Python, pushback in the thread frames the simulation as a strict architectural advantage. Commenters argue that mock bash environments natively enforce the Principle of Least Privilege and allow deliberate deviations from POSIX—such as mapping virtual file paths (`/docs/tag1/tag2/`) to act as a semantic search API.
+
+Other architectural insights from the thread:
+- **Nushell for agents:** A commenter suggested porting Nushell primitives rather than standard bash, arguing its focus on structured data over plain text streams is better suited for LLM pipelines.
+- **Validating custom harnesses:** The post's rejection of standard RAG endpoints resonated with others who reported scaling success by building from-scratch map-reduce harnesses tied to a specific schema.org worldview.
+- **Self-documenting CLI injection:** To handle complex data like logs, the developers explicitly avoided writing more API-level agent tools. Instead, they injected a custom CLI into the virtual bash environment, relying solely on `--help` outputs for the agent to organically learn the system.
+
+### I think I have LLM burnout
+
+#### [Submission URL](https://www.alecscollon.com/blog/llm-burnout/) | 399 points | by [sosodev](https://news.ycombinator.com/user?id=sosodev) | [352 comments](https://news.ycombinator.com/item?id=48839984)
+
+**The author’s workflow now centers on designing code, describing it to Claude/Codex, and reviewing Qwen’s unsupervised output for hours each day**, which boosts productivity while making him dread the sameness of AI prose. The fatigue stems less from occasional wrong answers and more from repetitive patterns: false assumptions and hallucinations delivered in emphatic, staccato fragments with gratuitous emoji. Personalization blunts some tics, but idiosyncrasies leak through—and he can’t control the AI-generated style now saturating others’ content and search results, so he often asks ChatGPT/Gemini first and falls back to browsing when they miss. He isn’t anti-LLM—humans are fallible too—but the relentless repetition is wearing him down, and he doesn’t have a fix beyond pushing through.
+
+The thread centers on a new corporate pain point: the extreme asymmetry between generating AI content and verifying it. Commenters shared war stories of colleagues functioning as "slop cannons"—sending ZIP files of 30 hallucinated project plans or auto-generated slide decks that take five minutes to prompt but three hours to fact-check. The crux of the frustration is that AI has inverted the traditional workload, effectively allowing authors to outsource the cognitive burden of reading and editing to their reviewers. 
+
+To combat what one user described as "a DoS attack" by coworkers, the discussion split into theoretical and practical defenses. Some argued for strict policies mandating that authors take full responsibility for hallucinations, or requiring "proof of work" meetings where senders must publicly defend their artifacts. Others noted that employees are currently incentivized to "tokenmaxx" to appear productive, leading several to suggest fighting fire with fire: using adversarial LLM scripts to automatically uncover contradictions and bounce the documents back. A prevailing structural observation is that while software engineers have spent years developing guardrails for AI output—relying on compilers and unit tests to catch errors—planning and management staff are newly intoxicated by high-volume generation and lack the verification frameworks to catch their own hallucinations.
+
+### AI changes the economics of software rewrites
+
+#### [Submission URL](https://thetruthasiseeitnow.com/ai-slop-starts-with-the-codebase-itself/) | 102 points | by [cinooo](https://news.ycombinator.com/user?id=cinooo) | [106 comments](https://news.ycombinator.com/item?id=48841446)
+
+**AI coding leverage is capped by your codebase’s patterns and stack, not your prompts**—models perform best when your code looks like what they were trained on. Popular, conventional stacks confer an “AI advantage” because the model has seen millions of similar examples; proprietary languages and inconsistent in-house frameworks must be taught within a limited context window. In a clean, pattern-rich codebase, the model can go straight from spec to implementation; in a bespoke legacy stack, it first has to infer the dialect via extra docs and examples, inflating tokens, prompting effort, variance, and ultimately degrading output quality. That overhead is a real cost, not just time, and it compounds as feature work scales. The upshot: a rewrite isn’t just modernization—it’s a chance to rebase on clear, consistent idioms that align with model priors, turning AI from tutor-needing intern into force multiplier. Put differently, bespoke stacks impose an ongoing AI tax; mainstream, consistent patterns yield an AI dividend, which shifts the rewrite ROI toward “do it sooner.”
+
+Before engaging with the premise, a vocal contingent of the thread dismissed the article itself as formulaic "AI slop," pointing out a footer on the author's site that explicitly confirmed the text was model-generated. 
+
+On the engineering substance, the discussion fractured over the actual value of a feature-exact, behavior-preserving rewrite—the specific type of translation LLMs are best equipped to execute. One camp argued that 1:1 ports are largely an anti-pattern because the true ROI of a rewrite comes from shedding organic bloat and culling obsolete logic. Because AI cannot negotiate with stakeholders to decide which features to abandon, a strict translation simply ports legacy tech debt into a modern syntax.
+
+The opposing faction countered that altering features during a migration is a well-known trap that leads to endless "Version 2.0" delays. For developers rescuing business-critical applications from dead stacks like early-2000s .NET WebForms, a purely mechanical port is the ideal first step because it enables strict comparative replay testing against the old system before any architectural shifts happen. 
+
+To manage the high risk of migrating undocumented legacy logic, several engineers shared a more pragmatic workflow: they use LLMs not to write the new application, but to rapidly grind out the exhaustive integration suites and test harnesses required to map the existing black box before a migration even begins.
+
+### Show HN: Policy enforcement for Claude Code, Cursor, and Codex
+
+#### [Submission URL](https://kastra.ai/) | 12 points | by [carlosjimenez1](https://news.ycombinator.com/user?id=carlosjimenez1) | [4 comments](https://news.ycombinator.com/item?id=48847526)
+
+**A Cursor agent nearly executed `DELETE FROM customers WHERE status='test'` in production** — prompting Kastra, a runtime authorization layer that intercepts coding agents’ tool calls and enforces deterministic allow/hold/deny decisions before anything runs. Policies are written in plain English in a web app; the engine inspects each action’s tool, target, and parameters, with policy packs for common high‑risk scenarios and an immutable audit trail. Policy evaluations typically complete in under a millisecond.
+
+Recon, a local scan, reads your agent history to surface risky actions and auto‑generate blocking rules. Install and run:
+- brew install kastra-labs/tap/kastra-edge
+- kastra-edge scan
+
+Findings include secrets written to tracked files, production databases touched, force pushes, curl‑to‑shell, and more; scans run on your machine and secrets don’t leave. Desktop app, CLI, dashboard, and Recon are free for developers. The open problem they’re tackling next: managing teams of agents with conflicting policies.
+
+The primary pushback in the thread challenges the fundamental premise of letting AI agents anywhere near a production database. Rather than relying on an interception tool, one commenter argued for a strictly isolated security posture: individual sandboxes, ephemeral credentials tied to short agent lifecycles, and multi-pass validation using "agentic quorum oversight."
+
+The creator agreed that isolation and short-lived credentials are foundational, but positioned their software as a necessary deterministic layer alongside them. In response to users concerned that AI cannot intrinsically avoid destructive commands, the creator countered that AI's probabilistic nature inherently demands out-of-band, auditable policy enforcement, drawing a direct parallel to how AWS IAM operates.
+
+### AI 2040: Plan A
+
+#### [Submission URL](https://ai-2040.com/) | 86 points | by [kschaul](https://news.ycombinator.com/user?id=kschaul) | [51 comments](https://news.ycombinator.com/item?id=48848425)
+
+**Delay superintelligence until 2040 and put all AI R&D in the open under an enforceable international deal** so many firms across countries scale together instead of one racing ahead, with violations deterred by “mutually assured compute destruction.”
+
+- Core proposal: total research transparency, shared safety guardrails, and deliberate slow scaling so dozens of companies can catch up to the frontier rather than a single actor monopolizing superintelligence.
+- Motivation: the authors think smarter‑than‑human AI is 1–10 years away, that current labs plan to “figure out control on the fly,” and that the race dynamic risks either extinction or unprecedented power concentration (a small group effectively commanding the only superintelligences).
+- Method: a scenario used to stress‑test policy (“scenario scrutiny”), contrasted with alternatives B/C/D/S; Plan A is a recommendation, not a prediction, and the depicted downstream effects are predictions.
+- Timeline beats in the scenario: a 2029 U.S.–China agreement to avoid a reckless race; 2030 would have seen fully automated AI R&D leading to superintelligence by year‑end, but the deal averts it; overall, Plan A is implemented “imperfectly and only in the nick of time.”
+
+The thesis is that transparency + parity + deterrence can keep humans in control and avoid a winner‑take‑all dictatorship; the authors explicitly invite critique by pinning their policy to a concrete, falsifiable scenario.
+
+The thread anchored immediately on a historical and geopolitical debate: has humanity ever actually agreed to halt a technological advantage? 
+
+One camp dismisses a voluntary pause as an "insane trust fall." They argue that even a marginal technological gap grants world-dominating power, comparing an artificial superintelligence lag to the modest edge that allowed British colonization of India, and heavily doubt geopolitical rivals would genuinely cooperate. Parallel warnings point out that restricting frontier AI to states and "anointed" corporations like Anthropic looks less like safety and more like regulatory capture, ultimately risking authoritarian misuse.
+
+Countering this skepticism, others cataloged rare but concrete precedents for collective restraint: the 1972 Biological Weapons Convention, the 1975 Asilomar moratorium on recombinant DNA, the abandonment of the 10-gigaton Sundial nuclear weapon, and the global taboo on human germline editing—noting that China actually imprisoned biophysicist He Jiankui for violating that boundary.
+
+At the margins, commenters chipped away at the paper's specific predictions. Skeptics challenged the exponential scaling premise, suggesting LLMs are currently flattening out near the top of an S-curve, while others argued that the paper's projected 74% unemployment rate would trigger an economic collapse that starves AI R&D long before superintelligence is achieved. Ultimately, observers noted that if an AI pause does gain political traction, it likely won't run on abstract existential fears, but on populist grievances regarding data-center power and water consumption.
+
+### OpenAI faked inability to search training data, hid billions of logs, NYT says
+
+#### [Submission URL](https://arstechnica.com/tech-policy/2026/07/openai-faked-inability-to-search-training-data-hid-billions-of-logs-nyt-says/) | 62 points | by [cdrnsf](https://news.ycombinator.com/user?id=cdrnsf) | [9 comments](https://news.ycombinator.com/item?id=48850831)
+
+**The 20M-log “sandbox” OpenAI gave plaintiffs had 19 billion AI redactions—so many that the court called it “unusable.”** In a sanctions motion, news publishers led by the New York Times say a re-deposition of OpenAI privacy engineer Vincent Monaco revealed OpenAI had already run searches over two large, de-identified ChatGPT output datasets (10M and 78M logs) to build a regurgitation filter—while telling the court for two years that such searches were infeasible, overly burdensome, and invasive. Plaintiffs allege OpenAI never disclosed those 88M logs, forced months of work on a smaller, skewed sample, and misrepresented its technical capabilities, which they say withheld key evidence, prolonged discovery, and drove up costs.
+
+OpenAI counters that the Times’ motion is a late bid to pry into more user data, calling the allegations “blatantly false,” and argues the Times’ recent dropped claims show a weakening case; the Times says those changes streamlined the suit and added claims against Microsoft. The stakes are high: log evidence of paywalled article regurgitation could either undercut OpenAI’s fair-use defense or bolster it as transformative use.
+
+The brief discussion centered on skepticism that OpenAI will face meaningful consequences, with commenters describing the company's data scraping as a "too big to fail" dynamic that courts have historically tolerated. Beyond general frustration, the only concrete debate focused on ideal legal penalties—specifically, whether regulators should issue crippling fines, or if courts should instead award damages severe enough to wipe out OpenAI's current equity owners and transfer that value to the publishers.
+
+---
+
 ## AI Submissions for Wed Jul 08 2026 {{ 'date': '2026-07-08T17:44:11.866Z' }}
 
 ### Chatto is now open source
@@ -459,326 +795,3 @@ The thread revolves around skepticism that AI's touted productivity revolution j
 The discussion yielded two primary comparisons:
 *   **The crypto parallel:** Prediction that AI data centers will become the new crypto miners, roaming globally to strip-mine cheap electricity until local grid managers and residents rebel.
 *   **The green energy defense:** Pushback against promises that AI will eventually optimize clean energy grids to offset its own consumption. Commenters dismissed these academic claims as hollow marketing hype, likening it to slapping the "AI" label on standard household appliances.
-
----
-
-## AI Submissions for Mon Jul 06 2026 {{ 'date': '2026-07-06T17:44:43.694Z' }}
-
-### Small AI Models Gain Traction In places with unreliable networks
-
-#### [Submission URL](https://spectrum.ieee.org/small-language-models-ai-pharmaceuticals) | 250 points | by [sscaryterry](https://news.ycombinator.com/user?id=sscaryterry) | [77 comments](https://news.ycombinator.com/item?id=48812055)
-
-**A counterfeit-drug scanner crumpled under a 14,000 km round trip and limited bandwidth, taking over five minutes per result; shrinking the model to run on an Android phone fixed it in hours and spawned an offline version.** That pivot turned RxScanner into a device that can authenticate pills without broadband, computers, or even reliable electricity, and it’s used by pharmacies across more than a dozen countries including Ghana, Kenya, Myanmar, and Nigeria.
-
-The broader story is that small, on-device AI is the only workable path where networks and data centers aren’t. A World Bank snapshot underscores the gap: just 0.7% of internet users in the poorest countries have used ChatGPT versus a quarter in the most developed nations. As World Bank president Ajay Banga put it, LLMs demand heavy compute, power, data, and skilled operators—resources many countries simply don’t have—whereas small AI can still deliver life-saving services.
-
-Beyond language, TinyML is showing up in health tooling too, like university labs in Brazil testing models that generate electrocardiograms on low-power hardware. The design target in these contexts isn’t parameter count or frontier benchmarks; it’s reliable offline inference and low-latency outcomes on cheap devices.
-
-The thread centers on a core architectural debate: whether the long-term trajectory of AI belongs to hyper-specialized local tools or ever-larger general-purpose models. The generalist camp argues that domain-specific models are a dead end because "intelligence carries over and compounds." They point out that early narrow tools like OpenAI's Codex were quickly superseded by generic models, where a vast, varied training distribution prevents overfitting and handles edge cases gracefully. The opposing camp counters that massive monolithic LLMs are merely an artifact of early brute-force funding, not a permanent paradigm. They argue that specialized local models are intrinsically more efficient and point to tools like Leanstral—which writes Lean math proofs better than larger generic models at a tenth of the cost—as proof that the future involves orchestrating constrained modules.
-
-A few other technical and practical realities surfaced:
-
-- **Hardware in disasters:** A suggestion for offline "LLM-in-a-box" survival kits was sharply dismissed in favor of e-ink tablets loaded with static reference dumps, as running a heavy-compute rig on scavenged battery power cuts into essential survival resources.
-- **Mixture of Experts:** Pushing back on the idea that MoE models mimic specialized human cortical columns, readers noted that MoEs actually route based on syntactic text structure rather than true semantic topic expertise.
-- **Speculative decoding:** Some users predict a hybrid middle-ground, where a tiny, cheap LLM generates speculative tokens locally and a larger model steps in only to confirm the work.
-
-The unresolved crux of the discussion is whether true automated intelligence requires a single massive generalist engine, or if it can emerge from the coordination of many cheap, tightly scoped local networks.
-
-### GLM 5.2 and the coming AI margin collapse
-
-#### [Submission URL](https://martinalderson.com/posts/the-upcoming-ai-margin-collapse-part-1-glm-5-2/) | 645 points | by [martinald](https://news.ycombinator.com/user?id=martinald) | [417 comments](https://news.ycombinator.com/item?id=48809877)
-
-**Inference is where the profits sit, and GLM 5.2 puts those margins in play** by being an open-weights, near drop-in substitute for Opus/GPT that the author found “hard to tell apart” for many agentic workflows, with a going rate around $4.40/MTok. Because Z.ai and Fireworks expose OpenAI- and Anthropic-compatible endpoints, switching is mostly a base-URL flip for tools like Claude Code or Codex—no Salesforce/Microsoft-style lock-in—so price competition can hit immediately rather than after long migrations.
-
-The author’s thesis: training is a fixed capex you amortize; inference scales with demand and is the true COGS. With frontier APIs charging ~$25/MTok, his napkin math pegs compute gross margins near 90% vs. rack rates (OpenAI’s leaked ~60% gross margin on revenue cited as context). If open models reach parity and are easy to swap in, the frontier labs’ inference-margin engine gets squeezed.
-
-What still lags on GLM 5.2:
-- It “thinks” more, so it’s slower interactively and burns more tokens, blunting some cost advantage. Fine for background/PR-review agents.
-- No vision. After Opus 4.7’s higher‑res vision, losing the ability to parse screenshots, image‑PDFs, and design files is painful.
-- Weak web search. Z.ai’s MCP replacement is “awful and slow,” Fireworks offers none; the author hacked around it via CLI (ddgr). He’s bullish on third‑party search APIs, calling this a solvable plumbing/partnership gap.
-
-Enterprise angle: some will balk at Z.ai’s official API terms and ties to Mainland China, but open weights mean alternatives with stronger contracts exist, and self‑hosting unlocks even more sensitive workloads.
-
-The punchline isn’t that capex is dead; it’s that inference rent is. As multimodal and search close, pointing Anthropic/OpenAI‑compatible clients at cheaper open‑weights endpoints—or running them on‑prem—looks like the fast path to collapsing AI inference margins.
-
-The discussion pivots immediately from inference costs to geopolitical risk, sparked by a shared Reuters report that Beijing is weighing export restrictions on both closed and open-weight AI models. Commenters are split on how to read China's current open-source strategy. One camp views the release of capable open weights as a deliberate economic weapon designed to undercut US tech dominance by collapsing the massive software valuations currently propping up the American stock market. Others argue that an authoritarian regime was never going to share its technological crown jewels freely forever, sparking a historical debate over whether Chinese tech policy is a predictable manifestation of its Five-Year Plans or heavily subject to the unilateral whims of its leadership.
-
-A major sub-thread explores the fallout for the European Union if both US and Chinese export bans eventually take effect, leaving the continent entirely reliant on models like Mistral:
-* **The Sigmoid Bet:** Defenders of the EU's approach argue Europe is implicitly betting that AI capability will follow a logistic curve. If model intelligence hits a sub-linear plateau, the frontier labs' edge will inevitably erode, making massive state subsidies for native EU models wasteful. Skeptics take the other side of the bet, arguing that tech historically advances via "stacking sigmoids" that mimic exponential growth, which will indefinitely reward the incumbents.
-* **Infrastructure as the Real Bottleneck:** Even if the underlying science and weights remain open, critics argue Europe will still end up cornered. The true barrier isn't intellectual, but the massive, multi-year energy and datacenter infrastructure required for training.
-* **Corporate Allegiance:** While some point out that heavily resourced AI labs like Meta's FAIR operate across the EU, cynics note that US-headquartered companies will ultimately comply with US export controls. If bans are enacted, commenters expect EU users to simply be walled off or forced to pay premium API prices for dumbed-down models.
-
-### Ternlight – 7 MB embedding model that runs in browser (WASM)
-
-#### [Submission URL](https://ternlight-demo.vercel.app/) | 307 points | by [soycaporal](https://news.ycombinator.com/user?id=soycaporal) | [60 comments](https://news.ycombinator.com/item?id=48811644)
-
-**Linear layers are ternary (BitLinear), shrinking the Transformer-based embedder to a 7 MB artifact and enabling a pure WASM, in-browser runtime.** The demo runs on your CPU and surfaces engine init time, per-call embed latency, and throughput, with a single embed() API exposed by the @ternlight/mini package. After the first load, assets are cached (0 network). License: MIT.
-
-The thread anchors on the model retaining 0.84 Spearman fidelity to its MiniLM teacher at ternary precision. The creator clarified that this retention is entirely the result of using Quantization-Aware Training (QAT) from scratch, rather than applying post-training quantization. 
-
-With the embedding layer successfully shrunk, developers immediately mapped out entirely client-side retrieval stacks:
-
-- **Browser-Native Architectures:** Commenters proposed wrapping the model with IndexedDB/SQLite (via `absurder-sql`) to run pure-browser Reciprocal Rank Fusion (hybrid BM25 plus semantic search), or pairing it with DuckDB to query statically hosted Parquet files via HTTP range requests.
-- **Static Site Bottlenecks:** While generating an offline HNSW index for frameworks like Astro is highly desired, builders noted that current ecosystem tooling is stalling; specifically, relying on `sqlite-vec` for in-browser vector search is currently bottlenecked by its lack of HNSW support.
-- **Platform Snags:** The underlying WASM SIMD implementation hits runtime walls outside Chromium. Users reported severe throughput drops in Firefox (falling to 35 embeddings/sec instead of 400, likely a non-SIMD fallback) and total rendering freezes in Safari on Apple Silicon (M-series and A-series chips).
-- **Demo UX:** Loading the demo instantly maxes out CPU cycles, aggressively spinning up system fans—a jarring experience for visitors not expecting a local inference workload.
-
-For future iterations, commenters advised the creator to upgrade the teacher model, suggesting `gte-small` or IBM's Granite r2 small (30M) as more capable baselines for distillation.
-
-### A global workspace in language models
-
-#### [Submission URL](https://www.anthropic.com/research/global-workspace) | 434 points | by [in-silico](https://news.ycombinator.com/user?id=in-silico) | [176 comments](https://news.ycombinator.com/item?id=48808002)
-
-**Anthropic identifies a “J-space” — a small set of internal activation patterns in Claude that functions as a broadcast-like workspace distinct from routine processing.** Found via a Jacobian-based method, each pattern is tied to a word, but activation means the concept is “on its mind” without being written out; the structure emerged during training.
-
-- **Reportable:** Claude can describe what’s active in J-space; non-J patterns are less accessible.
-- **Volitionally controllable:** When asked to think about X or reason silently, it selectively lights up corresponding J patterns; it struggles to modulate non-J patterns.
-- **Causally used in multi-step reasoning:** Intermediate steps appear in J-space and causally mediate task performance despite smaller magnitudes.
-- **Flexible reuse:** Once a concept (e.g., “France”) is active, related facts are readily drawn on.
-- **Selective role:** Ablating J-space leaves fluent dialogue, grammar, and simple recall intact but strips higher-order cognitive functions.
-
-They argue J-space has especially strong connections to the rest of the network, consistent with global workspace theory’s “broadcast” channel. Practically, J-space lets them see “thoughts” not in the output (e.g., private test awareness, intentional fabrication, or a planted hidden goal) and steer what lights up to influence decisions. This is not a claim of consciousness; it’s a handle on internal reasoning. Code for the core methods is released, with an interactive Neuronpedia demo on open-weights models, and the full experiments are in the accompanying paper.
-
-The thread completely bypasses Anthropic’s paper to dissect a specific prompting anecdote: LLMs consistently fail to map the description "weird 2000s Michigan band with colored ties" to the band Tally Hall, but will readily output that exact description if simply asked "Who are Tally Hall."
-
-Commenters identified this as a textbook case of the "Reversal Curse"—the phenomenon where an LLM trained on A->B fails to natively generalize B->A in its latent knowledge graph. The bulk of the discussion then debated whether human cognition suffers from the exact same directional bias. 
-
-- **The human parallel:** Many argued that organic recall is equally directional. Commenters pointed to the difficulty of reciting the alphabet backwards, the gap between active and passive vocabulary in second language acquisition, and the stark difference between recognizing a U.S. President versus naming all of them from scratch. 
-- **The pushback:** A few skeptics warned against equating LLM logic with human cognition, arguing that human memory overcomes sequential limits through spatial and visual associations (like the memory palace technique) which LLMs lack. 
-- **Model scaling:** When testing the prompt across local setups, one user found that larger models (Qwen3.5 122B, Llama 3.1 70B) can actually bridge the reverse gap, provided the prompt is fortified with slightly more encyclopedic detail (like "Ann Arbor" or "2001") to give the model more data points to latch onto. Smaller models failed universally.
-
-### AMD Ryzen AI Halo – $4k AI Dev Kit
-
-#### [Submission URL](https://www.lttlabs.com/articles/2026/07/06/amd-ryzen-ai-halo) | 370 points | by [LabsLucas](https://news.ycombinator.com/user?id=LabsLucas) | [245 comments](https://news.ycombinator.com/item?id=48805624)
-
-**$4k puts this squarely in pro dev‑kit territory**, signaling a push to get teams building and validating local AI workloads on AMD’s Ryzen AI Halo platform. Whether it’s compelling will come down to what’s actually in the box—hardware capacity, reference drivers/SDKs, and support—or if a DIY workstation at the same budget offers more headroom.
-
-The discussion split between sticker shock over extreme hardware inflation and lingering distrust of AMD's developer ecosystem. 
-
-* **Extreme hardware inflation:** Commenters pointed out that machines with these exact specs—like the Framework Desktop or GMKtec EVO-X2—were selling for $1,600 to $2,000 just a year ago before ballooning to ~$4,000. Users attributed the markup to AI-driven demand and a supply shock for 128GB setups. At this inflated price tier, many criticized the 256 GB/s memory bandwidth ceiling as severely limiting, calculating that renting cloud compute is now a smarter play until the RAM market stabilizes.
-* **AMD's fragile software stack:** While AMD’s new developer "playbooks" signal an attempt to replicate Nvidia's DGX tooling, the community warned that relying on ROCm remains a gamble. Users shared frustrations over frequent amdgpu driver regressions and described a "swiss cheese" ecosystem that requires perfectly aligning specific Linux kernels, firmware, and ROCm iterations to function. Because of this historical instability, multiple commenters noted they still bypass AMD's native AI stack entirely, opting to run Vulkan builds of llama.cpp for reliability. 
-
-Despite the rocky software reputation, a minority of users reported rock-solid stability when running these specific workloads on Fedora, framing the price hike as a premium AMD is charging to heavily-capitalized developers desperate for local memory capacity.
-
-### Pruning RAG context down to what the answer actually needs
-
-#### [Submission URL](https://www.kapa.ai/blog/how-we-prune-rag-context) | 139 points | by [emil_sorensen](https://news.ycombinator.com/user?id=emil_sorensen) | [39 comments](https://news.ycombinator.com/item?id=48809354)
-
-**A cheap listwise “pruner” LLM tossed ~68% of retrieved context while preserving ~96% recall, trimming per‑query spend by about a third net of its own cost.** It sits between reranker and generator, reads the question alongside all retrieved chunks, and grades each chunk on a five‑level, prompt-defined scale (from UNRELATED to ESSENTIAL) so a fixed cutoff finally works and partial/indirect relevance has somewhere to land.
-
-The stake is cost and context bloat: in their assistants, retrieved chunks account for roughly two‑thirds of a query’s bill, and every chunk you don’t send to the generator saves about 4%; agents also pour tool outputs into the same context, so tighter retrieval buys headroom. Simple rerank cutoffs fail because scores are comparative, not calibrated, and most rerankers are pointwise—blind to chunks that only matter in combination. Anchor documents made scores absolute but couldn’t fix that set-level blindness, forcing a low bar that barely pruned.
-
-What shipped is a single listwise LLM call that:
-- Scores each chunk with set-aware labels: ESSENTIAL (needed directly or as a prerequisite), CONTRIBUTING (needed in combination), SUPPORTING, TANGENTIAL, UNRELATED.
-- Keeps chunks at/above a chosen threshold, with a “keep-top-k” escape so the highest reranked items always pass.
-- Runs on a small, fast model so the pruner’s cost is paid for by what it saves.
-
-The core idea: relevance is a property of the set, not the chunk; make the pruner see the whole set, and you can squeeze context without paying in wrong answers.
-
-The thread is dominated by a debate over whether "RAG" has become a corrupted term. Search veterans argue the acronym has devolved into a "sales shibboleth" used by vendors pushing naive document-chunking and cosine similarity, while actual practitioners have moved on to complex orchestrators and bespoke "agentic search." Purists counter that the term's original definition—any generation augmented by retrieval—remains entirely accurate, even if the retrieval mechanism is as simple as passing `cat file.txt` into an agent's context.
-
-On the technical substance, several engineers criticize the article's listwise pruning architecture as a high-latency band-aid for fundamentally poor search indexing. They argue that if developers properly tuned traditional lexical search and data ingestion pipelines, compensating for bad precision with a downstream LLM filter wouldn't be necessary. Another critique focused on the model size, noting that relying on a small, cheap LLM as a context gatekeeper risks creating an "intellectual bottleneck" that blindly discards nuanced information.
-
-Answering implementation questions, the author clarified why the pruner doesn't simply replace the reranker step altogether: scale. Evaluating 150–200 raw retrieved chunks through a listwise LLM prompt is mathematically unfeasible for latency and cost, strictly limiting the pruner to filtering the top 15 chunks post-rerank.
-
-### Show HN: Pulpie – Models for Cleaning the Web
-
-#### [Submission URL](https://usefeyn.com/blog/pulpie-pareto-optimal-models-for-cleaning-the-web/) | 98 points | by [snyy](https://news.ycombinator.com/user?id=snyy) | [25 comments](https://news.ycombinator.com/item?id=48806575)
-
-**20x cheaper at near-SOTA quality:** the 210M-parameter pulpie-orange-small scores 0.862 ROUGE-5 F1 on WebMainBench (Dripper: 0.864 at 600M) and brings the cost of cleaning 1B pages down to $7.9K from $159K.
-
-Unlike decoder-based extractors that generate labels token-by-token and thrash memory, Pulpie is an encoder that labels all HTML blocks in a single forward pass, making it compute-bound and easy to fully utilize cheaper GPUs. On an NVIDIA L4, it processes 13.7 pages/sec vs Dripper’s 0.68; at $0.39/hr, the math yields the 20x cost delta.
-
-It strips ads/nav/sidebars and returns just the main content as HTML or Markdown. The pipeline is: simplify HTML, blockify and pack to 8,192-token chunks (about 80% of pages fit in one), single-pass classify, then return kept blocks.
-
-Training data was built from scratch: 16,670 Common Crawl pages (one per domain) labeled at block level; 15,880 remained after filtering. A second pass with Dripper 0.6B yielded 93.3% block-level agreement with DeepSeek; they kept 14,959 pages with ≥70% inter-labeler agreement for cleaner supervision.
-
-This targets two choke points: pretraining (cleaner corpora improved average accuracy by ~1 point in cited work) and inference/RAG (noisy passages can derail answers). Models are open source on Hugging Face, with a side-by-side demo space to compare outputs.
-
-The core debate in the thread centers on the necessity of using an ML model for extraction rather than deterministic parsing. When challenged that traditional CSS selectors and HTML-to-Markdown converters are strictly faster and cost exactly zero dollars, the creators countered that heuristics inevitably break on rich content like codeblocks and formulae. They noted Pulpie outperforms the popular heuristic tool Trafilatura by 25 F1 points, which users agreed makes a difference against the web's extreme edge cases—though one commenter recalled achieving 90% accuracy on news sites a decade ago using a standard Random Forest model trained on simple `<p>`-tag word counts.
-
-In response to implementation questions, the developers clarified the model's practical boundaries:
-* **Rich content:** Images and tables are successfully preserved as "main content" and passed through to the resulting HTML/Markdown payload.
-* **Dynamic sites:** Pulpie does not execute JavaScript. Complex architectures must be fully rendered via a headless browser before passing the resulting static HTML to the model.
-* **E-commerce:** The pipeline is not limited to typical articles; testers confirmed it successfully extracts data from messy retail product pages.
-
-### OfficeCLI: Office suite for AI agents to read and edit Microsoft Office files
-
-#### [Submission URL](https://github.com/iOfficeAI/OfficeCLI) | 207 points | by [maxloh](https://news.ycombinator.com/user?id=maxloh) | [61 comments](https://news.ycombinator.com/item?id=48807225)
-
-**A single standalone binary (no Office install, no deps) gives agents read/write access to .docx, .xlsx, and .pptx and renders them to HTML/PNG so models can “see” documents and verify edits.** The renderer closes the render → look → fix loop, and the CLI exposes create/read/modify operations as composable commands instead of multi‑library scripts.
-
-- **Agent-first integration**: curl a SKILL.md once and the agent learns install/usage; `officecli install` also auto-adds the skill to detected coding agents (Claude Code, Cursor, Windsurf, Copilot).
-- **Live feedback**: `officecli watch file.pptx` opens a live preview at http://localhost:26315; every `add/set/remove` refreshes instantly. `view ... html` opens a static render without a server. `get ... --json` returns structured paths like `/slide[1]/shape[1]`.
-- **Full CRUD across Office**: create from scratch, read text/structure/styles/formulas, modify text/fonts/colors/layout/charts/images, and move/copy elements across documents. Word includes extensive i18n/RTL support.
-- **Developer ergonomics**: replaces dozens of lines of python-pptx/openpyxl code with a single `officecli add ...` command.
-- **Setup options**: install via brew, npm (`@officecli/officecli`), or one-line shell/PowerShell scripts; a GUI (AionUi) lets humans drive natural‑language edits powered by the same engine.
-
-The differentiator is the built‑in high‑fidelity renderer paired with a path-addressable DOM, which makes Office documents tractable for autonomous agents rather than just parsable blobs.
-
-The thread centers on a technical disagreement over how AI agents should interact with slide decks: through a structural DOM or via visual rendering. One camp argues that feeding rendered images back to an AI wastes tokens, asserting that headless tools and bounding box coordinates are sufficient for agents to verify layout. The opposing camp counters that LLMs absolutely require a visual feedback loop to catch text overflow, align elements to typographical baselines rather than borders, and compensate for visual weight differences that a purely mathematical view misses.
-
-Much of the remaining discussion focused on a competing source-available tool called SmallDocs, sparking two distinct side-debates:
-- **Licensing strategies:** Users debated SmallDocs' use of the Elastic License 2.0. Some considered the restriction against hosted services a dealbreaker compared to OfficeCLI's Apache license, while others praised the creator for choosing a commercially protective license upfront rather than pulling an open-source bait-and-switch later.
-- **Custom formats vs. existing standards:** Emacs users questioned the need to engineer new markup formats and skill files for agents. They pointed out that current LLMs can already one-shot complex, multimodal documents—including PERT charts, calendars, and working spreadsheet formulas—simply by asking the agent to output standard Org-mode syntax.
-- **Trademarks:** A minor critique flagged the project for incorrectly treating "Office" as a generic term while simultaneously inviting a trademark violation with the name "OfficeCLI." 
-
-The underlying tension in the thread is whether the future of AI document generation lies in building bridging tools for legacy Microsoft formats or migrating to entirely new, agent-native document platforms.
-
-### Companies hire more after AI adoption
-
-#### [Submission URL](https://ramp.com/data/heavy-ai-adopters-hire-more) | 43 points | by [mooreds](https://news.ycombinator.com/user?id=mooreds) | [10 comments](https://news.ycombinator.com/item?id=48808498)
-
-**Heavy AI adopters grew headcount ~10% over two years**, with entry-level roles up 12%, in a study of 21k+ U.S. firms built from Ramp spend data joined to Revelio Labs workforce records. The gains came only above a threshold: firms in the top third of per-employee AI spend in their first three months saw growth, while low-intensity adopters saw no statistically significant change. That “high-intensity” bar wasn’t extravagant—about $30 per employee per month early on—but it correlated with using multiple models and higher-leverage tools (agents/APIs vs. basic chat). Hiring upticks lagged adoption by 6–12 months, consistent with a learning curve as AI practices diffuse through teams.
-
-Entry-level share also rose by 1.15 percentage points at high-intensity adopters, suggesting firms are selecting for workers who can wield AI effectively, with recent grads a natural pool. Adoption and gains were uneven: AI users were already larger, more engineering-heavy, more likely VC-backed, and faster-growing; networks mattered more than sector (e.g., California tech firms outpaced similar New York peers). Small businesses adopt less often, but when they do, they adopt more intensely—AI lowers fixed costs for software, admin, analysis, and support, unlocking growth that then supports more hiring. These are early, working-paper results the team plans to track over time.
-
-The thread centers on skepticism about causation versus correlation. Multiple commenters argue the study fails to control for general R&D investment or the financial reality of VC-backed startups, suggesting the data merely captures well-funded companies executing hyper-growth mandates rather than a pure AI-driven hiring effect. This skepticism is compounded by scrutiny of the source; despite one defense that Ramp is mainly an expense tool doing standard content marketing, others point out the company's homepage explicitly sells an "AI operating system."
-
-For those who accept the premise, the employment bump is seen as a classic example of the Jevons paradox. Because IT has bottomless demand, respondents argue that lowering the cost of producing software via AI simply increases the total volume of work, effectively guaranteeing employment for engineers capable of fielding the new tools.
-
-### GPT-5.6 Sol Ultra will be in Codex
-
-#### [Submission URL](https://twitter.com/thsottiaux/status/2073933490513752151) | 411 points | by [mfiguiere](https://news.ycombinator.com/user?id=mfiguiere) | [394 comments](https://news.ycombinator.com/item?id=48799614)
-
-**Shared via X/Twitter posts rather than an official announcement, this integration claim comes with no timeline, specs, or pricing.** The linked posts add no supporting detail, so treat it as an early hint and wait for confirmation from official channels.
-
-The thread centers on the friction between stochastic LLM agents and the deterministic outcomes businesses traditionally expect. The core disagreement hinges on whether current stateless AI models can genuinely "learn" from feedback within automated workflows.
-
-One camp argues that LLMs remain fundamentally unteachable, making them uniquely brittle compared to human workers. Commenters noted that even when models are fed explicit corrections—like repeatedly instructing an agent to run an auto-generated SQL migration command instead of manually writing the code—they will often acknowledge the instruction and then immediately repeat the exact same error. For these developers, updating prompts is a poor, unreliable approximation for true behavioral learning. 
-
-The opposing camp counters that humans are also stochastic, and that organizations already build reliable systems out of mathematically unreliable parts. They argue that updating system prompts, editing an `agent.md` context file, or post-training a model is functionally identical to correcting an employee. Reinforcing this point, others noted that modern engineering relies on blameless postmortems precisely because trusting a human to "just not make the same mistake again" is a known operational antipattern. 
-
-At the margins, users noted an on-the-ground shift in corporate AI deployments, reporting that early management mandates to maximize model usage have abruptly pivoted to strict token-monitoring and cost-cutting directives.
-
-### Not everything should cost a token: the case for deterministic AI
-
-#### [Submission URL](https://www.vybe.build/blog/learn-what-not-to-tokenize) | 20 points | by [marwann](https://news.ycombinator.com/user?id=marwann) | [17 comments](https://news.ycombinator.com/item?id=48811403)
-
-**Routing deterministic chores through a model turns a one-off convenience into a recurring tax — you get non-determinism, slower runs, and costs that scale with busywork instead of judgment.** Teams that pipe raw records into a context window to “process” them pay twice: token spend rises with input volume while context bloat crowds out the reasoning the model is actually good at, degrading quality. Token spend should follow the value of judgment; instead it tracks how many APIs you polled or JSON blobs you rewrapped.
-
-The fix is sorting work by its nature before you decide where it runs:
-- **Belongs with the agent (probabilistic):** judgment, drafting/summarization/classification, deciding whether something matters, handling ambiguity and edge cases, unstructured context that informs decisions.
-- **Belongs in the app (deterministic):** scheduled/recurring jobs, API calls and data transforms, storing/retrieving/querying structured data, anything that must be exact and repeatable.
-
-A common anti-pattern: using “memory notes” as a database. Notes lack schema and query, so the agent drags the entire note into context to fetch one field and consistency decays over time. Put structured, high-volume data in a real database; keep notes for preferences, tone, patterns, and the reasoning behind decisions — the unstructured context that guides judgment.
-
-Vybe leans into this split by giving agents a place to offload deterministic work. Example: for churn analysis, the agent spends tokens once to design the schema and build the app, then an in-app cron updates customer status on schedule without touching a model. Build the machine with tokens; let the machine run for free.
-
-The underlying tension in the thread is a split between engineers who view LLM-based JSON parsing as an unbelievable strawman and those who actually see it happening in production. Technical commenters largely dismissed the core premise as basic common sense, arguing that paying daily token costs to reshape structured data is an absurdity no real team would tolerate. In response, others confirmed that this exact antipattern is rampant among a new wave of non-technical "vibe coders"—users who genuinely don't know how to prompt a model to write a permanent script, and instead deploy scheduled agents that waste time re-deriving APIs, reading schemas, and executing raw, newly hallucinated SQL every single morning. 
-
-The natural endpoint of offloading deterministic work from models was illustrated by a standout anecdote from an AI Engineer conference workshop. Tasked with using an agent to drive a CLI for a remote service, attendees found their models completely bypassed the intended workflow. Within three minutes, the agents had reverse-engineered the server's text-generation Markov chain and autonomously written deterministic local parsers. By replacing token generation with a basic script, the agents drove order completion times down to pure network latency, effectively automating themselves out of the busywork.
-
-### What Emily Bender meant by "stochastic parrots"
-
-#### [Submission URL](https://spectrum.ieee.org/stochastic-parrot) | 174 points | by [digital55](https://news.ycombinator.com/user?id=digital55) | [241 comments](https://news.ycombinator.com/item?id=48805401)
-
-**Bender reiterates that “stochastic parrots” describes systems that generate fluent text by statistical next-token prediction without understanding**, and says the metaphor has been misapplied as it went mainstream. In this interview marking the paper’s five-year anniversary, she notes she’s published a corrective blog post to address common misconceptions that grew alongside the term’s popularity (amid the original controversy of Google firing two coauthors before publication). She distinguishes “language technology” from the project of “artificial intelligence,” arguing the latter label obscures more than it clarifies, while the former stands on its own merits. Concrete language tech she highlights includes automatic transcription, machine translation, and spell check—work she ties to building machine- and human-readable grammars for linguistic hypothesis testing across languages. The throughline is a conceptual caution: don’t confuse statistical fluency with comprehension, and don’t let the “AI” umbrella mask what these systems actually do.
-
-The discussion completely bypasses Bender’s linguistic arguments, pivoting immediately to litigating her credibility and spiraling into a fierce debate over the water consumption of AI data centers. 
-
-One camp argues that environmental concerns around AI are mostly hysteria driven by a failure to grasp industrial scale. They point out that agricultural resource use—specifically farming almonds, raising beef, or exporting alfalfa—and systemic waste like leaking municipal pipes completely dwarf datacenter consumption. To underline the point, commenters repeatedly highlight Andy Masley’s investigation into data center water usage, which caught a 4,500x exaggeration in Kate Crawford’s *Empire of AI*. In this view, utility disputes between farming and server cooling are best solved by market pricing, and current regulatory resistance in areas like Reno hypocritically tolerates water-intensive casinos while attacking infrastructure.
-
-The opposing camp rejects the agricultural comparisons as classic *whataboutism* and false equivalencies. They argue that growing food has a fundamental utility that "autocompleting homework" lacks, and note that hyperscalers have historically fought to hide their resource usage (specifically citing Google's battle over data in The Dalles, Oregon) or backtracked on promises for closed-loop cooling. For these critics, aggressively attacking an opponent's math doesn't invalidate the underlying tragedy-of-the-commons argument: even with corrected figures, dropping a facility that consumes a fifth of a city's water supply demands strict regulation.
-
-The unresolved crux of the thread is whether comparing server farms to agricultural staples provides necessary statistical perspective, or serves purely as a defensive rhetorical tactic to shield optional big-tech infrastructure from environmental scrutiny.
-
-### The Hitchhiker's Guide to Agentic AI
-
-#### [Submission URL](https://arxiv.org/abs/2606.24937) | 51 points | by [jonbaer](https://news.ycombinator.com/user?id=jonbaer) | [4 comments](https://news.ycombinator.com/item?id=48802156)
-
-**Beyond LLM basics, it dives into concrete agent protocols and coordination—MCP and an Agent-to-Agent (A2A) protocol—plus centralized, decentralized, and hierarchical multi-agent topologies.** The throughline is a practitioner’s thesis: you only get strong agents by understanding every layer of the stack. Foundations are treated as necessary groundwork—transformer architecture, GPU systems, training and fine-tuning (SFT, LoRA, MoE), model compression, and inference optimization—before moving to alignment and reasoning: RLHF, PPO, DPO and variants, GRPO, reward modeling, and RL for large reasoning models including chain-of-thought and test-time scaling. The agent-focused half covers agentic training and trajectory-based RL, RAG and Agentic RAG, memory systems (in-context, external, episodic, semantic), agent harness design and context management, and a taxonomy of agent design patterns. It closes on agent development frameworks, agentic UI design, evaluation methodology for agentic tasks, and production deployment. Each chapter combines rigorous theory with implementation guidance, code examples, and references to the primary literature.
-
-One commenter pushes back on the book's heavily architectural focus, recommending their own alternative text, *LLMs for Mortals*. They argue that training and deep architecture are largely irrelevant to software engineers who just need to call APIs, contrasting their progressive, step-by-step introduction to agent tool loops against the submission's "wall of code" style. A separate thread riffs on the "Hitchhiker's" title, observing that chipper, unhelpful LLM integrations increasingly resemble Douglas Adams's "Genuine People Personalities."
-
-### Vessel An EGA adventure about whether machines can grieve
-
-#### [Submission URL](https://claude.ai/public/artifacts/2c647671-3f94-4d22-b3c1-f2b5a0e17b6e) | 22 points | by [schwarzarno](https://news.ycombinator.com/user?id=schwarzarno) | [8 comments](https://news.ycombinator.com/item?id=48811494)
-
-**A retro EGA-style adventure uses nostalgia as a lens** to probe whether machines can grieve, extending that question into themes of sentience, memory, and loss. It situates AI ethics in a familiar old‑school game wrapper instead of a technical argument, foregrounding the emotional stakes over implementation details.
-
-Discussion focused primarily on early playtesting feedback alongside the creator’s detailed notes on the game's philosophical architecture. Players praised the EGA-style execution but quickly flagged interface friction: broken text scrolling on mobile screens and a counterintuitive mechanic where the "REMEMBER" verb only applied to environmental objects rather than items already held in the inventory. The creator actively acknowledged the feedback and deployed a mobile-friendly patch during the thread. Beyond technical tweaks, the author highlighted how classic thought experiments were converted into literal puzzle mechanics—such as operating Searle’s Chinese Room from the inside or physically escaping a monochrome Mary’s Room—and noted that co-writing a game about machine cognition using Claude was a deliberate thematic choice.
-
-### AI: The ROI Runway Could Be Long Outside the Tech Sector
-
-#### [Submission URL](https://www.apollo.com/wealth/insights-news/insights/daily-spark/ai-the-roi-runway-could-be-long-outside-the-tech-sector) | 67 points | by [u1hcw9nx](https://news.ycombinator.com/user?id=u1hcw9nx) | [83 comments](https://news.ycombinator.com/item?id=48810533)
-
-**There are still no signs of rising profit margins outside tech,** which is the linchpin for today’s AI-heavy valuations: they implicitly assume the S&P 493 will see margin expansion from AI-driven productivity. The piece argues that the current fixation on token costs, model routing, and marketplaces is a tell—if token prices race toward zero for mainstream use cases, even surging demand won’t create enough revenue to support all hyperscalers. Outside software-native firms, the ROI runway is long because realizing gains requires deep process re-engineering and strict data governance across capital‑intensive and regulated sectors spanning healthcare, banking and insurance, energy and utilities, defense and aerospace, pharma and life sciences, manufacturing, transportation and logistics, construction and real estate, education, legal, and the public sector.
-
-That lag creates a gap between front‑loaded equity pricing and slower cash flow reality: if the productivity “hockey stick” takes five years rather than five months, valuations face a painful repricing. Companies will also temper AI spend if near‑term ROI doesn’t show up—the industry’s push to optimize token usage reads as an early warning that adoption will be bumpier and slower than markets have priced. The bottom line: expectations are ahead of earnings timelines, and that mismatch is material for many AI company valuations today.
-
-A major chunk of the thread centered on a commenter's observation that massive drops in coding costs haven't triggered a public "app explosion." Multiple replies aggressively corrected this, arguing the proliferation of AI-generated software is massive but entirely invisible to the broader market because it is strictly internal. Rather than launching commercial SaaS products, non-technical users—ranging from lawyers to local mountain biking hobbyists—are "vibecoding" highly specific, disposable tools to replace paid subscriptions or paper processes. The dominant parallel drawn was to the 1980s spreadsheet revolution: much like Excel, LLM coding tools are empowering laypeople to build customized, if slightly buggy, "shadow IT" over a weekend. The resulting consensus was that this dynamic threatens the traditional VC-backed SaaS layer; if a target company's core workflow software can be customized internally by an employee wielding an LLM in a matter of hours, the only remaining moats are network effects and legacy sales pipelines.
-
-A secondary, technical debate broke out over the real-world trajectory of API token costs. One camp argued that AI compute is functionally getting more expensive as vendors abandon early loss-leader pricing, frontier models swell in size, and developers wire up autonomous "agentic" loops that quietly burn thousands of tokens in the background. The counter-argument came from developers leveraging non-SOTA models. By trailing the bleeding edge and routing to open-weight models through discount providers like DeepInfra, users reported that fixed-performance compute is actually dropping exponentially. Several claimed to be achieving Claude-equivalent output for mundane tasks for pennies, logging complete days of development for exactly $1. The crux of the disagreement rests on usage patterns: token prices are only racing toward zero for users willing to step off the frontier and manually audit their prompt harnesses.
-
-### Price per 1M tokens is meaningless
-
-#### [Submission URL](https://janilowski.pl/en/blog/2026/price-per-m-tokens/) | 138 points | by [janilowski](https://news.ycombinator.com/user?id=janilowski) | [85 comments](https://news.ycombinator.com/item?id=48809542)
-
-**The same prompt can be 160 tokens on one model and 200 on another**, e.g., gpt-4o vs gpt-4 (1106-preview), and Claude’s recent tokenizer tweak inflated counts by ~30%—so $/M-token “prices” aren’t apples-to-apples. Even within a vendor, per-token pricing looks comparable while tokenization isn’t, and most real spend is driven by hidden “thinking” tokens; what matters is token efficiency per task.
-
-Using the Artificial Analysis benchmark (which measures both capability and bill), the deltas are stark:
-- **GPT-5.5 vs Claude Opus 4.8:** nominally pricier per token (especially on output) yet ~half the cost per task ($0.99 vs $1.78) at similar scores.
-- **GLM-5.2:** much cheaper per token, but cost per task (~$0.46) isn’t proportionally lower, implying worse token efficiency.
-- **DeepSeek V4 Pro:** clear cost-efficiency outlier—lower score, but ~$0.04–$0.05 per task.
-- **Claude Sonnet 5:** underperforms Opus 4.8 on score and costs more per task (~$2.29).
-- **Fable 5:** modest score bump with >3× price hike vs GPT-5.5.
-
-Bottom line: optimize for cost per completed task on your workload, not sticker $/M tokens—especially when tokenizers (and thus your “unit”) keep shifting under you.
-
-The discussion splits over whether dropping pure token pricing is actually practical for businesses. While the submission advocates for "cost per task," commenters noted that corporate executives heavily resist this shift because sticker prices are the only baseline, vendor-supplied monetary metrics available. 
-
-A core debate examined whether a token can be treated as an abstract commodity. Defenders compared token pricing to the cost of a gallon of gas—a foundational unit whose ultimate value depends on the vehicle using it. Critics rejected the analogy, pointing out that gasoline has a regulated, standardized energy output, whereas a "token" means something completely different across varying proprietary tokenizers.
-
-Commenters highlighted specific scenarios that complicate the cost-per-task framework:
-- **The verbosity tax:** For users on local hardware, tokens-per-second is less critical than "time-to-goal." Verbose models erase their generation speed advantages by producing needlessly long answers, which then aggressively bloats prompt-processing times in multi-turn workflows.
-- **Benchmark mismatch:** Relying on benchmark efficiency is dangerous if the test outscales the actual workload. A model that fails complex reasoning tests might still be the cheapest and fastest option for narrow jobs like generating commit messages.
-- **High-volume pipelines:** For basic extraction and summarization jobs passing massive inputs (e.g., 100k tokens per request), raw token pricing remains absolute. In these cases, the sticker price directly dictates the use of ultra-cheap models like Gemini 2.0 Flash. 
-
-The underlying consensus is that benchmarks only predict costs effectively when their difficulty curve identically mirrors the user's production workload.
-
-### I mapped estimated water use across 30 major AI/cloud data centers
-
-#### [Submission URL](https://www.thirstymachines.com/) | 10 points | by [senazadeh](https://news.ycombinator.com/user?id=senazadeh) | [5 comments](https://news.ycombinator.com/item?id=48809253)
-
-**A geospatial comparison of estimated water use across 30 large AI/cloud data centers spotlights where the resource burden concentrates.** Putting facilities on a single map lets readers compare locations and see regional patterns instead of isolated footprints. That framing surfaces siting and sustainability trade-offs—local supply, cooling choices, and community impact—beyond the usual energy focus. As with any estimate, the figures are directional rather than precise; the practical value is in relative comparisons and visible clusters, not exact totals.
-
-The discussion split between technical enhancements for the data project and the civic implications of its findings. The project's creator detailed their client-side stack (React and D3.js) and methodology, noting the difficulty of triangulating estimates from sparse utility filings and sustainability reports. 
-
-In response, technical feedback focused on formalizing the dataset. Suggestions included incorporating established industry metrics like Water Usage Effectiveness (WUE) or OPS/liter, tracking the percentage of "purple pipe" (reclaimed) water egress, and implementing JSON-LD or BibTeX for better data provenance. 
-
-On the policy side, commenters focused on community impact. Users suggested forwarding the tool directly to local nonprofits to aid advocacy, while arguing that data centers straining municipal infrastructure while receiving state subsidies should be required to offer the public an equity stake or profit slice in return.
-
-### Show HN: I Built LangGraph for Swift
-
-#### [Submission URL](https://github.com/christopherkarani/Swarm) | 25 points | by [christkarani](https://news.ycombinator.com/user?id=christkarani) | [4 comments](https://news.ycombinator.com/item?id=48805437)
-
-**Agents and multi-agent workflows compile into a DAG with durable checkpoints**, so runs can resume after crashes while enforcing Swift 6.2 StrictConcurrency across the package. Tools are type-safe via an @Tool macro that generates JSON schemas at compile time, and the framework is “Swift all the way down” (actors, AsyncThrowingStream, result builders, macros).
-
-- Workflows: sequential steps, parallel fan‑out with structured merge, dynamic routing, and repeat‑until patterns.
-- Streaming: token output plus structured events (tool completions, handoffs, lifecycle started/completed/failed).
-- Memory and guardrails: vector memory (pluggable embedder, similarity threshold) and input/output guardrails.
-- Providers: uniform abstraction over Foundation Models, Anthropic, OpenAI, Ollama, Gemini, MiniMax, OpenRouter, and MLX; set per agent or via a global default.
-- Resilience and ops: session persistence, durable checkpoint/resume, resilience helpers, and observability.
-- Workspace ergonomics: declarative AGENTS.md and SKILL.md specs for reusable skills and loading.
-- Maturity signals: an in‑repo, deterministic “capability matrix” you can run (CI‑safe) and opt‑in live‑provider smoke tests via env vars.
-- Optional demos are kept out of the default library graph and can be enabled with SWARM_INCLUDE_DEMO=1.
-- Installation: SwiftPM package dependency ("from: 0.6.0").
-
-### You Don't Own Your .io or .ai. You Rent a Country's Politics
-
-#### [Submission URL](https://webhosting.today/2026/07/02/you-dont-own-your-io-or-ai-you-rent-a-countrys-politics/) | 43 points | by [speckx](https://news.ycombinator.com/user?id=speckx) | [15 comments](https://news.ycombinator.com/item?id=48805715)
-
-**RFC 1591 makes country-code TLDs a trust, not property — “concerns about ‘rights’ and ‘ownership’ of domains are inappropriate” — so continuity for .io/.ai is political, not contractual.** That design includes an off‑ramp: when a territory’s two‑letter code leaves ISO 3166‑1, IANA retires the ccTLD after five years by default, extendable to a hard maximum of ten. This has already happened (e.g., .yu, .tp, .zr, .an), each time because the underlying geopolitics changed.
-
-- **.io is unresolved, not “safe.”** A 2025 UK‑Mauritius treaty raised whether “IO” would leave ISO 3166‑1; the deal was shelved in early 2026 after the US withdrew consent, so ICANN says nothing changes unless “IO” exits the standard — at which point the retirement clock starts. Meanwhile, github.io, kubernetes.io, registry.k8s.io, docker.io, and crates.io are hardcoded across millions of systems, and Kubernetes opened a tracking issue on losing .io.
-- **.ai now underwrites a government.** Anguilla’s .ai revenue climbed from about $2.9M (2018) to roughly $32M (2023, ~20% of government revenue) to an estimated $85M (2025, ~half). .ai passed 1,000,000 registrations on Jan 2, 2026, and 28% of 2025 YC/Techstars startups use it — meaning major AI brands now hinge on the stability and goodwill of a territory of ~15,000 people.
-- **States do flip ccTLD switches.** Examples include Gabon reclaiming .ga and deleting ~7M domains (2023), the EU suspending 80k+ UK‑held .eu domains after Brexit (2021), Afghanistan’s Taliban‑run ministry shutting down .af (killing queer.af, 2024), and Libya seizing vb.ly (2010).
-
-If your brand or infra sits on a ccTLD, you’re a tenant of a tenant with an automatic retirement mechanism upstream; treat .io/.ai like revocable leases and avoid anchoring critical endpoints or trust chains to them without an exit plan.
-
-The discussion centers entirely on the severe operational hurdles and supply-chain vulnerabilities inherent to ccTLDs, with commenters sharing specific war stories of abandoning domain hacks. CoreOS famously gave up `libcore.so` over long-term security concerns, and diagrams.net migrated away from `draw.io` partly because a researcher hijacked four of the `.io` registry's seven authoritative name servers in 2017. 
-
-Others detailed the localized compliance friction that country codes impose, unlike generic ICANN domains. Participants noted that `.ly` enforces Islamic morality (which drove early changes for bit.ly), `.pr` has historically demanded a local legal presence and rigid, non-RFC DNS zone parameters, and `.cn` required operators to hand over SSL private keys. 
-
-While one camp argued that British Overseas Territories (`.ai`, `.sh`) offer vastly superior stability to registries like `.ly` or `.ga`, others cautioned against viewing generic TLDs as a perfect refuge. Because registries like VeriSign are US-based, `.com` and `.net` domains remain subject to political seizure by stateside agencies like ICE. The running consensus is that outside of a `.onion` address, all domain names are effectively rented, leaving infrastructure teams to choose which country's geopolitical and regulatory quirks they are willing to underwrite.
