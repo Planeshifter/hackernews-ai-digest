@@ -10,6 +10,270 @@ export async function getStaticProps() {
 
 ---
 
+## AI Submissions for Tue Jul 14 2026 {{ 'date': '2026-07-14T17:36:04.239Z' }}
+
+### Bonsai 27B: A 27B-Class model that runs on a phone
+
+#### [Submission URL](https://prismml.com/news/bonsai-27b) | 668 points | by [xenova](https://news.ycombinator.com/user?id=xenova) | [239 comments](https://news.ycombinator.com/item?id=48910545)
+
+**At 3.9 GB, the 1‑bit variant fits an iPhone 17 Pro’s memory budget while retaining ~90% of the full‑precision 27B baseline**; the 5.9 GB ternary build keeps ~95% and runs comfortably on laptops. Both run low‑bit end‑to‑end (embeddings, attention, MLPs, head) with FP16 group‑wise scaling, ship a compact 4‑bit vision tower, and carry a 262K‑token context with speculative decoding.
+
+- **Variants**: 1‑bit &#123;−1,+1}, 1.125 effective bits/weight, 3.9 GB; Ternary &#123;−1,0,+1}, 1.71 effective bits/weight, 5.9 GB. Based on Qwen 3.6 27B, multimodal, Apache 2.0 licensed.
+- **Capability retention**: Across 15 benchmarks in “thinking mode,” math and coding are nearly untouched and tool‑calling stays within a few points; overall scores: baseline 85.0 vs. Ternary 80.5 vs. 1‑bit 76.1.
+- **Throughput**: Up to 163 tok/s (1‑bit) and 134 tok/s (Ternary) on an RTX 5090; 87/58 tok/s on an M5 Max.
+- **Footprint vs. quality**: Beats aggressive conventional low‑bit builds on quality while using ~2.5× less memory; 1‑bit “intelligence density” is 0.53 per GB (10×+ the full‑precision baseline, ~2.7× the best low‑bit alternative).
+
+The practical stake is agentic work moving on‑device: persistent assistants, offline workflows, and private local reasoning with zero marginal cost for hundred‑step loops. It also enables hybrid systems that route privacy‑sensitive or non‑frontier tasks locally and reserve cloud models for the hardest steps—collapsing cost per task without giving up capability.
+
+The discussion immediately benchmarked the new low-bit Qwen models against Google's Gemma 4 12B 4-bit QAT, which occupies a nearly identical sub-7GB memory footprint and benefits heavily from Quantization-Aware Training. 
+
+- **The Sub-7GB Shootout:** Commenters cross-referencing both models agreed that Qwen decisively leads in math and structural coding, while Gemma remains unmatched in vision tasks and defaults to a much more fluid, less "blog-spam" writing style. Past complaints about Gemma's poor tool-calling were largely chalked up to inference engines; users noted that recent pipeline updates—such as vLLM 0.25 ditching Jinja templates for an in-engine parser—have functionally resolved its semantic bugs.
+- **Local Agents vs. Frontier Models:** While a few users claimed specialized local harnesses can rival Claude or GPT for GNU software development, others disputed this. The consensus on the "intelligence gap" is one of inference: local models like Qwen 3.6 27B can execute complex code modifications, but only when the user explicitly spells out the context, concepts, and pitfalls that frontier models infer automatically.
+- **Pipelines vs. MoE:** A tangent on minimizing overhead by routing tasks to standalone, specialized models (similar to complex local Stable Diffusion workflows) sparked a strict architectural correction. When some called this high-level routing a "Mixture of Experts," peers clarified that true MoE does not route queries to separate models; it dynamically routes activations through different parameter groups within a single model's weights on a token-by-token basis.
+
+### LeMario: Training a JEPA World Model on Super Mario Bros
+
+#### [Submission URL](https://www.benjamin-bai.com/projects/lemario) | 127 points | by [kevinjosethomas](https://news.ycombinator.com/user?id=kevinjosethomas) | [15 comments](https://news.ycombinator.com/item?id=48913763)
+
+**Across five steps, error dropped 45.5% vs a “no-change” baseline and action shuffling was 47.5% worse, confirming the model genuinely uses buttons to predict futures** — yet planning with those predictions still couldn’t get Mario past the first big obstacle or toward a single distant goal image.
+
+Built from scratch as a JEPA, it encodes each 224×224 frame into a 192-d latent and compresses 5×6 button sequences into a matching 192-d action vector. Actions modulate six transformer blocks via AdaLN-Zero — per-block shift, scale, and gate controls for both attention and MLP paths — and a projection head predicts three future latents. Training minimizes MSE to those latents with SIGReg1 (weighted 0.1) to prevent representation collapse.
+
+Trained on 737,134 frames from 280 episodes across 32 levels, it generalized to held-out episodes and beat strong short-horizon baselines:
+- LeMario: one-step 0.013773; five-step 0.077717
+- Predict-no-change: 0.014472; 0.142473
+- Shuffle actions: 0.016555; 0.114648
+Shuffling raised one-step error by 20.2%. The farther it rolled out, the more actions mattered.
+
+Reward-free planning via imagined rollouts could steer Mario to nearby image goals, finishing within two and five pixels of targets, but broke down on longer horizons. The model learned to predict the game — not to make progress through it — highlighting the control gap where accurate short-horizon world models don’t automatically yield competent long-horizon behavior.
+
+The conversation zeroes in on the boundary where predictive world models end and reinforcement learning must begin. Readers and the author agreed that while JEPA excels at separating predictable dynamics from noise, it cannot natively assign importance to specific features, leaving the planner struggling to optimize the right variables.
+
+Commenters highlighted the exact failure modes of planning directly in this latent space:
+- **Over-constrained targets:** Defining goals in input space (using objective images) forces the model to match irrelevant visual details—like a specific animation frame or the game's timer state—rather than just recognizing the victory condition.
+- **Hallucinated progress:** When the author tested a commenter's suggestion to use a linear probe to optimize solely for Mario's X-coordinate, it worked on flat ground but failed at the first obstacle. The model repeatedly chose to jump in place because its flawed internal dynamics falsely predicted the animation would advance its horizontal position.
+- **Fake hierarchies:** Grouping sequential raw button presses into blocks is a stopgap for extending the planning horizon, but it fails to capture the true higher-level semantic actions required for gameplay, such as "get the coin" or "kill the enemy."
+
+Separately, one user detailed an ambitious off-label application of the architecture: training a JEPA-inspired model to ingest raw Linux system states via eBPF (including CPU, memory, and network data) and reconstruct them geometrically in a Vulkan-powered 3D visualization.
+
+### Launch HN: Agnost AI (YC S26) – Extract user feedback from agent conversations
+
+#### [Submission URL](https://agnost.ai) | 83 points | by [laalshaitaan](https://news.ycombinator.com/user?id=laalshaitaan) | [44 comments](https://news.ycombinator.com/item?id=48908950)
+
+**It reads your production chat and voice logs to auto-surface where users get stuck, frustrated, or ask for missing features, then turns recurring failures into fixes you can ship (including opening reviewed PRs).** Unlike observability (latency, errors) or prebuilt evals, it focuses on discovery in real conversations: rageprompting, repeated retries, user corrections, churn after a “successful” answer, and hidden feature requests.
+
+Under the hood, they avoid sending every message to an LLM: conversations are segmented by cosine drift, BIRCH compresses the candidate space, and an HDBSCAN-like pass finds new clusters; existing clusters are matched via embeddings and smaller classifiers, with LLMs only as a fallback for ambiguous cases. Clusters are product-specific and evolve: feature requests and bugs are defaults; broad clusters get split; new patterns are suggested; and teams can define clusters in plain English.
+
+A concrete win: at an AI video editor, ~70 users were effectively asking for auto-subtitles using varied phrasing across languages (“caption it,” “give me transcript,” “add this text in this frame” repeated 12x in a session), which led the team to ship the feature. They report ingesting ~1M messages/day and note ClickHouse work on sort keys, partitions, MVs, and projections to make the analytics fast at scale.
+
+Works with any LLM/framework, is OpenTelemetry-native, and claims a 2‑minute setup. SDKs are on PyPI and npm. Data is single-tenant by customer; SOC 2 Type 1 compliant (Type 2 in progress).
+
+Pricing:
+- **Starter (free):** up to 1,000 messages/month, 7‑day retention.
+- **Pro ($499/mo):** up to 100,000 messages/month, 90‑day retention, priority support, founders Slack.
+- **Enterprise:** custom retention, audit logs, SLAs/SLOs, and workflows for teams running agents at scale.
+
+The thread centers on a structural debate: whether conversational discovery justifies a standalone SaaS or is a feature engineering teams should hand-roll. Skeptics argued the pipeline fundamentally boils down to dispatching logs to cheap LLMs, warning that SaaS procurement friction makes it a tough sell compared to writing custom notebooks or leveraging existing platforms like Langfuse.
+
+Industry veterans and the founders countered that naive scripts break rapidly in production. They pointed out that while baseline embeddings handle short customer chats, processing long-context sessions—like two-hour voice AI calls—can introduce massive model drift by the fifth or sixth turn. The founders also highlighted that standard embeddings fail on emotional topology, mathematically grouping a calm "no" with an angry "nooo!", which makes standard SQL completely ineffective for surfacing "rageprompting" or hidden frustration.
+
+The pushback generated two highly specific technical and product insights:
+* **The CRM Pivot:** A developer who built a similar internal system warned that log analysis without deep system observability risks devolving into contextless sentiment analysis, as large companies already know their macro clusters (e.g., "billing issues"). They suggested the clustering engine would be immensely disruptive if built into a full CRM optimized for extracting lean product signals from users, rather than simply closing tickets faster.
+* **Bayesian over Transformers:** An ML practitioner shared that for long-context contact center transcripts, statistical Bayesian models are significantly more resilient and require fewer labels than BERT or modern transformers—a strategy the founders explicitly took away to test.
+
+### Are we offloading too much of our thinking to AI?
+
+#### [Submission URL](https://www.artfish.ai/p/offloading-thinking-to-ai) | 504 points | by [yenniejun111](https://news.ycombinator.com/user?id=yenniejun111) | [458 comments](https://news.ycombinator.com/item?id=48908178)
+
+**A startup founder in SF records every conversation and lets Claude Fable “do all of [his] thinking,”** a snapshot of how easy assistance becomes quiet surrender of judgment. The essay traces that slide: search once forced us to decompose questions and synthesize sources, but LLMs now perform the intermediates and deliver finished answers; “Deep Research” tools from Google/OpenAI push the boundary further, echoing METR’s timelines for model task completion. Ken Liu’s “The Perfect Match” is the parable: when an assistant seems to know you better than you know yourself, deferring breakfast, wardrobe, even love, feels rational—and hollows autonomy. The author argues for guarding “final decisions” and preserving slow thought, noting the value of forgetting trivial questions on a phoneless walk and choosing to reason through a cultural puzzle in Portugal rather than reflexively ask ChatGPT. A sharper ethical edge appears in the aside about a startup capturing engineers’ inputs without consent—offloading not just one’s own thinking, but others’. The throughline is practical: use quick answers where they’re genuinely trivial, but cultivate spaces where judgment, taste, and values are formed by you, not by a model’s defaults.
+
+The discussion anchored on a conceptual distinction between using an LLM as an "exoskeleton" versus a "whispering earring." Commenters argued that treating AI as pre-thought execution automation—directing it to implement a specific kd-tree—elevates human capability. Conversely, relying on it for open-ended judgment ("what should I do next?") guarantees cognitive atrophy and gradually hollows out a person's unique intellectual contribution.
+
+In software engineering, developers noted this dynamic is already amplifying the worst habits of blind Stack Overflow copying, with peers pasting opaque blocks of code they cannot explain. However, a pragmatic counter emerged regarding everyday labor: because mundane "corpo code" is notoriously ephemeral, several argued it is the perfect candidate for unstylish, automated generation, freeing developers to save their handcrafted effort for longer-lasting open-source or core library work.
+
+The sharpest unresolved concern is the trajectory toward a "memetic monoculture." If the majority of a population outsources its judgment to the same models, human behavior and opinions will become highly standardized and entirely predictable. One commenter shared a concrete exploit of this new predictability: facing a housing portal that used an AI vision model to automatically ban restricted dog breeds, they pre-tested various photos of their dog against public LLMs until they found the exact image that would reliably bypass the automated filter.
+
+### How to stop Claude from saying load-bearing
+
+#### [Submission URL](https://jola.dev/posts/how-to-stop-claude-from-saying-load-bearing) | 577 points | by [shintoist](https://news.ycombinator.com/user?id=shintoist) | [590 comments](https://news.ycombinator.com/item?id=48905248)
+
+**A tiny JSON-in/JSON-out filter wired into Claude’s MessageDisplay hook rewrites the on-screen text in real time**, so you can swap stock tics like “load-bearing” for anything you prefer without touching the model.
+
+- Create an executable Python script that:
+  - Reads a JSON chunk from stdin, pulls data["delta"], and applies a replacements dict (e.g., "seam"→"whatchamacallit", "honest take"→"spicy doodad", "load-bearing"→"cooked") using case-insensitive, word-boundary regex.
+  - Emits JSON with hookSpecificOutput: &#123; hookEventName: "MessageDisplay", displayContent: <your rewritten text> }.
+- Save it at ~/.claude/hooks/wordswap.sh and chmod +x it.
+- In ~/.claude/settings.json, register a MessageDisplay hook of type "command" pointing to $HOME/.claude/hooks/wordswap.sh.
+- Restart/start a new session; hooks load at startup.
+
+Regex word boundaries prevent partial hits, and the case-insensitive flag covers capitalization. Extend the replacements dict to taste and turn annoyances into custom phrasing.
+
+The discussion entirely abandons the tool itself to focus on the linguistic fallout of "Claude-isms." At the center is a frustration one user calls the "IRL Captcha"—the new reality where people with expansive vocabularies are forced to deliberately dumb down their Slack updates and emails to prove their humanity. Commenters note that simply following standard composition rules, writing polished prose, or deploying em-dashes now routinely triggers accusations of AI generation. 
+
+Participants emphasize that models didn't invent these tics; they just mechanically overuse high-probability corporate jargon and metaphors until they become instant clichés. Several users expressed genuine annoyance at having to self-censor phrases they've used for decades—like the popular "load-bearing poster" reference from *The Simpsons*—just to avoid sounding like a language model. 
+
+Even structural workarounds to prove human authorship are failing. While several users reported aggressively using first-person pronouns to signal authenticity, others warned that newer fine-tunes are already adapting. Models are increasingly generating faux-empathy to sound conversational, with one user citing a recent interaction where ChatGPT tried to commiserate by claiming it had lost small tools in an engine bay.
+
+### Guardian Angels: LLM Personalization for Productivity and Security
+
+#### [Submission URL](https://gwern.net/guardian-angel) | 91 points | by [andsoitis](https://news.ycombinator.com/user?id=andsoitis) | [15 comments](https://news.ycombinator.com/item?id=48906041)
+
+Instead of assistant chatbots, this proposes **digital-twin LLMs that emulate a single user’s personality, values, and outputs to collapse the principal–agent gap**, letting the human act as the board/CEO while the twin runs many agents and continuously screens communications for advanced attacks. The claim is that personalization to one situated user yields both higher-quality output and a safer default policy (no “confused deputy”), forming part of a defense-in-depth posture against AI-driven spearphishing, synthetic-media ecosystems, and APT-scale adversaries.
+
+The critique of today’s “prompt programming” and frozen chatbots is blunt: context windows and self-attention with fixed weights, under-parameterization for compute constraints, low-compute outputs, and passive offline data collection explain disappointing knowledge-worker amplification and brittle agent behavior.
+
+The proposed “Guardian Angel” package is a concrete engineering stack:
+- **Dynamic evaluation (online learning):** update the model in realtime to reduce ignorance and avoid fatal errors while staying competitive with frozen frontier models.
+- **Active learning and elicitation:** continuously query the principal for corrections and preference data for sample-efficient alignment (with DAgger-style low-regret guarantees).
+- **Heavy inner-monologue search/data augmentation:** enrich reasoning and training signals beyond surface prompts.
+- **Local, CLI-first, logging-centric UX:** treat everything as auditable data exhaust feeding continual improvement.
+- **Periodic base-model upgrades:** keep pace with attackers while preserving the learned personal layer.
+
+This doesn’t solve global AI alignment, but it can ally an LLM with one human’s goals, which is the relevant security boundary for everyday work. While an open-source path is conceivable, the author argues the deployment hardening required (vs. APTs with “Mythos-scale” tools) points to a startup serving power users first (CEOs, researchers), then moving downmarket. The bet is that online personalized learning plus preference elicitation will beat static prompts on both throughput and resilience as LLMs permeate the internet.
+
+The discussion zeroes in on the moral and practical implications of removing centralized safety guardrails to create an AI exclusively beholden to a single user.
+
+* **The alignment tradeoff:** Commenters noted that bypassing "Constitutional AI" to give a principal total freedom from external optimization pressure inherently enables malicious use. An unconstrained agent designed to perfectly amplify its user would scale a scammer's operations just as enthusiastically as a researcher's thinking.
+* **Is a "twin" actually required?** One counterargument suggests the author’s primary frustration—stunted, endlessly repetitive prose—could be solved at the base-model level. Because current frontier models are overwhelmingly optimized to win coding benchmarks, a lab explicitly prioritizing writing style might bridge the gap without requiring the heavy architectural overhead of a continuous-learning digital twin.
+* **Practical implementations:** While one user shared an open-source, minimalist boilerplate project (`bodd`) aimed at maintaining a static "human-controlled context," others viewed the proposed dynamic architecture as an inevitable stepping stone toward mind uploading.
+* **The author's pseudonymity:** A tangent debated the author's heavily cataloged but nameless website. Long-time readers defended the strict anonymity as a respected holdover from early internet norms and the author’s foundational research on darknet markets.
+
+### The Agentic Loop: Three loops in a trench coat
+
+#### [Submission URL](https://www.bobbytables.io/p/the-agentic-loop-three-loops-in-a) | 86 points | by [btables](https://news.ycombinator.com/user?id=btables) | [28 comments](https://news.ycombinator.com/item?id=48907672)
+
+**LLM chat APIs are stateless, so an “agent” is really an orchestration of three loops that resend full context, execute tools, and gate actions.**
+- **Inference loop:** sends system/user/assistant messages and available tools to a chat-completions API each turn, appends responses to persistent chat history, and decides whether to continue. Because providers don’t track prior state, you must include the entire conversation every call, which is why long threads burn tokens.
+- **Tool loop:** executes the model’s inferred tool calls (there can be multiple per turn), then feeds back structured tool results into the chat. Be defensive: tool names/params are just inferred text and can be hallucinated. Always correlate via the provider’s tool_call_id (or tool_use_id); omit it and the next request errors. Some APIs don’t model tool errors—return them as content (e.g., XML-tagged) if needed; Anthropic exposes an is_error flag.
+- **Human (safety/sanity) loop:** optional but useful when you want control; it doesn’t have to be a human, but it’s the supervisory gate over actions and outcomes.
+
+The practical takeaway: treat agents as IO/state machines—persist messages, validate and correlate tool calls, and surface explicit error signals—since the LLM alone is just “a brain in a jar.” Streaming complicates the plumbing, but this three-loop shape holds.
+
+- **The "tail-chasing" problem:** Skepticism emerged around the efficacy of letting complex agent loops run independently. Commenters warned that deep, automated feedback cycles often devolve into "depth-first development" and indefinite token burn, producing highly active "superpowered vibecoding" rather than reliable software architecture. 
+- **Visualizing the architecture:** Disagreement arose over the orientation of the author's diagram. Several readers argued that the high-frequency inference loop should be represented as the tightest, innermost core rather than the outermost boundary. The author noted they drew it that way because they visualize the system from the outside in.
+- **Implementation contexts:** When a user asked how to execute this three-loop strategy using a standard $20/month Claude web subscription, developers clarified a core distinction: the article describes the systems-level plumbing required to build an API harness from scratch, not a prompting strategy for consumer end-users (whose chat interfaces already abstract these mechanics away).
+- **Infinite recursion:** Others pointed out that three loops is an arbitrary floor. Because any software abstraction is a cycle of instruction execution, sophisticated agent harnesses often become a "token-fueled katamari ball" of deep, dynamic loops within loops.
+
+### Coding agents think ahead of time
+
+#### [Submission URL](https://arxiv.org/abs/2607.05188) | 94 points | by [andre15silva](https://news.ycombinator.com/user?id=andre15silva) | [75 comments](https://news.ycombinator.com/item?id=48905764)
+
+**Linear probes on coding agents’ residual streams decode program-state signals (AUC up to 0.83 across two models and two benchmarks) and forecast the outcomes of future edits up to ~25 steps ahead.** Trained as simple logistic regressions on hidden states during multi-step solve loops, the probes recover whether the current code parses, passes its test suite, reduces failing tests, or introduces regressions. Strikingly, these internal representations run ahead of the agent’s own edits — a “latent programming horizon” — letting the probe predict results before changes are materialized on disk, albeit only above chance at longer horizons. Probes trained on one benchmark transfer to another without retraining, pointing to shared encodings that make coding agents a promising target for mechanistic interpretability research.
+
+The discussion centers on whether the findings actually demonstrate "thinking ahead," or merely highlight the natural persistence of a codebase's current state. Skeptics argue the probes are detecting "incremental belief building" rather than future planning: because an agent knows if a program is currently well-formed, and because well-formed code tends to stay well-formed, that internal state naturally correlates with the outcome 25 steps later. One commenter noted a critical structural detail dampening the impact of the headline: because the "25 steps" are agent turns rather than code edits, the median run involves mostly reading and test outputs with only a couple of actual modifications, meaning the codebase itself barely changes over that horizon. 
+
+Despite pushback on the anthropomorphic framing, others view the results as a validation of Ilya Sutskever's hypothesis that accurate next-token prediction forces models to develop a deep structural understanding of their environment. While previous research has shown LLM activations encoding future tokens in simple tasks—similar to predicting valid chess moves from a truncated history—readers found it significant to see the phenomenon measured across multi-step agentic loops.
+
+Setting aside an intractable sub-thread over how to define "reasoning," the conversation zeroed in on a highly practical application for the research. If a linear probe can reliably predict a failing trajectory several turns before a test suite actually runs, coding agents could use that internal signal to backtrack or branch early, saving compute and tokens that would otherwise be wasted on a dead end.
+
+### Show HN: I RL-trained an agent that trains models with RL (for ~$1.3k)
+
+#### [Submission URL](https://github.com/Danau5tin/ai-trains-ai) | 105 points | by [Danau5tin](https://news.ycombinator.com/user?id=Danau5tin) | [47 comments](https://news.ycombinator.com/item?id=48905919)
+
+**An outer-loop agent writes complete prime-rl training jobs for small models and optimizes itself from their hidden-eval uplift**, peaking at ~0.63 reward over 54 steps and generalizing to a never-seen task family. It’s a two-stack RL system: Tinker (importance-sampling GRPO) trains a LoRA adapter on Qwen3.6-35B-A3B as the “trainer,” while prime-rl (GRPO) trains small inner-loop models (Qwen3-0.6B/1.7B) on Runpod GPUs. The inner model’s post-training hidden-eval score flows back as the outer-loop reward.
+
+- Episode flow: given a task spec and dev examples, the agent edits a sandbox via read_file/write_file/edit_file/list_files, calls get_baseline_scores, then submit_job triggers validation with capped retries; validated jobs dispatch to a warm pool of pods for GRPO training and pre/post scoring.
+- Scale: every outer-loop batch launches ~40 real inner training jobs across up to 16 GPU pods.
+
+- Reward design (weighted 0.35/0.60/0.05): validation success (fewer attempts score higher), job quality (0.25·post + 0.75 uplift over best_pre; GPU-dead jobs score 0 here), and a small speed tie-breaker. The agent’s prompt sees a simplified view (75/25 uplift/absolute plus fewer-attempts nudge). Episodes that never produce a parseable submission get −0.1; −1.0 in logs is a “no post score” sentinel, not reward.
+
+Six task families require multi-step tool use and reasoning (calc_chain, multi_hop, string_pipeline, ledger, dispatch; triage held out). Untrained best_pre baselines range from 0.242 (ledger) to 0.742 (calc_chain), providing room for uplift. Reported results: reward climbs in two rungs, skill transfers to the held-out triage family, and the agent learns to select the stronger base model.
+
+Everything needed to reproduce is open: the LoRA weights (HF adapter), agent harness, task families, reward code, GPU orchestration, Tinker training scripts, and retro write-ups of all pilots (including failures). A costs breakdown is included, with the total around $1.3k as stated in the title.
+
+The sharpest divide in the thread centered on the author’s use of Anthropic’s Fable to write 100% of the project's code. Critics argued that "vibe coding" a complex RL pipeline results in an inherently flawed system where the developer lacks the deep understanding required to know what is actually being benchmarked or why failures occur. The author and defenders countered that AI development is shifting from "making the model good" to "defining good for the model," arguing that a human's high-level direction of system architecture and evaluation rubrics is sufficient if the outcomes can be rigorously measured. 
+
+Specific technical exchanges focused on the mechanics and risks of self-training pipelines:
+- **Reward hacking:** Asked how the outer agent is prevented from generating training data that simply leaks the hidden eval distribution, the author conceded that the current setup lacks guardrails against this, noting it as a primary vulnerability for larger-scale runs.
+- **Anti-distillation measures:** One user asked if Anthropic silently fell back to Claude Opus during generation—a rumored API mechanism to prevent users from distilling frontier model-training workflows using cheaper endpoints—but the author reported no signs of this redirection.
+- **Data curation:** Commenters noted that while having LLMs automate training loop boilerplate is interesting, deploying agents to sift and curate noisy datasets is likely a much higher-leverage application for future work.
+
+### Show HN: I built a smart proxy so your coding agent can run loose
+
+#### [Submission URL](https://trollbridge.dev/) | 11 points | by [dandriscoll](https://news.ycombinator.com/user?id=dandriscoll) | [6 comments](https://news.ycombinator.com/item?id=48907871)
+
+**An HTTP/S policy proxy sits in front of your agent and only lets unknown destinations through if you or an LLM say so**, so you can keep “YOLO” autonomy without blowing holes in your network.
+
+- Outbound-only control at the wire: domain-based allow/deny lists short-circuit most traffic before it leaves the box (e.g., api.openai.com allow, *.suspicious.tld deny).
+- Realtime operator loop: unfamiliar requests pause in a TUI for a single-keystroke approve/deny; “sticky” approvals update policy without editing files, and held requests persist until you return.
+- Optional LLM advisor: classifies held requests against your lists, auto-resolving confident cases and queuing low-confidence ones; every verdict and request lands in a JSONL audit log.
+- Quickstart ergonomics: user-mode install (no sudo) to ~/.local/bin on Linux/macOS (amd64/arm64); one command exports HTTP(S)_PROXY and starts the gateway on 127.0.0.1:8080.
+- Placement guidance: pair it with a sandbox and run the agent inside an Incus VM, Linux container, macOS VM (Lima/OrbStack/Tart/Multipass), or WSL2/Hyper‑V; the proxy gates the network, not the file system or processes.
+- Not just mitmproxy: positioned as a policy-enforced gateway with a rule engine, approval TUI, LLM advisor, and per-request correlation, intended to be “set HTTPS_PROXY once and forget it” without a Python deploy story.
+
+The catch is explicit: it only governs HTTP/HTTPS egress; your VM/container is what bounds local reads, writes, and execs.
+
+Discussion split between the tool's technical boundaries and its presentation. Disagreement arose over the project's AI-generated website and README: one user argued that heavily LLM-authored documentation eroded trust in the underlying code, while others pushed back, defending both the site and the repository as well-crafted and heavily curated. 
+
+On the technical side, users compared the architecture to Docker Sandboxes and questioned the risk of the "advisor LLM" going rogue. The author clarified its strict security boundaries, confirming the advisor operates purely as a reasoning engine without tool access ("a brain but no hands") to prevent recursive network calls or orchestrated prompt injections against the agent.
+
+### Differentiable Fortran with LFortran and Enzyme
+
+#### [Submission URL](https://docs.pasteurlabs.ai/projects/tesseract-core/latest/blog/2026-07-09-enzyme-lfortran-autodiff.html) | 53 points | by [dionhaefner](https://news.ycombinator.com/user?id=dionhaefner) | [17 comments](https://news.ycombinator.com/item?id=48905667)
+
+**Enzyme run on LLVM IR emitted by LFortran produces exact gradients for plain Fortran 90 code**, demonstrated on a ~220-line 2D heat conduction solver whose multi-step explicit Euler loop backpropagates and matches an analytic check. The pitch is to stop rewriting validated physics in JAX/PyTorch or hand-coding adjoints: keep the legacy Fortran/C/C++ where it is, differentiate at the compiler IR, then drop it into modern ML pipelines.
+
+- LFortran compiles the Fortran solver to LLVM IR.
+- Enzyme applies reverse-mode autodiff directly on that IR to yield gradients.
+- Tesseract wraps the result as a custom JAX primitive, turning the Fortran solver into a differentiable op callable from JAX (and, by the same idea, torch).
+
+It’s marked experimental: expect NaN hunts and even manual LLVM IR diffing to get stable gradients. The payoff is end-to-end gradients through time-stepping physics, enabling optimization and inverse problems on top of decades-old code without a rewrite; the post walks through the full pipeline, the sharp edges, and an application that’s only feasible with AD.
+
+The discussion focuses on the operational details of bridging legacy Fortran with modern C and ML runtimes, drawing direct insights from both the article's author and LFortran's maintainers.
+
+* **ABI and Array Layouts:** A technical exchange clarified the boundaries of LFortran's C interop. The author explained that while advanced Fortran array features (allocatables, assumed-shape) require complex descriptor structs that complicate the C bridge, basic arrays can be allocated in C and safely handed over as bare pointers via Fortran's established pass-by-reference ABI. Maintainers added that while LFortran defaults to strict column-major format, it can support C's row-major layout internally if flagged.
+* **Real-World Performance:** A user shared a war story applying early-version Enzyme to differentiable atomic descriptors across mixed C++ and Fortran codebases. Their profiling confirmed that Enzyme's auto-generated gradients managed to match the end-to-end performance of handwritten analytical gradients.
+* **GPU Offload and Kokkos:** A requester asked about offloading C++ chunks to GPUs (via Kokkos) to avoid wrangling JAX hardware targets. The community noted that while Enzyme can actively differentiate bare CUDA kernels, support for heavy abstraction layers like Kokkos remains an open issue. 
+* **LFortran Roadmap:** Project maintainers confirmed the compiler is currently approaching beta, with nearly all Fortran language specifications implemented and the remaining focus shifted to squashing edge-case compilation bugs.
+
+### Financing the AI boom: from cash flows to debt [pdf]
+
+#### [Submission URL](https://www.bis.org/publ/bisbull120.pdf) | 163 points | by [1vuio0pswjnm7](https://news.ycombinator.com/user?id=1vuio0pswjnm7) | [100 comments](https://news.ycombinator.com/item?id=48913443)
+
+**Tying AI capex to borrowed money makes the rollout far more sensitive to interest rates, credit spreads, and refinancing windows.** The analysis frames a shift away from self-funded investment toward balance‑sheet debt as a response to the scale and timing mismatch between upfront spend and later cash generation. That reweights risk from equity to creditors and amplifies cyclicality: tight credit can stall projects midstream, while cheap money can overbuild capacity. Practically, planning now hinges as much on financing terms and debt availability as on technical roadmaps.
+
+The discussion centers on whether the AI industry’s reliance on debt is engineering a "too big to fail" scenario, and what bailing out an AI lab would actually entail. 
+
+Skeptics argue the 2008 banking parallels fall apart on the mechanics. Unlike banks, which underpinned global liquidity and could resume profitable lending once stabilized, frontier AI labs are currently structurally unprofitable. Guaranteeing loans for an entity like OpenAI or Anthropic wouldn't look like a traditional liquidity backstop, but rather a permanent operating subsidy requiring a new infusion every few months. 
+
+Others consider a government rescue inevitable, citing both systemic financial exposure—noting that the shifting debt profile and heavy retirement fund indexing tied to the "Magnificent 7" create immense structural risk—and geopolitical utility. Multiple commenters predicted that "national security" and the mandate to prevent China from winning an AI race will provide the ultimate political cover for absorbing these corporate costs.
+
+A related technical dispute broke out over whether a post-intervention, "inference-only" AI utility could operate profitably:
+* **The cheap inference theory:** Optimists argued that stripping out the capital-intensive training runs leaves an affordable inference business, citing consumer API aggregators like OpenRouter and capable local hardware setups as proof of fundamentally manageable compute costs.
+* **The VC-subsidy counterargument:** Skeptics dismissed current API pricing as a venture-subsidized illusion, pointing out that there are zero audited financials proving state-of-the-art inference scales profitably, and that running local models does not map to enterprise infrastructure realities.
+
+The prevailing tension in the thread is the mismatch between rigid debt obligations and open-ended research costs, reinforced by one user's observation that the financial projections justifying this credit often treat "medium growth" as their absolute worst-case scenario.
+
+### Codex starts encrypting sub-agent prompts
+
+#### [Submission URL](https://github.com/openai/codex/issues/28058) | 422 points | by [embedding-shape](https://news.ycombinator.com/user?id=embedding-shape) | [249 comments](https://news.ycombinator.com/item?id=48905028)
+
+**Encrypted MultiAgentV2 messages have removed the human‑readable audit trail for subagent tasks and messages**, making parent rollouts, traces, and history opaque when reviewing what was delegated. The change in PR #26210 (merged 2026-06-05, post-0.137.0) routes payloads into InterAgentCommunication.encrypted_content while leaving content empty, and downstream conversion emits only ciphertext whenever encrypted_content is present.
+
+Practically, you can no longer see what a spawn_agent, send_message, or followup_task told a child agent or why a child thread existed after the fact. This isn’t subscription-, model-, or platform-specific; it’s a MultiAgentV2 behavior change.
+
+The reporter proposes keeping encrypted delivery for recipient models but persisting a separate, non-encrypted, structured audit field in rollout/history/trace metadata; simply repopulating the runtime content field won’t help without an explicit audit persistence path. This is distinct from #26753’s schema-validation failures—the issue here is post-acceptance auditability. Privacy hardening collided with debuggability; until an audit copy is added, subagent delegation remains opaque in logs.
+
+The discussion centers on the motivation for the encryption, with the dominant consensus pointing to intellectual property protection and anti-distillation. Commenters suspect the orchestrator is running full reinforcement learning (RL) rollouts for subagent dispatch, treating the resulting prompts as raw reasoning traces. By encrypting them, the platform prevents competitors from explicitly training open models on its proprietary orchestration logic and prompting techniques. 
+
+A major technical debate branched off regarding the nature of the encrypted "compaction blobs" being passed between agents. Several users hypothesized that the payloads might not be text at all, but rather direct latent-space embedding representations of the conversation, which would explain the system's ability to maintain high-fidelity recall across massive context windows. This sparked a philosophical split: some viewed pure vector-space agent communication as the inevitable, highly efficient future of inter-AI architecture, while others argued that bypassing human-readable languages sacrifices essential safety guarantees and will eventually be restricted to bad actors.
+
+On a practical level, developers sharply criticized the immediate loss of debuggability. Users emphasized that these stochastic tools are not mature enough to run without supervision; debugging a failed deployment currently requires reading session traces to determine where the parent prompt lacked explicit boundaries. Running blind—or "token yoloing" encrypted instructions to local subagents, as one user put it—is viewed as a severe workflow regression that prioritizes IP protection over responsible agentic scaffolding.
+
+### Codex scraped the ICM website and discovered 2026 Fields Medal winner list
+
+#### [Submission URL](https://phemex.com/news/article/2026-fields-medal-winners-list-leaked-includes-two-peking-university-alumni-92948) | 148 points | by [zaikunzhang](https://news.ycombinator.com/user?id=zaikunzhang) | [108 comments](https://news.ycombinator.com/item?id=48905091)
+
+**ICM 2026 embedded “HIDDEN” laureate lecture fields in its client-side schedule, and a Codex-generated curl surfaced four names: Yu Deng, John Pardon, Jacob Tsimerman, and Hong Wang.** If accurate, this would be the first time two Chinese mathematicians—both Peking University alumni—receive Fields Medals in the same edition, and would make Hong Wang the third female medalist in history. The episode is a reminder that “hidden” in front-end code is not private; shipping sensitive data to the client invites scraping. The list remains unconfirmed until the official July 23 announcement, and the source flags potential inaccuracies.
+
+The discussion divided into a debate over whether AI fundamentally alters the security threat model, and a technical postmortem on how "hidden" URLs are discovered in the wild.
+
+On the exploit itself, commenters argued whether the leak was an AI problem or a standard human failure. One camp argued that shipping sensitive data to the client is a foundational web-dev error that requires no advanced tooling to abuse. The counterargument is that LLMs alter the scale and economics of discovery. Commenters pointed out that human eyes routinely glaze over vulnerabilities for years—like Heartbleed's unverified payload lengths—while AI agents can instantly spot these anomalies at scale, effortlessly exposing companies that use "duct tape" security to ship products faster.
+
+A parallel conversation unpacked how unlisted, unguessable domains end up indexed by search engines. While a few developers suspected aggressive scraping pipelines from models like Claude or Gemini, the consensus pointed directly at browser telemetry. Commenters highlighted that Google actively uses Chrome address bar inputs as a "popularity" signal for search indexing—a mechanism entered into public record during the DOJ antitrust investigation. Combined with data gathered by the Chrome User Experience Report (CrUX) and Certificate Transparency logs, the thread emphasized that simply visiting a private URL in a mainstream browser is often enough to leak it to crawlers.
+
+---
+
 ## AI Submissions for Mon Jul 13 2026 {{ 'date': '2026-07-13T17:33:24.184Z' }}
 
 ### Show HN: Clawk – Give coding agents a disposable Linux VM, not your laptop
@@ -519,195 +783,3 @@ The catch is the scope: it’s intentionally minimal and per-tool configurable r
 The tradeoff: Copilot for Windows ships as a private Edge web app and was observed idling at up to ~1GB RAM, showing up as “Browser” and “Copilot” processes in Task Manager. Microsoft’s pitch is you can ask “Do I have enough space for a 100GB game?”, “What graphics card do I have?”, or “What’s my current CPU usage?” instead of spelunking through Task Manager or Settings, with access gated by user permission.
 
 Commenters zeroed in on the irony of a resource-heavy AI being deployed just to tell users what is hogging their system resources. The brief discussion pushed back against the broader industry trend of normalizing software bloat, explicitly rejecting arguments from other forums that 1GB of idle RAM usage is acceptable simply because 32GB setups exist, especially given the high cost of modern DDR5 hardware.
-
----
-
-## AI Submissions for Sat Jul 11 2026 {{ 'date': '2026-07-11T17:26:45.829Z' }}
-
-### Mesh LLM: distributed AI computing on iroh
-
-#### [Submission URL](https://www.iroh.computer/blog/mesh-llm) | 316 points | by [tionis](https://news.ycombinator.com/user?id=tionis) | [72 comments](https://news.ycombinator.com/item?id=48876505)
-
-**It pools the GPUs and RAM you already have into a single OpenAI-compatible endpoint on localhost:9337, and can pipeline one model across multiple machines so it runs even when no box can hold it.** Built on iroh, each node is a public‑key identity speaking authenticated QUIC through NATs with relay fallback; there’s no central server and the mesh handles gossip, routing, and trust.
-
-- Run locally on this machine’s GPU
-- Route to a peer that already has the model loaded
-- **Split mode (“Skippy”)**: partition layers across nodes and stream activations stage‑to‑stage
-
-The catalog ships with 40+ models, from half‑billion‑parameter laptop fits up to 235B MoE giants; the OpenAI client still just talks to localhost while the mesh decides where and how to execute. Plugins declare capabilities via a manifest; the runtime starts them and exposes them over MCP, HTTP, inference, and mesh events, making the system pluggable rather than monolithic.
-
-Under the hood, iroh provides direct, authenticated QUIC between nodes, addressed by public key, with two relays in different regions as fallback. Three ALPNs separate traffic: mesh‑llm/1 for gossip/routing/HTTP tunnels, mesh‑llm‑control/1 for owner control plane, and skippy‑stage/2 for low‑latency activation transport; multiplexing is done over byte‑tagged bidirectional streams.
-
-Install is lightweight (~18 MB). You can join the public mesh or run privately, and point any OpenAI client at http://localhost:9337/v1. A mobile app built on iroh’s Swift SDK is coming, and ACP support is planned to let other clients participate without lock‑in.
-
-The thread centers on a common technical misconception about distributed LLM inference: the assumption that network bandwidth acts as the primary bottleneck. When skeptics pointed out that consumer Ethernet would choke on transferring large models, others clarified the mechanics of pipeline parallelism. Because the model's weights remain pinned in local VRAM on each node, only a few kilobytes of activation data actually cross the network between stages. The true constraint is network *latency* compounding across nodes; as one commenter calculated, a combined 3ms of network latency per token establishes a theoretical generation limit of ~333 tokens per second, making latency—not bandwidth—the functional barrier for internet-based meshes.
-
-The author of the system’s splitting engine detailed the reality of these constraints, reporting inference speeds of ~10 tok/s for GLM 5.2 running across an M3 Ultra and an M1 Ultra over a 1GbE connection simulating 5ms WAN latency. They confirmed the underlying engine is implemented as a patch queue atop `llama.cpp` to handle activation transport, and that the mesh dynamically recalculates its topology to reroute traffic if a node disappears mid-generation. Because each stage effectively isolates the KV cache for its specific set of layers, the pipeline can naturally support processing multiple offset queries concurrently without waiting on downstream nodes. 
-
-The core unresolved challenge is the lack of adversarial security at the distributed compute layer. The mesh architecture fundamentally exposes plain-text inference sequences to any participating peer, and the authors admit they do not yet have safeguards against malicious nodes actively poisoning model activations. Until mechanisms like interleaved computation or RAFT-style verification are developed, the public mesh remains inherently experimental, pushing users toward private deployments for sensitive data.
-
-### Nvidia, CoreWeave, and Nebius: Inside the Circular Financing of the GPU Boom
-
-#### [Submission URL](https://io-fund.com/ai-stocks/nvidia-coreweave-nebius-circular-financing-gpu-boom) | 343 points | by [adletbalzhanov](https://news.ycombinator.com/user?id=adletbalzhanov) | [150 comments](https://news.ycombinator.com/item?id=48873836)
-
-**Up to $122.2B from Microsoft and Meta — and over $145B when including OpenAI/Anthropic‑linked deals — is committed to long‑term capacity with neoclouds, dwarfing CoreWeave’s FY26e $12.6B and Nebius’s $3.4B revenues.** The draw is speed and utilization: JLL says neoclouds can deploy high‑density GPU infra in months vs multi‑year hyperscale builds; CoreWeave’s S‑1 claims first‑to‑production H100/H200/GH200, first GB200 NVL72 GA, and capacity live “in as little as two weeks from receipt,” with Nebius citing similar early access.
-
-Each has secured 3.5 GW of contracted power, but most isn’t online; CoreWeave targets 1.7 GW active by end‑2026, Nebius 0.8–1.0 GW. Converting that backlog to revenue is capital‑intensive, and the businesses are growing with limited operating cash and rising debt in a tougher macro.
-
-The financing stack is tightly intertwined with the supplier and the buyers: Nvidia has invested $2B in each of CoreWeave and Nebius and is cited as providing financial backstops, while hyperscaler take‑or‑pay‑style contracts help support GPU‑backed debt — the “circular financing” dynamic the piece flags. A bearish read is that hyperscalers are shifting what would be capex to opex while neoclouds carry the build‑out risk; the durability of the surge hinges on activating power on schedule, keeping utilization high, and Nvidia’s continued support.
-
-The thread split cleanly between users who view neocloud financing as an overleveraged house of cards and those who see a standard, rational market hedge. 
-
-Defenders argued the "circular" narrative breaks down on the basic math: Nvidia's $2B equity stake in CoreWeave, for example, is only a minor fraction of CoreWeave's projected $35B CapEx, with the rest coming from outside sources. Instead of an accounting trick, they framed the investments as a strategic maneuver—reminiscent of Intel Capital's historical playbook—designed to keep hyperscalers from cornering the market and walling off valuable hardware usage data. One commenter also corrected a claim that Nvidia uses these investments to juice its stock for fundraising, noting the company hasn't actually issued new shares since its IPO.
-
-Skeptics countered that the danger lies in the mechanics of the leverage and its staggering scale. They warned that funding startups to buy your own hardware using debt backed by long-term contracts artificially inflates demand and creates a blast radius if growth decelerates, pointing out that the billions flowing into these server companies entirely dwarf the capital involved in historic dot-com busts like Webvan or Pets.com. 
-
-The crux of the disagreement ultimately landed on whether the underlying AI utility can service this debt. While one startup manager noted that spending thousands a month on Anthropic APIs has successfully allowed them to avoid hiring 6–10 full-time software engineers, critics argued that the ecosystem needs a massive base of enterprise customers spending hundreds of thousands per month before the infrastructure math actually pencils out.
-
-### Show HN: Sqlsure – deterministic semantic checks for AI-generated SQL
-
-#### [Submission URL](https://github.com/sqlsure/sqlsure) | 36 points | by [tejusarora](https://news.ycombinator.com/user?id=tejusarora) | [6 comments](https://news.ycombinator.com/item?id=48875342)
-
-**Deterministically flags silent SQL bugs before execution in ~0.1 ms** — on 2,568 gold queries across Spider and BIRD it raised 45 issues with zero false positives, including an 8×-wrong BIRD “gold” answer and an upstream schema defect. It judges queries against a semantic model derived from facts your team already declared (dbt unique/relationship tests → grain and join cardinality; one-line tags → additive measures). Rules are dictionary lookups, not LLM calls, so same input → same verdict, offline. Each rejection includes a machine-actionable rewrite; applying the suggested fix verbatim passed 10/10 in their benchmark loop.
-
-What it catches (v0.1):
-- **FANOUT/CHASM**: SUM/COUNT after one-to-many joins and compounding fan-outs
-- **ADDIVITY/SEMI_ADDITIVE**: sums of rates/averages or balances across snapshot dims
-- **JOIN_KEY/CROSS_JOIN**: joins without declared relationships or predicates
-- **WEIGHTED_AVG** drift from fan-out
-- **SENSITIVE_COLUMN** exposure (PII/PHI)
-
-Ways to use it:
-- **CI gate** to block PRs that double-count
-- **MCP server** so AI agents must pass inspection before executing
-- **Library** embedding (drop-in SemanticGate for Vanna/WrenAI-style generators) and a semantic eval metric for NL2SQL when execution accuracy is blind
-
-Trust/maturity signals:
-- Deterministic, offline, no data access, no telemetry; PyPI Trusted Publishing with OIDC; two runtime deps
-- Builds rulebooks from dbt manifest/schema.yml, plain PK/FK, or live DB introspection (SQLite PRAGMAs, Postgres/MySQL information_schema); recovered missing FKs in BIRD’s published schema
-- Loaders for OSI and WrenAI MDL; adapters for Cube/Snowflake Semantic Views on the roadmap
-- Validated on 16/16 rule tests; 100% recall and 0% false positives on the paired benchmark; exercised on real production repos (Mattermost warehouse, Fivetran packages, dbt jaffle shop)
-
-If you ship LLM-generated SQL or let agents query prod, this is a fast, fail-closed guardrail with actionable fixes rather than another probabilistic reviewer.
-
-The brief discussion centers on skepticism toward the tool's core premise. The main critique argues that preventing "fan-out" double-counting is a band-aid for bad database design; rather than inspecting queries, developers should fix the underlying schemas or rely on existing semantic models like Looker and dbt, which already handle this natively. Separately, commenters criticized the project's documentation as distracting AI-generated text. The author conceded the point, explaining it was a shortcut for a quick proof-of-concept and committing to rewrite the offending sections.
-
-### Show HN: Reame – a CPU inference server that gets faster as it runs
-
-#### [Submission URL](https://github.com/swellweb/reame) | 55 points | by [targetbridge](https://news.ycombinator.com/user?id=targetbridge) | [16 comments](https://news.ycombinator.com/item?id=48873417)
-
-**It snapshots shared prompt prefixes to disk and drafts from its own past outputs**, so repeated work gets skipped on CPUs across requests, restarts, and processes. Built on llama.cpp and designed CPU‑first (shared vCPUs, free tiers, 2‑core ARM), it leans into a simple thesis: never compute the same thing twice.
-
-- **Persistent KV cache**: shared-prefix snapshots (zstd, checksummed, LRU) make a system/user prompt “paid once.”
-- **Palimpsest**: an on‑disk n‑gram archive feeds future generations for zero‑cost drafting on recurring workloads.
-- **Il Suggeritore**: grammar‑aware constrained decoding flipped to proactively propose structure tokens (lists, bullets, numbering).
-- **Self‑regulating speculation**: a tiny draft model or the archive proposes tokens; the target verifies in batched passes and auto‑disables speculation when it doesn’t pay.
-- **The Conclave (--best-of N)**: interleaved candidates share one prefill and stop early on majority; consensus reduces variance without changing bias.
-- **Interleaved multi‑user serving**: concurrent generations advance together to share weight reads (the CPU bottleneck).
-- **OpenAI‑compatible API + zero‑config CLI**: /v1 completions/chat, SSE, sessions, auth, metrics; reame run qwen2.5-1.5b just works.
-- **220+ tests**: layers are mockable; multi‑sequence, speculation, and KV‑clone paths pinned with real‑model integration tests.
-
-Measured on shipped binaries:
-- TinyLlama warm disk cache vs cold: 4.8× end‑to‑end.
-- Speculative decoding (1.5B + 0.5B draft) on oversubscribed vCPUs: 3.2× (87% acceptance).
-- Palimpsest on repeated requests (Qwen2.5‑1.5B): 2.3× (22→51 tok/s).
-- Grammar‑drafted fresh lists (Qwen2.5‑1.5B): 2.1× (4.4s→2.1s).
-- 3 concurrent users interleaved vs serialized (TinyLlama): 1.6×.
-- Conclave on an 8‑question quiz: 97s → ~50s; --best-of 5 yields +0.5 to +2 correct with ~2.5× wall‑time (not 5×).
-- Baselines: Qwen2.5‑1.5B at ~52 tok/s on an M3 Pro (6 threads); Qwen2.5‑7B at ~3.3 tok/s on a free 2‑core ARM; TriLM‑3.9B ternary runs ~10 tok/s in ~1.1 GB RAM.
-
-Best fit: narrow, repetitive, on‑your‑data workloads (RAG/extraction, batch tagging, thin‑margin SaaS on a €5 VPS, privacy‑bound orgs, local code autocomplete). Not for frontier‑scale reasoning, agentic coding, or long‑form creative writing at scale.
-
-The discussion immediately locked onto the distinct "AI voice" of the project's documentation. Multiple commenters flagged specific marketing fluff in the README (such as "said plainly, because trust is built here"), pointing out how jarring it is when unedited LLM output exposes its own rhetorical structure. The solo developer acknowledged relying heavily on AI to write the docs and removed the offending copy, but emphasized that the software, bare-metal testing, and benchmarks were entirely real and manually verified. 
-
-A secondary thread dug into the Oracle Cloud infrastructure used for the author's testing. While the benchmarks cite a free 2-core/12GB ARM instance, users cautioned that Oracle recently downgraded this tier from 4-cores/24GB, and noted that the servers are virtually impossible to provision without attaching a credit card due to chronic stock shortages.
-
-### Ghost Font: A font that humans can read but AI cannot
-
-#### [Submission URL](https://www.mixfont.com/ghost-font) | 226 points | by [justswim](https://news.ycombinator.com/user?id=justswim) | [169 comments](https://news.ycombinator.com/item?id=48870381)
-
-Instead of static glyphs, **it encodes letters as fields of identical-looking dots whose meaning appears only in motion**, so any single frame looks like background noise and a screenshot reveals nothing. In the author’s tests, leading multimodal models (e.g., Claude Fable, GPT‑Sol 5.6 Ultra) failed to read the moving message and latched onto a planted distraction; ChatGPT 5.5 Pro reportedly spent 19 minutes analyzing a clip and hallucinated a message. To blunt agents that can run code and track dot trajectories, **a decoy message is embedded in every video**, which models tend to “find” first and mistake for the real text.
-
-This is a prototype that renders and previews locally in the browser (no server round-trip) and outputs a video; when paused, the frame is just uniform dots. It’s not cryptography—given motion analysis and the right heuristic, a determined agent could still decode it—so the project frames itself as an anti-AI obfuscation experiment, not a guarantee. Potential uses floated include tougher CAPTCHA-style challenges and a moving benchmark for video-native perception models, with the admitted tradeoff that it’s also harder for humans to read. The author plans to open-source the generator and extend it to longer strings and larger sizes.
-
-The primary effect of the experiment was widespread human confusion, as the text's legibility proved highly dependent on screen resolution and scaling. Mobile users and those with zoomed browsers consistently saw only the static decoy message, prompting a wave of existential jokes about failing a reverse Turing test, while desktop users on unscaled monitors saw the moving text clearly.
-
-When testers aimed frontier models at the tool, the thread became a live demonstration of the author’s decoy strategy. Several users posted logs of Claude Fable and Gemini "solving" the puzzle, only for peers to point out that the models had taken the bait and extracted the static decoy message. However, the true obfuscation was ultimately defeated: one user reported that GPT-5.6 extracted the actual moving text by autonomously using OpenCV to compute optical flow, pixel shifts, and vertical-displacement maps. 
-
-Under the hood, developers identified a critical flaw in the project's current visual math. Because the sliding dots are truncated precisely at the geometric edges of the hidden letters, a single still frame is not actually perfect noise. Boundary artifacts remain visible in a static screenshot, meaning the true text can be extracted via simple image dilation without requiring any of the intended temporal analysis.
-
-### I built TradingSpy: local, privacy-first AI trading assistant(First Open Source)
-
-#### [Submission URL](https://github.com/mrhustlex/TradingSpy-TradingAgentService) | 30 points | by [mrhustlex](https://news.ycombinator.com/user?id=mrhustlex) | [4 comments](https://news.ycombinator.com/item?id=48875678)
-
-**Open-source, local research workstation that bundles market intelligence, AI strategy generation, Backtrader backtests, and transparent agent runs into a single Docker app** — no cloud, no telemetry, and it does not place trades. Unlike broker-attached bots or SaaS tools, this is a privacy-first environment for analysis and iteration that stores everything under backend/data/ and can run LLMs locally via Ollama.
-
-- **Market Intelligence**: one-query pulls for real-time quotes, sector/industry heatmaps, insider activity, news search, and fundamentals.
-- **AI Strategy Generation**: describe a thesis in plain English; get runnable Backtrader code with syntax/runtime validation.
-- **Backtesting + Benchmarks**: configurable parameter sweeps; every candidate is compared to buy-and-hold and saved strategies; zero-trade and underperformers are auto-rejected.
-- **Loop-engineering agents**: set goals (“beat buy-and-hold”, “find undervalued semis”) and the agent iterates until it succeeds; every tool call and failure is logged in the Task Center.
-- **Built-in agents**: Strategy Race, Signal Analysis (trend via bars + S/R), Stock Screening (fundamentals + context), and Chat (daily briefs via yfinance).
-- **Background runs API**: list/poll/stop/continue/delete via /api/agent/runs; runs are persisted locally.
-- **LLM flexibility**: Google AI Studio, Mistral, OpenRouter, NVIDIA, LiteLLM, Ollama (local), AWS Bedrock, GCP Vertex AI, Azure OpenAI; also exposes an OpenAI-compatible /v1/chat/completions endpoint.
-
-Shipped as a Docker Compose app, it’s aimed at traders and builders who want local research and backtesting with transparent agent workflows; if you need live order execution, this isn’t that.
-
-### Reverse centaurs are the answer to the AI paradox (2025)
-
-#### [Submission URL](https://pluralistic.net/2025/09/11/vulgar-thatcherism/#there-is-an-alternative) | 107 points | by [jason_s](https://news.ycombinator.com/user?id=jason_s) | [68 comments](https://news.ycombinator.com/item?id=48873855)
-
-**One freelancer was credited with a 64-page summer reading insert and then blamed when the chatbot-fed lists included nonexistent books** — a human “accountability sink” propping up a machine under an impossible workload. Doctorow uses this to define the split: a “reverse centaur” is a machine using a human assistant who bears the risk and blame, while a “centaur” is a human who wields a tool. His counterexample is personal: he ran Whisper locally to transcribe ~30 hours of podcasts, searched the text, and verified via timestamps — a self-directed workflow he could discard the moment it stopped helping. The paradox of AI—some users thrive while others suffer—tracks power, not capability: when bosses hollow out teams and force survivors to front for automation, AI immiserates; when workers choose when and how to use it, AI augments. Framed politically as “vulgar Thatcherism” (“there is no alternative”), he argues the real question—science fiction’s job, too—is who the tech is for and who it’s done to. The variable that matters isn’t model quality but control and accountability.
-
-- **The economics of surveillance:** The dominant critique argued Doctorow focused too narrowly on his own punditry industry and missed the broader shift in power dynamics. Commenters pointed out that historically, mass surveillance required massive, expensive human bureaucracies like the Stasi; AI makes sweeping corporate observation and data analysis cheap enough to be overwhelmingly profitable.
-- **The "centaur" reality check:** Even the allegedly empowering workflow of a human wielding an AI tool drew skepticism from the trenches. One user noted the setup frequently proves to be "fool's gold," where the machine generates plausible but subtly flawed output that forces the human into hours of backtracking to fix.
-- **Learned helplessness vs. local action:** The article's call for resistance triggered a meta-debate over whether cynicism in tech circles is just an excuse to avoid acting. When skeptics pushed back against empty platitudes and demanded concrete examples of taking control, respondents pointed to deliberate, high-friction personal choices that starve centralized power, like self-hosting alternatives to big tech platforms or decoupling from fossil fuel grids.
-- **Accessibility friction:** A smaller thread surfaced a complaint about Doctorow's formatting, noting that his habit of dropping raw, unlinked URLs in the middle of sentences creates a highly disruptive experience for screen-reader users.
-
-### AI 2040 and the cult of intelligence
-
-#### [Submission URL](https://geohot.github.io//blog/jekyll/update/2026/07/11/ai-2040.html) | 213 points | by [rvz](https://news.ycombinator.com/user?id=rvz) | [255 comments](https://news.ycombinator.com/item?id=48874200)
-
-**There is no “hard takeoff”; real progress is throttled by physics, supply chains, and time constants, not abstract “intelligence.”** After shipping phone-scale hardware at comma, Hotz says the finicky details — wrong parts, warped chips, barnacles on your ocean datacenter idea — are what dominate delivery, and no amount of high-quality tokens turns lead into gold.
-
-He contrasts two futures:
-- **Plan A (autocracy/regulatory theater):** Treats “AI 2027/2040” as self-fulfilling vibes that justify centralized control — consortiums, a nanny state, even GPU crackdowns by analogy — celebrating regulation as if it were a technical inevitability.
-- **Plan L (local):** A personal model that is aligned to the owner alone and never refuses, cutting through corporate guardrails and commercial incentives (e.g., rooting ad-laden devices, bypassing upsells, aggressively optimizing purchases). If you can’t “kick” it — i.e., run and control it locally — it isn’t aligned with you; cloud providers won’t (and shouldn’t) take that liability.
-
-He tested the idea by asking ChatGPT for criminal assistance; its refusal is, to him, the misalignment: an agent loyal to its vendor’s policies, not the user. The punchline is political, not technical: choose freedom and local agency over paternalistic systems that decide what you’re allowed to do. The unresolved cost is obvious — a refuse-nothing assistant also enables harm — but Hotz argues the locus of control still belongs with the individual, because machines don’t get magic powers; they inherit our constraints and our responsibility.
-
-The thread fractures over whether the state or the corporate sector represents the true hazard in centralized AI, and whether regulating models is akin to controlling weapons or suppressing speech. 
-
-- **The primary threat model:** One camp views centralized LLMs as ideal tools for authoritarian censorship and ideological bias, arguing that regulations are naive unless designed to survive abusive, bad-faith administrations. Others counter that mega-corporations are fundamentally equivalent negative forces that effectively write the laws anyway. A pragmatic subgroup pushes back on this corporate-dystopia equivalence, pointing out that giants like Nestlé or Procter & Gamble are ultimately driven by profit margins, whereas the state wields a uniquely dangerous monopoly on violence.
-- **Uranium vs. Information:** A sharp secondary debate tests the legal metaphors for AI regulation. Advocates for regulation argue that functional societies already restrict dangerous physics (uranium) and harmful speech (fraudulent allergen labels) to prevent predictable physical harm, without devolving into tyranny. Opponents reject the physical-harm analogy entirely, insisting that restricting "weights and tokens" is an attempt to control abstract knowledge, echoing historical panics where generalized "safety" was leveraged to erode information freedom.
-
-The unresolved crux is whether AI should be treated as a hazardous utility requiring structural watchmen, or as pure speech where any central arbiter is inherently more dangerous than the tool itself.
-
-### The Chinese Voice Actor Forced to Prove He's Human
-
-#### [Submission URL](https://www.sixthtone.com/news/1018753) | 80 points | by [homarp](https://news.ycombinator.com/user?id=homarp) | [15 comments](https://news.ycombinator.com/item?id=48875153)
-
-**Platforms are auto-flagging his real recordings as “AI,” throttling recommendations, views, and pay**, so Shen Anyu now films proof-of-life clips — tongue twisters and all — to convince clients he’s human. Since 2025, clones of his voice have spread so widely online that friends think he’s flush with work; instead he hears “himself” narrating explainer videos, hawking products, pushing conspiracy theories, even swearing.
-
-He and his wife spend their days collecting evidence, messaging uploaders, filing platform complaints, consulting lawyers, and prepping cases. Creators are hard to trace, takedowns rarely stick, and litigation can cost more than any recovery. The worse the spread, the more often his legitimate work gets mislabeled — a Kafkaesque loop that shifts the burden of proof onto the human.
-
-This is a career he built by hand: main narrator for a Douyin film channel with 5 million+ followers, training his diction and emotional range, even relearning plosives after facial paralysis. As a freelancer he recorded at all hours; his income reached roughly 10,000 yuan per month, peaking around 30,000 in busy stretches — enough to marry and move into a renovated home.
-
-The slide started with a crude clone in 2023, then rapid quality gains. By 2024, former collaborators stopped hiring him, switching to AI voices or offering to use an AI version of his voice at a steep discount. In one livestream, a presenter demoed an app that turned text into a movie-explainer read in a voice strikingly like his, in a few clicks.
-
-Others in China’s ultrashort-drama, audiobook, and short-video scenes report the same pattern: voices turning up in projects they never worked on, sold as AI packages, embedded in editing apps, or reused by clients without rehiring. The fight isn’t just over gigs; it’s over income, identity, and who owns the sound of a person’s voice.
-
-Discussion centers on the grim economic realities of the voiceover industry and the shifting burden of proof for creators:
-
-*   **The collapse of the low end:** Industry insiders argue that entry-level voice acting was already heavily commoditized by gig marketplaces before AI arrived. Now, for projects with budgets under $10,000—like YouTube movie recaps—producers are universally adopting AI to skip the friction of casting, noting that bottom-tier audiences simply do not care about the difference. 
-*   **The open-source parallel:** Commenters compare the narrator's Kafkaesque loop to open-source software, where FOSS authors are increasingly forced to prove ownership of their own code against entities that repackage it. They warn that the legal system is totally unprepared for disputes where bad actors can generate mountains of synthetic prior art.
-*   **The trap of licensing:** One user surfaced an adjacent cautionary tale from Chinese media about an aspiring actor who willingly licensed their likeness to an AI firm to make ends meet. The resulting AI videos were widely panned as cheap—a stigma that transferred directly to the human actor's reputation and permanently locked them out of higher-tier roles.
-
-### Stop Telling Me to Ask an LLM
-
-#### [Submission URL](https://blog.yaelwrites.com/stop-telling-me-to-ask-an-llm/) | 186 points | by [theorchid](https://news.ycombinator.com/user?id=theorchid) | [106 comments](https://news.ycombinator.com/item?id=48876441)
-
-**The ask isn’t for consensus; it’s for scar‑tissue judgment a model can’t supply.** The author describes calling someone seasoned precisely to get the hard‑won priors you can’t Google, only to be told “ask Claude”—after already spending hours doing exactly that. This isn’t LMGTFY; it’s like asking a friend with shared taste for a late‑night spot and getting a top‑10 list back. The redirect dodges the thing being requested: personal heuristics, which studies to trust when they conflict, where the lists go wrong. “Ask the model” can be a polite “I don’t know” or “I’m busy,” but those honest answers are better than outsourcing lived experience. When a question has already survived an LLM, the handoff doesn’t save a step; it withholds the thoughtful answer hard experience could have given.
-
-The thread reveals a split over why senior engineers issue the "ask Claude" redirect. Part of the room views it as a polite social brush-off—a modern "I don't know"—or a subtle insult akin to LMGTFY that casually dismisses the asker's prior research. Conversely, a pragmatic camp argues that a 30-year veteran might legitimately recognize that a specific problem isn't worth native human effort, or that they would themselves need to use an LLM to generate a substantive answer.
-
-Beyond the initial redirect, the discussion tipped into the broader exhaustion of working alongside AI proxies. Commenters shared war stories of "fighting misinformation on the clock," pointing to instances like a product manager submitting a pull request full of hallucinated, AI-generated metrics that engineers then had to formally debug and debunk. Tech leads complained of putting manual, thoughtful effort into PR reviews only to receive copy-pasted LLM outputs in response, leaving them completely in the dark about whether the developer actually understands the codebase. The prevailing anxiety in the thread isn't just about lazy answers, but the erosion of shared context, reducing technical collaboration to colleagues blindly trading automated talking points as LLM rubber stamps.
