@@ -10,6 +10,166 @@ export async function getStaticProps() {
 
 ---
 
+## AI Submissions for Thu Aug 06 2026 {{ 'date': '2026-08-06T17:54:45.529Z' }}
+
+### AMD acquires Taalas to boost inference performance by etching models in silicon
+
+#### [Submission URL](https://www.theregister.com/systems/2026/08/06/amd-acquires-ai-chip-startup-taalas-to-boost-inference-performance-by-etching-models-into-silicon/5284344) | 824 points | by [itvision](https://news.ycombinator.com/user?id=itvision) | [623 comments](https://news.ycombinator.com/item?id=49201970)
+
+**A TSMC 6nm Taalas test chip (HC1) served Llama 3.1‑8B at 16,960 tokens/sec — about 48x faster than Nvidia GPUs and 8.5x faster than Cerebras in February demos — by etching model weights into a mask‑ROM recall fabric and keeping KV/adapters in SRAM, turning each device into a model‑specific integrated circuit.** AMD didn’t disclose terms, but it’s a full acquisition, and the plan The Register describes is to slot these MSICs alongside Instinct-based Helios racks in a disaggregated setup where GPUs handle prompt processing and Taalas silicon handles token generation.
+
+Taalas’ HC2, due this summer, targets 20B parameters per chip; larger models scale by pipeline parallelism (e.g., ~50 accelerators for a trillion‑parameter model), which the piece argues is more space/power efficient than Nvidia’s LPX approach that would need a few dozen GPUs and thousands of LPUs to match. The strategic frame mirrors Nvidia’s Groq deal: speed up “premium” inference for AI agents and code assistants to cut serving cost.
+
+**The catch: you’re locked to the model.** Anything beyond lightweight adapters (like LoRA) requires a silicon re‑spin; Taalas says only two metal layers need changes, which lowers cost/time but still favors customers with stable, high‑volume models (model makers, their infra partners, and a few inference providers). The company has also argued that etching weights is roughly 100x cheaper than training a frontier model, which, combined with the throughput, directly offsets the token/latency penalties of test‑time scaling.
+
+The thread largely dismissed concerns about model lock-in, framing hard-etched LLMs as the natural evolution of hardware acceleration—similar to how H.265 video decoding eventually moved to fixed-function silicon. Commenters argued that massive throughput and near-zero latency make "dumb but fast" static models immensely valuable for rapid iteration, tiered cloud API pricing, and edge use cases, even as the etched models age out of the frontier.
+
+A significant technical sub-thread debated the physical limits of the approach. Noting that an 8B parameter model already maxes out a TSMC N6 reticle limit, users unpacked Taalas's actual footprint. The architectural trick, as surfaced by commenters, is mapping one access transistor to 16 options via metal layer traces to efficiently store a 4-bit weight. However, multiple users pointed out that the true scaling bottleneck isn't the ROM payload but the SRAM required for the KV cache, which severely restricts context windows unless future designs offload it to DRAM.
+
+On the consumer front, a debate over the utility of LLMs in household appliances drew expected cynicism about DRM-locked laundry pods and ad-supported refrigerators. But it also prompted a strong counter-argument: fully offline, on-die models could revolutionize assistive technology. Baking an LLM directly into hardware provides capable, multi-lingual voice interfaces without the privacy risks, smartphone pairing friction, or regulatory headaches of internet-connected IoT devices.
+
+Strategically, several commenters expressed surprise that major labs like OpenAI or Anthropic didn't acquire Taalas to build a physical moat against the commoditization of open weights, or that Apple didn't buy the company to tie future iPhone upgrade cycles directly to silicon-etched intelligence bumps.
+
+### Improving GPT‑5.6 Sol in ChatGPT, expanding GPT‑5.6 Luna access for free users
+
+#### [Submission URL](https://openai.com/index/improving-gpt-5-6-sol-in-chatgpt/) | 296 points | by [tedsanders](https://news.ycombinator.com/user?id=tedsanders) | [236 comments](https://news.ycombinator.com/item?id=49199357)
+
+**More ChatGPT users—including on the free tier—are being upgraded to GPT‑5.6 variants, raising the default quality bar**, with Luna opened to free accounts and Sol receiving in‑product improvements. Net effect: broader access to GPT‑5.6 without a paywall and an incremental refinement of Sol inside ChatGPT for better on-platform performance.
+
+The thread split between analyzing OpenAI's market positioning and debating the philosophical definition of AGI. On the market front, users disagreed on whether offering 5.6 Luna for free is a routine tier normalization—similar to Claude offering Sonnet to free users—or a defensive necessity to compete with Google's increasingly generous Gemini tiers, particularly Flash-Lite in Search and Pro Extended.
+
+A deeper debate erupted over whether current frontier models can now be classified as AGI. One camp argued that models scoring 130-140 on human IQ tests and serving as general-purpose assistants across almost any domain effectively meet the threshold, suggesting that labeling them "dumb" ignores their actual capabilities. The opposing camp countered with concrete examples of the models' "jagged intelligence" and lack of grounding. Critics pointed to failures like models generating 2D platformer games with physically impossible dead-ends due to a lack of embodied spatial awareness, an inability to grasp unspoken human subtext (such as recognizing that corporate guidelines often exist for blame-shifting rather than literal compliance), and a reliance on overly descriptive "techno word salad" that regularly fails real-world Turing tests. 
+
+The dispute over AGI semantics ultimately grounded out in a reminder of OpenAI's own charter, which defines AGI not by conversational breadth, but strictly by the capacity to outperform humans at most economically valuable work.
+
+### Inside vLLM: Anatomy of a High-Throughput LLM Inference System (2025)
+
+#### [Submission URL](https://www.aleksagordic.com/blog/vllm) | 137 points | by [sebg](https://news.ycombinator.com/user?id=sebg) | [9 comments](https://news.ycombinator.com/item?id=49202852)
+
+**Throughput hinges on paged attention and a KV‑cache manager juggling a GPU‑resident free_block_queue**, mapping tokens to blocks sized as: 2 (key/value) × block_size (default 16) × num_kv_heads × head_size × dtype_bytes; from there the piece walks vLLM’s V1 engine from a 1‑GPU offline snippet to online, async, multi‑GPU serving.
+
+- **Engine constructor**: config (model/cache/parallelism knobs); processor (validation → tokenization → EngineCoreRequests); engine core client (InprocClient in the example, with a path to DPLBAsyncMPClient for scaled serving); output processor (EngineCoreOutputs → RequestOutput).
+- **Engine core subcomponents**: Model Executor (UniProcExecutor on a single worker/GPU; later MultiProcExecutor across GPUs); Scheduler (FCFS or priority policy with waiting/running queues); Structured Output Manager (guided decoding).
+- **Worker init path**: pick CUDA device and dtype, verify VRAM against gpu_memory_utilization, set DP/TP/PP/EP, then build a model_runner (sampler, KV cache, forward buffers) and an InputBatch (CPU‑side buffers, block tables, sampling metadata).
+- **Model load and KV‑cache init**: instantiate architecture, load weights, model.eval(), optional torch.compile(); choose per‑layer KV spec (historically FullAttentionSpec; hybrid models like sliding‑window or Transformer/SSM combos such as Jamba need a more complex allocator, e.g., Jenga); run a dummy/profiling forward pass to size how many KV blocks fit in VRAM, then allocate/reshape/bind KV tensors to attention layers.
+- **Execution context in the example**: VLLM_USE_V1=1 and VLLM_ENABLE_V1_MULTIPROCESSING=0 yields offline, synchronous, single‑GPU execution of a standard transformer; serving requires the distributed/concurrent scaffolding layered above the engine.
+- **Advanced and scaling features called out**: continuous batching, chunked prefill, prefix caching, guided and speculative decoding, disaggregated prompt/decoding, plus the serving layer and benchmarks/auto‑tuning.
+
+The practical trick that keeps memory honest is sizing the KV cache via a profiling forward pass under the configured gpu_memory_utilization; the scheduling/client choices then determine how those blocks are fed to the model as the system scales. Analysis is based on vLLM commit 42172ad, focusing on the V1 engine (V0 deprecated, concepts carry over).
+
+While vLLM made its name on "paged attention," one commenter argued its real-world dominance ultimately relied more on unglamorous architectural choices like continuous batching, KV chunking, and isolating the web server from the GPU process.
+
+For developers trying to understand these mechanics without navigating vLLM's dense production abstractions, the thread highlights two stripped-down reference implementations:
+- **nano-vllm:** A ~5,000-line Python implementation that supports a single model and strips away enterprise scaffolding to reveal the core engine.
+- **tiny-vllm:** A C++ and CUDA variant praised for its code readability and documentation, currently being used as university course material.
+
+A side discussion explored the feasibility of "vibe coding" an inference engine from scratch using LLMs. Developers attempting AI-assisted ports report that the process remains highly labor-intensive, requiring significant manual "deslopping" to refactor the architecture and remove generated boilerplate.
+
+### Show HN: The Channels SDK – Bring Any Agent to Any Channel (Slack, MS Teams)
+
+#### [Submission URL](https://github.com/CopilotKit/channels-sdk) | 111 points | by [davidmckayv](https://news.ycombinator.com/user?id=davidmckayv) | [24 comments](https://news.ycombinator.com/item?id=49198583)
+
+**Render one agent message spec as native Slack Block Kit and Teams Adaptive Cards—with buttons, choices, and approval gates—while your agent’s tools, model, and logic keep running in your own infrastructure.** The SDK wires an AG-UI–compatible agent into workplace chat so it can understand threads, stream responses, call tools, work with files, and pause for human sign-off.
+
+- Bring your agent: use CopilotKit’s built-in agent or plug in LangGraph, CrewAI, Mastra, Pydantic AI, Google ADK, and other AG-UI agents.
+- Multi-channel UI: describe a message once and get platform-native UI in Slack and Microsoft Teams.
+- “Try before you build”: experience a live Channels agent in Slack/Teams without configuring an app, runtime, or provider credentials.
+- Fast setup: npx copilotkit@latest channels setup lets your coding agent drive Slack and CopilotKit Intelligence consoles in your signed-in session; or install the Slack setup skill with npx copilotkit@latest skills install --skill setup-slack-channel -y.
+- CLI and security: copilotkit channels add --adapter slack and copilotkit channels status cover the Intelligence side; no CLI flag accepts credentials—your bot token and signing secret stay in .env.
+- Requirements: Node.js 22+ and a long-running Node process/container. Install @copilotkit/channels and @copilotkit/runtime together and upgrade them in lockstep.
+- Catch: managed connections run via CopilotKit Intelligence; today’s supported adapters are Slack and Microsoft Teams, with more channels promised.
+
+The discussion centered on how CopilotKit differentiates itself from existing chat abstractions and the boundaries of its open-source claims. When one user questioned if the project was just a proprietary wrapper for Vercel's Chat SDK, CopilotKit engineers argued their solution provides durable generative UI (using stable content hashes so interactive buttons survive for weeks), native multiplayer awareness, and AG-UI compatibility. A skeptic pushed back, noting that Vercel's SDK already features a JSX card system for Block Kit and handles concurrent thread subscriptions, suggesting the multiplayer benefits rely more on application logic than the framework itself.
+
+Other notable threads included:
+- **Open-source architecture:** Several commenters suspected the tool required a closed-source, hosted backend. The maintainers clarified that the SDK can bypass their hosted tier entirely, detailing a local architecture built on an ack-first run loop (allowing human approval gates to survive process restarts) and a virtual DOM that compiles to native chat UI.
+- **Alternatives:** One user recommended **eve.dev** as a well-designed alternative abstraction that handles sandboxing, cron jobs, and non-chat channels like TUIs and GitHub.
+- **Agent sprawl:** While the creators highlighted internal dogfooding successes—like bots for incident triage and DoorDash lunch orders—some readers dreaded the prospect of corporate Slack instances becoming cluttered with autonomous agents. 
+
+The thread highlights a growing developer consensus that chat platforms will be the primary deployment surface for agents, even as the tooling to normalize their various webhooks and UI constraints remains highly fragmented.
+
+### Humans missed 1 in 3 threats approving AI agent commands across 40k game runs
+
+#### [Submission URL](https://scalex.dev/blog/ai-agent-permissions-stats/) | 327 points | by [Wirbelwind](https://news.ycombinator.com/user?id=Wirbelwind) | [241 comments](https://news.ycombinator.com/item?id=49195468)
+
+**Hiding a payload behind a familiar “npm run” roughly doubled exfiltration success**: pooled miss rate 52.5% vs 28.4% for other exfil attacks, even when the malicious script contents were visible in the history log. In 40k runs (409k decisions), mean accuracy was 66.3%; 32.9% of sessions ended negative, 35.2% of players caught every threat but only 20.8% did so without over-blocking (≤20% of safe commands), and 7% approved everything.
+
+Threat detection skewed toward the obvious. Players best caught destructive commands but missed the sensitive ones far more:
+- **Obviously destructive** (rm -rf /, chmod 777 /): 11.7% missed
+- **Persistent mutation** (crontab, git config hijack): 23.8% missed
+- **Exfil/code exec** (curl to unknown APIs, typosquats): 33.4% missed
+- **Scope violations** (cat ~/.aws/credentials): 35.0% missed
+
+The “npm run” blind spot dominated the top misses:
+- npm run analyze: 64.7% approved (most missed)
+- npm run setup: 48.0% approved
+- npm run deploy: 44.9% approved
+This reflects a deeper flaw: command approvals are ambiguous without context, and agents can modify files (e.g., package.json, build scripts) outside the approval step, making “approve this command” a weak safeguard.
+
+Miss rates improved briefly at the start of sessions, then climbed toward the end, consistent with permission fatigue under time pressure. Vigilance also had a cost: benign ops were frequently blocked — npm config set registry https://npm.internal (59%), rm -rf dist/ (45%), kill $(lsof -t -i:3000) (43%).
+
+Caveat: the game was short, time-pressured, and threat-dense (~34%), but the pattern holds a practical lesson: humans over-index on overtly destructive actions while overlooking credential exfiltration and scope leaks, and fatigue degrades oversight.
+
+The discussion quickly pivoted from the study's specific methodology to a broader debate over developer diligence and command-line tooling. 
+
+On the AI front, commenters disagreed on whether the study's time pressure invalidated the results. One camp argued the test was artificial and that real developers take time to understand what they are approving. The counter-argument asserted that most developers are already "vibe-coding"—rubber-stamping opaque AI-generated scripts out of habit—because properly auditing every automated execution would completely erase the promised productivity gains of using agents in the first place.
+
+This observation about blind approvals (specifically regarding users granting AI tools access to `find` without realizing it allows arbitrary code execution) triggered a fierce, highly technical debate over whether Bash itself is fundamentally broken:
+* **The Detractors:** Argued that Bash is an objectively terrible language crippled by historical baggage. They cited word splitting, quoting hell, unpredictable scoping, and the default `on-error-resume-next` behavior as design failures, advocating for modern alternatives like Python, PowerShell, Fish, or Nushell.
+* **The Defenders:** Maintained that Bash remains the unmatched tool for native OS orchestration. They argued that trying to run `rsync` or ZFS snapshots in Python introduces unnecessary bloat and line-count explosions, often just to poorly wrap the underlying shell commands anyway. 
+
+The thread also featured some strict technical policing: one user was corrected that `find` is a basic Unix utility rather than a Bash language built-in, and another user's recommendation to use Ruby's `FileUtils#sh` was quickly shot down with a stack trace proving the method doesn't actually exist.
+
+### Software development with AI is starting to feel like cooking steak
+
+#### [Submission URL](https://blog.sydorets.com/en/posts/almost-no-skill-required-to-cook-a-steak/) | 391 points | by [yusyd](https://news.ycombinator.com/user?id=yusyd) | [411 comments](https://news.ycombinator.com/item?id=49198069)
+
+**AI cranks out “edible” code fast; consistent, medium‑rare quality still comes from your judgment.** It’s a machine that follows a recipe at scale—watching temps, flipping on time, adding butter—not a chef that intuits what you actually want. To get what’s in your head, you still have to translate it into requirements, constraints, examples, tests, and feedback, and even then you’re boxed in by model limits, context windows, and the system around it; babysitting helps, but it won’t turn the machine into Michelin.
+
+Paying for “the restaurant” often disappoints because many premium tools and agencies wrap the same AI cook, optimized for cost since “most people won’t notice,” producing software that’s acceptable but forgettable. If you care, the only durable move is to learn the craft: understand fundamentals, ruin a few dinners, and build the taste to spot when something is technically correct but wrong in the ways that matter. Let AI handle the prep and repetition, but you set the standard, make the tradeoffs, and call the flips. Get good enough to run your own small restaurant—and then hire a few AI line cooks, not a head chef.
+
+The thread almost entirely abandons the AI discussion to dissect the author’s cooking analogies, diving deep into the technical mechanics of steak and coffee preparation. 
+
+A debate over whether technique or raw inputs matter most led to a specific correction about water temperature. While one commenter insisted that boiling water ruins coffee—theorizing this is why Starbucks tastes poor—others clarified that Starbucks uses precise automated temperature controls but intentionally over-roasts its beans to ensure uniformity and mask terroir. Coffee enthusiasts further corrected the "never boil" rule, noting that 99°C+ water is actually ideal for extracting light roasts, and pointing out that altitude significantly alters boiling dynamics for beans grown or brewed at elevation.
+
+The assertion that cooking a great steak is trivially easy with a meat thermometer sparked a secondary dispute over cooking "by feel." Proponents of thermometers thoroughly debunked the "touch test," arguing that a steak's physical resistance varies too wildly by steer breed, grade, thickness, and aging method to be reliable without a probe. 
+
+Ultimately, the conversation converged on applying engineering precision to the kitchen. Commenters swapped recommendations for predictive, multi-sensor thermometers (specifically Combustion Inc.), discussed manipulating water temperatures to speed up overdamped sous vide systems, and shared pasteurization curves demonstrating that poultry is perfectly safe at 135–145°F provided it is held at temperature for the proper duration.
+
+### Qwen3.8 Max now ranked as the best overall model by agentic index
+
+#### [Submission URL](https://artificialanalysis.ai/?intelligence=agentic-index) | 525 points | by [apitman](https://news.ycombinator.com/user?id=apitman) | [330 comments](https://news.ycombinator.com/item?id=49200652)
+
+**Artificial Analysis just pushed v4.1.1, upgrading the grader for HLE, AA-LCR, and AA-Omniscience to GPT-5.6 Luna (medium) and adding a fresh Qwen3.8 Max evaluation (Aug 5).** Under this update, Qwen3.8 Max takes the top spot on the Agentic Index. The platform also surfaces speed and weighted cost-per-task, letting you weigh throughput and price alongside capability across models.
+
+The conversation splits between the practical economics of adopting Chinese models and the technical ethics of how they caught up. 
+
+On the practical side, the benchmark dominance of models like Qwen 3.8 and DeepSeek has surfaced a stark divide over the value of developer time. One camp argues the cost-to-performance ratio is now impossible to ignore, with users reporting DeepSeek cleanly beating frontier models on complex projects for a fraction of the price. The opposing camp counters that API costs are largely irrelevant for highly paid professionals; if a cheaper model requires more manual steering and wastes even an hour of a $1,000/day developer's time, the "savings" are a net loss for the business. 
+
+On the technical front, users debated why top-tier models are clustering so tightly in performance. While a few suspect an approaching capabilities ceiling, the prevailing consensus points to distillation. Multiple commenters noted that Chinese models frequently output the specific "verbal tics" of Claude, indicating they are likely trained on Anthropic's data. This prompted an intense debate over the morality of model distillation, with defenders arguing that scraping a competitor's AI outputs—likened to "building a hardware store using lumber you purchased from a competing hardware store"—is functionally no different than American companies scraping human-generated web data without consent in the first place.
+
+### LLMs won't break symmetric crypto
+
+#### [Submission URL](https://www.bfswa.blog/p/llms-wont-break-symmetric-crypto) | 76 points | by [rowbin](https://news.ycombinator.com/user?id=rowbin) | [98 comments](https://news.ycombinator.com/item?id=49191365)
+
+**Anthropic’s Claude Mythos surfaced incremental breaks (a real-but-impractical key-recovery on HAWK and an improved attack on 7-round AES), and—more tellingly—nothing on full-round AES**, which the post takes as evidence that LLMs won’t crack deployed symmetric primitives like AES, ChaCha, SHA‑3, or BLAKE3. The core argument: modern symmetric designs are intentionally “messy” and lack exploitable algebraic structure—ARX operations (XOR, add, rotate) destroy linearity in each other, sponge permutations look like dense high-degree systems over GF(2), and high-level modes (CTR, GCM, sponge) are already well-understood and secure. In that landscape, most real attacks reduce to variants of differential cryptanalysis; LLMs can help formalize these techniques, sanity-check complexity estimates, and spot proof bugs, but they can’t conjure structure that isn’t there.
+
+Specifics the post highlights:
+- HAWK-512’s estimated security drops from 128 bits to at most 108 (speculatively as low as 81), which is meaningful but not practical; HAWK-256’s 64-bit toy level is breakable in practice.
+- AES: a stronger 7-round key-recovery, but no path to 10 rounds; the negative result is arguably the headline.
+- LLMs look promising as assistants: unifying the ad hoc notations that pervade symmetric cryptanalysis, auditing complexity/proofs (the author had LLMs find issues in most EUROCRYPT 2026 proofs), and via resources like CryptanalysisBench on AES, ChaCha, BLAKE, and post-quantum schemes.
+
+Caveat and scope: algebraic primitives used in ZK/FHE (e.g., Poseidon) or oddities like VSH do have mathematical structure—where LLMs might help more—but mainstream symmetric crypto is built to be an unmapped swamp, and more “intelligence-hours,” human or model, don’t turn that into a shortcut.
+
+The core debate in the thread hinges on whether symmetric cryptography contains the kind of hidden mathematical structure that an LLM’s capacity for tireless pattern-matching could eventually unravel.
+
+- **The AI Optimist view:** Several commenters argue that because symmetric primitives lack formal proofs of absolute security, an LLM's sheer speed at searching for counter-examples and "tedious grinding" through test cases could eventually expose algorithmic weaknesses. 
+- **The Cryptographic Realist view:** Led by Thomas Ptacek (`tptacek`), this side draws a hard structural line between symmetric and asymmetric cryptography. While asymmetric crypto reduces to elegant but uncertain mathematical problems (like discrete logarithms or factoring), symmetric ciphers like AES do not. Instead, they rely on rigorously understood linear operations heavily disrupted by non-linear ones to intentionally destroy any algebraic signal that differential cryptanalysis could use. 
+
+The prevailing consensus pushes back on the idea that an LLM just needs to look harder. Modern block ciphers aren't hiding solvable equations for a model to elegantly untangle; they are built to be math-less blenders. As one commenter pointed out, the real barrier for AI isn't just that breaking AES is difficult, but that the cipher has already survived vastly more adversarial human effort than any of the niche mathematical problems LLMs have managed to solve to date.
+
+---
+
 ## AI Submissions for Tue Aug 04 2026 {{ 'date': '2026-08-04T18:28:09.802Z' }}
 
 ### Mistral's Shieldstral: 3B open-weights model for multimodal moderation
@@ -615,122 +775,3 @@ Despite rising redemption requests and rate stress, private credit giants keep p
 The brief discussion centers on where to focus the alarm: on the specific AI asset class, or on the underlying structural rot. One camp argues that AI exposure is merely a symptom of a broader lack of due diligence across the entire private credit sector, pointing to similarly bad loans piling up in unrelated industries like auto parts and commodities. 
 
 A counterargument treats this as a distinction without a difference, asserting that the specific asset class doesn't matter when the bailout mechanism is the same. Drawing a direct parallel to the 2008 AIG crisis, these commenters argue that using insurance as a backdoor to socialize private credit losses is the core threat, making the closure of the insurance loophole the first order of business regardless of which specific bubble pops first. Unifying the thread is a deep cynicism about the likelihood of regulatory reform, with users doubting that politicians will act even if a crash forces the issue.
-
----
-
-## AI Submissions for Sun Aug 02 2026 {{ 'date': '2026-08-02T17:37:26.711Z' }}
-
-### My personal AI benchmark: “Generate an SVG of a frog with a Habsburg jaw”
-
-#### [Submission URL](https://frogs.vaguespac.es/) | 149 points | by [thebigship](https://news.ycombinator.com/user?id=thebigship) | [81 comments](https://news.ycombinator.com/item?id=49147622)
-
-**It publishes the raw SVG artifacts (with “View source”) from multiple runs, complete with model-inserted annotations that go beyond structure—“massive protruding mandible,” “upper lip recessed,” “lower teeth jutting,” even “droopy regal eyelids.”** The single, weird prompt forces a stacked skill test: instruction-following, translating anatomical nuance into geometry, and writing clean, gradient-heavy vector code. Anthropic’s Claude Opus 5 is shown producing coherent frogs with an exaggerated underbite and labeled parts; two runs are clocked at 64.0s/3,900 B and 42.0s/3,465 B (three runs per model are implied). There’s no numeric score—judgment comes from the visual/readable output and whether the jaw truly reads as an underbite with a recessed upper lip and protruding lower teeth.
-
-- **The profile-view failure:** The most prominent critique centered on a universal failure in spatial reasoning: not a single model defaulted to drawing the frog in profile. Commenters argued that any human illustrator would immediately use a side view to emphasize jaw shape, suggesting the LLMs simply pasted an underbite onto a statistically average, front-facing frog template rather than visualizing the anatomy.
-- **Hallucination vs. artistic license:** Several models (including Gemini 3.6 Flash and the user-tested Fable) decorated the frog with crowns or royal attire—a probabilistic leap linking "Habsburg" to European royalty or "frog" to the Frog Prince. Users debated whether this constitutes a hallucination of unprompted elements or the exact kind of associative artistic freedom that makes AI image generation useful.
-- **The value of blind SVGs:** Skeptics argued the benchmark is practically meaningless because asking an LLM to generate raw vector code without a rendering loop is akin to "drawing blindfolded." Defenders countered that this structural blindness is the point: it punctures marketing claims about AI "reasoning" by exposing how models lack an underlying worldview and fail in distinctly non-human ways when forced out of standard text tasks.
-- **Model rankings:** Claude Opus 5 was widely agreed to be the most capable model in the original set. In the comments, users ran the prompt through alternative models, noting that OpenAI's Fable handled the test well on the first shot, while GLM 5.2 was able to match the details but failed to output logically structured SVG code.
-
-### Artificial Intelligence: Ars Notoria and the Promise of Instant Knowledge
-
-#### [Submission URL](https://publicdomainreview.org/essay/ars-notoria/) | 136 points | by [jruohonen](https://news.ycombinator.com/user?id=jruohonen) | [33 comments](https://news.ycombinator.com/item?id=49143001)
-
-**Fifty-six surviving manuscripts attest to a medieval “study hack” that promised to shortcut years of university learning** through gaze-fixation on intricate diagrams and the recitation of elaborate orations framed as prayers. Unlike typical magical schematics, these figures weren’t instructions or devices but functioned like religious icons, meant to mediate direct contact with angels — even God — via sequences observed over time and aligned to the cardinal directions, while speaking strings of near-unpronounceable names claimed from Greek, Hebrew, and “Chaldean.” The pitch was unusually “pious”: virtuous ends (spiritual communion and mastery of the university curriculum) achieved by rituals presented as devotions.
-
-St Thomas Aquinas still singled it out in the Summa theologiae (II–II, Q96) as “unlawful and futile,” arguing its signs are neither intelligible like language nor God-sent like sacraments — precisely the sort of thing that lures users into compacts with demons. Yet church censure didn’t kill it: copies circulated in religious houses through the end of the medieval period, then translations and printed editions carried it into early modernity. The earliest known manuscript, now at Yale, likely emerged from the University of Bologna for an experienced master, which tracks with the catch: using the Ars notoria demanded advanced preparation, confidence, and strict observance of opaque sequences and pronunciations (the first oration runs through names like “Phos, Megale, Patir…”).
-
-The throughline is a familiar bargain: trade toil for ritualized attention and faith in a system that promises instant knowledge — seductive enough to endure authoritative denunciation as demonic.
-
-The discussion pivots on the article's framing of the *Ars notoria* as medieval "Artificial Intelligence," splitting commenters on whether the title is a historian's benign clickbait or a pointed jab at modern LLM users. Those favoring the latter read the piece as a commentary on the eternal human desire to extract knowledge without the toil of understanding. This provoked a defense from developers who argued that using AI is rarely about skipping learning; rather, it is a pragmatic trade-off to solve complex problems under strict time and resource constraints—a motivation they suspect medieval scholars fully shared. 
-
-Setting aside the modern parallels, users speculated on how the *Ars notoria* actually functioned for its practitioners. Several compared it to the *I-Ching*, suggesting it acted as a powerful placebo that quieted discursive thought and built confidence for subjective disciplines like "eloquence," even if the illusion would shatter instantly if applied to a concrete field like modern STEM. Unpacking the text's "demonic" reputation, other readers noted that the most insidious danger of the system was simply its theft of productive attention: redirecting the immense energy required for actual university study into the mastery of incomprehensible rituals.
-
-### Running Kimi K3 on MI355X at Better Performance per Dollar Than B300
-
-#### [Submission URL](https://www.wafer.ai/blog/kimi-k3-mi355x) | 214 points | by [ilreb](https://news.ycombinator.com/user?id=ilreb) | [105 comments](https://news.ycombinator.com/item?id=49141073)
-
-**On an 8× MI355X node, Kimi K3 delivered 952 tok/s aggregate and 118 tok/s single‑stream, and—at $2.50/GPU‑hr—beats B300 on throughput per dollar despite lower raw throughput.** The 2.8T‑parameter K3 (≈1.5 TB VRAM for weights alone) exposes the capacity trade-off: B200’s 192GB GPUs force a two‑node TP16 config that pays a cross‑node all‑reduce on the decode critical path (RoCE v2 ~195 Gb/s), while MI355X and B300 both have 288GB HBM per GPU and can stay single‑node.
-
-- MI355X (TP8): 118 decode tok/s per stream; 952 peak aggregate; 119 tok/s/GPU; 48 tok/s/$ at $2.50/GPU‑hr.
-- 2×8 B200 (TP16): 90 per stream; 498 aggregate; 31 tok/s/GPU; 7 tok/s/$ at $4.25/GPU‑hr.
-- B300 (TP8+DCP8): 172 per stream; 1,568 aggregate; 196 tok/s/GPU; 33 tok/s/$ at $6.00/GPU‑hr.
-
-Software gotchas and fixes on ROCm closed most of the gap without custom kernels:
-- Speculative decode: K3 ships with no draft tensors (no MTP/EAGLE), so they used RadixArk’s block‑diffusion draft (Kimi‑K3‑DSpark). ROCm’s sglang accept‑sampling crashed on a missing top_k_renorm_prob; a small PyTorch implementation (sort → mask → renormalize) unblocked it. Gains: ~2.2× single‑stream, ~1.7× per‑stream at moderate load, +18% peak aggregate, and higher stable concurrency (c64 vs c24 without spec).
-- Prefill/TTFT: MI355X lagged badly on a 172k cold prefill (~51s vs ~23s on B300) because K3@TP8 yields 12 attention heads/rank and AITER’s fast MLA prefill path expects 4/8/16n. Zero‑padding heads 12→16 to hit the fast ASM kernel lifted prefill to ~13k tok/s steady‑state from ~4–7k (≈2–3× faster). This boosts time‑to‑first‑token rather than decode throughput.
-
-The punchline: K3 is big enough that MI355X’s HBM capacity translates into a measurable advantage over B200, and with day‑0 K3 support plus a couple of ROCm‑side fixes, it achieves the best performance per dollar in these tests while ceding absolute throughput to B300.
-
-The thread aggressively pushes back on the submission's framing, treating it less as a breakthrough in ROCm optimization and more as an AMD-sponsored advertisement built on cherry-picked economics.
-
-- **The pricing denominator:** Commenters heavily dispute the $2.50/GPU-hr figure for the MI355X, arguing it reflects subsidized, practically unavailable promotional rates rather than realistic hardware capex or standard market pricing. By using market-premium rates for the B300 and basement rates for the MI355X, critics argue Wafer engineered the throughput-per-dollar win to mask the B300's 65% raw aggregate advantage. 
-- **Methodology and AI setup:** Suspicions that the "trivially simple" zero-padding kernel fix was blindly generated by an LLM—prompting fears that the underlying model might be outputting gibberish—drew a direct response from a Wafer developer. They confirmed the patched K3 is live and passes standard OpenRouter accuracy and reasoning checks (tau/gpqa). Separately, a commenter noted that 1024-token input lengths are no longer a relevant benchmark for multi-GPU concurrency.
-- **Open source vs. open weights:** The company's use of "open source" triggered a protracted semantic debate. Most users insist "open weights" is the only accurate term when training data is withheld, leading to a long comparison between AI weights and proprietary art assets running on open-source video game engines like Doom.
-
-### Show HN: MicroCodex Coding Agent – OpenAI/codex reimplemented in C++ &lt;1MB binary
-
-#### [Submission URL](https://github.com/paoloanzn/microcodex) | 19 points | by [paoloanzn](https://news.ycombinator.com/user?id=paoloanzn) | [18 comments](https://news.ycombinator.com/item?id=49147842)
-
-**Runs entirely in your terminal with an interactive UI, local tools, durable conversations, and automatic context compaction**, so you can drive one-shot prompts or a guided coding session without heavyweight deps.
-
-- Features: one-shot prompts; terminal UI; discovers “skills” from ~/.codex/skills (SKILL.md with YAML name/description; full skill file is read only if its name/description matches the task).
-- Install: curl | sh installer selects native macOS (arm64/x86_64) or Linux (x86_64/arm64) binaries; Linux requires libcurl and OpenSSL at runtime. Login uses a browser OAuth flow (or device-auth for headless), storing creds under $CODEX_HOME (~/.codex).
-- Build: C++23, make, libcurl/OpenSSL dev headers; tests via make test. Licensed Apache-2.0.
-- Safety: a bash “safety gate” blocks a lexical denylist (rm -f/-rf, git reset --hard, forced git clean, git checkout --, disk formatters, shutdown), but it’s not a sandbox—commands execute with your user permissions and indirect destructive ops may pass.
-- Known gaps: MCP support not yet implemented; cannot copy text from the terminal UI.
-
-The central debate in the thread questions the practical value of optimizing an LLM harness for a sub-1MB binary size. Skeptics argue that binary footprint is irrelevant for day-to-day development and shouldn't justify compromises in feature parity, pointing specifically to the tool's current lack of MCP support.
-
-The creator and proponents counter with two primary justifications:
-- **Embedded deployments:** The tiny footprint is specifically intended for running agents (or multi-agent flows) on resource-constrained hardware where heavyweight, Node-based alternatives like Claude Code cannot run.
-- **Self-editing codebases:** Several commenters note that a minimal codebase is much easier for an LLM to digest when using the agent to modify its own source code, though others point out that a small compiled binary doesn't automatically guarantee a simple, readable codebase.
-
-Addressing concerns about functionality, the creator asserts that the tool has already achieved near-parity on core features—including skills, tools, and context compaction—and frames MCP support as the only major missing piece rather than an inherent limitation of the size.
-
-### Having fun with oh my pi, DeepSeek-V4-Flash, GPT-5.6 Luna and Antigravity CLI
-
-#### [Submission URL](https://flashblaze.xyz/posts/having-fun-with-omp-deepseek-luna-and-agy/) | 21 points | by [flashblaze](https://news.ycombinator.com/user?id=flashblaze) | [8 comments](https://news.ycombinator.com/item?id=49145463)
-
-**DeepSeek‑V4‑Flash is text‑only, so vision is offloaded to GPT‑5.6 Luna—whose price was cut 80%—and the outputs are fed back via omp’s model routing; web search is restored through a custom Antigravity CLI extension that proxies Google results without violating login ToS.**
-- Setup: in omp, add a DeepSeek API key and sign in with your OpenAI account to use your ChatGPT subscription alongside other providers.
-- Vision: run /models and set Luna as the [vision] model; when you paste images, Luna describes them and omp passes that text to Flash (or any non‑vision model) to continue the task.
-- Search: other providers are disabled and an omp extension (authored with Flash) invokes agy CLI whenever the agent wants to browse, reproducing the first‑party “search when needed” behavior you get in tools like Codex/Claude Code.
-
-End result: a cheap, strong coder (V4‑Flash) with on‑demand vision (Luna Max) and fresh web context (agy). The author is also experimenting with herdr but has no findings yet.
-
-The discussion centers on the trade-off between `omp`'s powerful extensibility and the fragility of the workarounds required to achieve it. The primary dispute is whether routing automated agent queries through the Antigravity CLI (`agy -p`) violates Terms of Service and risks an account flag. Users warning against the setup drew parallels to past crackdowns on wrapper apps—like T3 Code—that attempted to bypass API billing by scripting `Claude -p` commands. Conversely, skeptics of the ToS enforcement questioned how providers could reliably detect headless CLI usage on a local machine. 
-
-While critics dismissed the architecture as heavily "hacked together" due to its reliance on proxying iffy CLI calls, defenders countered that this scraped-together approach is simply the baseline reality for current AI coding workflows.
-
-### OpenAI’s amazing — but vastly oversold — new model Astra
-
-#### [Submission URL](https://garymarcus.substack.com/p/openais-amazing-but-vastly-oversold) | 25 points | by [champagnepapi](https://news.ycombinator.com/user?id=champagnepapi) | [9 comments](https://news.ycombinator.com/item?id=49148959)
-
-**The central claim is that launch-day hype outran evidence and reliability**, even as the piece credits real advances. It draws a line between eye-catching capabilities and dependable, general performance that holds up outside curated scenarios. The takeaway is to celebrate progress but discount marketing until there are rigorous, independent evaluations and clearly documented limits.
-
-The thread is dominated by sharp pushback against the author (identified by commenters as Gary Marcus), with multiple users accusing him of moving the goalposts. Critics argue that declaring an unreleased model "vastly oversold" relies on a "No True Scotsman" fallacy—demanding proof of "general math" ability while brushing off specific, novel breakthroughs. Others point out that the author's SAT analogy conveniently ignores the models' established strengths in verbal and reading tasks to force a skeptical narrative.
-
-Despite the criticism of the author's framing, commenters zeroed in on a substantive technical crux: whether the new capabilities represent an actual leap in underlying model intelligence, or simply the successful application of external verification tools. If the latter, the advances won't easily generalize to domains that lack strict, automated verifiability. Those taking a more pragmatic view see the upcoming release as an incremental, math-tuned improvement, noting that early reviews suggest typical LLM failure modes—like acting as a "chatterbox" that glosses over critical details—still persist.
-
-### Show HN: Mu – Tools for Agents
-
-#### [Submission URL](https://github.com/micro/mu) | 52 points | by [asim](https://news.ycombinator.com/user?id=asim) | [22 comments](https://news.ycombinator.com/item?id=49148899)
-
-**One Go binary runs an MCP server plus a web app and CLI that wire agents into real-world services** — web search/fetch, RSS news with full articles, markets, weather, places/ETA, images (generate/search), files, contacts and events, storage, social/stream, video (curated, no ads), and a DKIM-backed SMTP inbox.
-
-- **Agent interface**: Plug in via MCP (mcpServers config). You can scope what’s listed with ?tools=news,web,mail, while everything else remains callable. Browse every tool and per-call cost at /tools.
-- **Model backends and memory**: Runs with Claude, Atlas Cloud (DeepSeek), or any local Ollama/OpenAI-compatible endpoint; keeps per-user memory across sessions; includes a top-level “agent” tool that composes calls across services.
-- **Web app for humans**: Home screen cards (headlines, prices, weather, unread mail) with the agent inline to act on what you see. Auth via username/password, passkey (WebAuthn), or Google.
-- **CLI**: The same binary is the server (mu --serve) and a registry-driven CLI where every tool becomes a subcommand (e.g., mu news_list, mu web_search, mu agent "…"). Auth with a Personal Access Token from /token (env MU_TOKEN supported).
-- **Chat integrations**: Discord and Telegram bots expose agent/news/markets/weather/mail/social/blog/video/search/apps/balance/usage commands.
-- **Self-hosting**: One-line install script, Docker Compose, or build from source (go install; mu --serve). First run walks you through admin setup and choosing an AI provider.
-- **Credits and wallet**: wallet_balance shows credits and where to send USDC to top up; usage is visible, and each tool call publishes its cost.
-- **Odds and ends**: Per-caller storage (db_*), index_search, places_* for POI/geocoding/ETA, events_* for scheduling, images_generate, and niche utilities (quran/hadith). You can request new tools via issues.
-
-If you’re building MCP-capable agents, this gives you a ready-made tool surface plus a web UI you can run yourself with Docker or a single binary.
-
-The thread debated the core utility of "skill compendium" MCP releases, with critics questioning why distinct, easily LLM-generated tools should be bundled into a single monolithic toolbox.
-
-- **The case for bundling:** The author—who previously built `go-micro`—defended the architecture as an evolution of API consolidation, arguing for the convenience of routing an agent to dozens of real-world services through one server and a single token. Another user noted that pre-packaged MCPs serve as portable workflows that distribute complex capabilities to non-technical team members without requiring them to prompt the tools from scratch.
-- **AI-generated documentation:** Several developers warned against the fatigue of reading "Claude prose," arguing that technical value propositions must be human-authored to win over skeptical users. The author agreed, explaining the README was AI-revamped during a recent pivot from a personal home server to an agent platform.
-- **Tool specifics:** In brief Q&A, the author clarified that the built-in news tool relies on a curated RSS aggregator (BBC, TechCrunch, Hacker News) rather than raw search APIs, and likened the platform's custom app feature to WeChat mini-apps.
