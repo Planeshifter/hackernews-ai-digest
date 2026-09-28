@@ -14,12 +14,12 @@ const CONFIG = {
   RETRY_DELAY: 2000,
   REQUEST_DELAY: 1000,
   REQUEST_TIMEOUT: 10000,        // HTTP fetch timeout
-  LLM_TIMEOUT: 90000,            // LLM completion timeout (gpt-5/gemini are slow)
+  LLM_TIMEOUT: 90000,            // LLM completion timeout
   MAX_COMPLETION_TOKENS: 8000,   // generous — a low cap starves reasoning models and yields empty output
   MIN_SUCCESS_RATIO: 0.5,        // abort (do not publish) if fewer than this fraction of attempts succeed
   MODELS: {
-    SUMMARY: 'gpt-5',
-    DISCUSSION: 'google/gemini-3.1-pro-preview'
+    SUMMARY: 'openai/gpt-6-luna',
+    DISCUSSION: 'google/gemini-3.8-flash'
   }
 };
 
@@ -224,7 +224,7 @@ async function main() {
     const hnText = htmlToText(story.text);
 
     try {
-      // ---- Submission summary (gpt-5) ----
+      // ---- Submission summary ----
       const hasBody = content.length >= CONFIG.MIN_CONTENT_LENGTH || hnText.length > 0;
       const submissionUser = hasBody
         ? `Title: ${story.title}\nURL: ${story.url}\n\n` +
@@ -236,6 +236,7 @@ async function main() {
       const submissionCompletion = await retryWithBackoff(
         async () => openai.chat.completions.create({
           model: CONFIG.MODELS.SUMMARY,
+          reasoning: { effort: 'medium' },
           max_tokens: CONFIG.MAX_COMPLETION_TOKENS,
           messages: [
             { role: 'system', content: SUBMISSION_PROMPT },
@@ -256,7 +257,7 @@ async function main() {
       }
       submissionSummary = stripPreamble(submissionSummary);
 
-      // ---- Discussion summary (gemini) ----
+      // ---- Discussion summary ----
       // Only attempt a discussion summary when there are actual comments — an
       // empty array serializes to "[]", which is not worth a model call.
       let discussionSummary = '';
@@ -266,6 +267,7 @@ async function main() {
         const discussionCompletion = await retryWithBackoff(
           async () => openai.chat.completions.create({
             model: CONFIG.MODELS.DISCUSSION,
+            reasoning: { effort: 'medium' },
             max_tokens: CONFIG.MAX_COMPLETION_TOKENS,
             messages: [
               { role: 'system', content: DISCUSSION_PROMPT },

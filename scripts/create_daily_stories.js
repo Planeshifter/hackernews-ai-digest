@@ -13,7 +13,7 @@ const CONFIG = {
   MAX_RETRIES: 3,
   RETRY_DELAY: 2000,
   MAX_COMMENT_DEPTH: 10, // Prevent infinite recursion
-  CLASSIFIER_MODEL: 'openai/gpt-5.1'
+  CLASSIFIER_MODEL: 'openai/gpt-6-luna'
 };
 
 const API_URLS = {
@@ -160,6 +160,8 @@ async function isAIRelated(title) {
     const completion = await retryWithBackoff(
       async () => openai.chat.completions.create({
         model: CONFIG.CLASSIFIER_MODEL,
+        // A title classifier needs no reasoning tokens; keep the 50-token JSON budget usable.
+        reasoning: { effort: 'none' },
         messages: [
           { 
             role: 'system', 

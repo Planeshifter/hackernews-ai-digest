@@ -16,8 +16,8 @@ A daily job generates a Markdown digest of Hacker News AI submissions. For each 
   - a title line:  ### {title}
   - a metadata line:  #### [Submission URL](...) | N points | by [user](...) | [M comments](...)
 NEVER attribute an edit to those two lines to either prompt — they are pipeline output, not model output. Beneath them, TWO different models write TWO sections, in this fixed order:
-  1. SUBMISSION section — written by the SUBMISSION_PROMPT (model gpt-5). Summarizes the linked article/repo/paper/tweet/product.
-  2. DISCUSSION section — written by the DISCUSSION_PROMPT (model gemini). Summarizes ONLY the HN comments.
+  1. SUBMISSION section — written by the SUBMISSION_PROMPT (currently GPT-6 Luna; historically GPT-5). Summarizes the linked article/repo/paper/tweet/product.
+  2. DISCUSSION section — written by the DISCUSSION_PROMPT (currently Gemini 3.8 Flash; historically Gemini 3.1 Pro). Summarizes ONLY the HN comments.
 There is NO reliable machine-readable delimiter between the two sections; sub-headers vary per story or are absent. You must decide which prompt an edit belongs to by READING the content and its surrounding context, not by pattern-matching a header. For every edit hunk, decide: does it fix SUBMISSION output, DISCUSSION output, or is it AMBIGUOUS/spanning both? If you cannot confidently tell, mark it AMBIGUOUS. An AMBIGUOUS hunk may NEVER, on its own, justify a prompt change. A SUBMISSION-section edit may ONLY ever justify a change to the submission prompt; a DISCUSSION-section edit may ONLY ever justify a change to the discussion prompt. A whole-story deletion (model refused, emitted an error placeholder, or produced scaffolding) is usually a SUBMISSION signal — confirm from the deleted text.
 
 =====================================================================

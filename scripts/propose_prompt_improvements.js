@@ -33,7 +33,7 @@ const G = require('./guardrails.js');
 const CONTROL_CHARS = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/; // all control chars except \t \n \r
 
 const CONFIG = {
-  MODEL: 'gpt-5',
+  MODEL: 'openai/gpt-6-luna',
   WINDOW_DAYS: 7,
   MAX_PR_DIFF_LINES: 400,
   MAX_TOTAL_INPUT_CHARS: 120000,
@@ -374,6 +374,7 @@ async function callModel(meta) {
     try {
       const completion = await openai.chat.completions.create({
         model: CONFIG.MODEL,
+        reasoning: { effort: 'medium' },
         max_tokens: CONFIG.MAX_COMPLETION_TOKENS,
         response_format: { type: 'json_object' },
         messages: [{ role: 'user', content: meta }],
