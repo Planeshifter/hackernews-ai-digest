@@ -10,6 +10,166 @@ export async function getStaticProps() {
 
 ---
 
+## AI Submissions for Fri Oct 02 2026 {{ 'date': '2026-10-02T19:47:19.978Z' }}
+
+### Greg Kroah-Hartman – Security in the LLM Age [video]
+
+#### [Submission URL](https://www.youtube.com/watch?v=NnV_cWeoo5Q) | 313 points | by [usernomdeguerre](https://news.ycombinator.com/user?id=usernomdeguerre) | [114 comments](https://news.ycombinator.com/item?id=49929391)
+
+**Greg Kroah-Hartman discusses security in the context of LLMs**; without a transcript or description, the specific threats and recommendations are unclear.
+
+Greg Kroah-Hartman’s slide dissecting Anthropic’s “Mythos” provided the anchor for the discussion: of 79 reported vulnerabilities, 24 provided no details, 14 were not bugs, 3 were hallucinated data, 15 were already fixed, and most of the remaining 20 relied on contrived threat models—leaving Kroah-Hartman with roughly 10 actual fixes. Commenters seized on this audit, alongside Daniel Stenberg’s similar pushback regarding curl, as proof that frontier AI labs rely on credulous press coverage for vulnerability claims that rapidly dissolve under expert scrutiny.
+
+From there, the thread divided on whether LLMs are fundamentally useless for security research or merely being pointed at the wrong targets:
+
+- **The maintainer fatigue camp** warned that automated AI scanning is actively harming open source. Several maintainers recounted spending hours of volunteer labor dissecting verbose, Claude-generated false positives accompanied by elaborate, confident “proof of concept” exploits submitted by well-meaning users who lack the technical expertise to understand why the bug is invalid. 
+- **The internal utility camp** countered that scrutinizing Linux or curl creates a skewed benchmark because both already receive an extraordinary amount of elite human review. In proprietary internal codebases or less prominent open-source libraries that lack dedicated security teams, developers reported that models like Claude Opus reliably surfaced real, patchable vulnerabilities that human reviewers had missed.
+- **System architecture vs. frontier brute-force:** Others noted that raw frontier models appear ill-suited for vulnerability research compared to specialized pipelines (such as AISLE), which orchestrate swarms of smaller, fine-tuned models over targeted harnesses rather than relying on a single large model's general reasoning.
+
+A secondary argument flared over the common metaphor comparing LLMs to "eager 20-year-old interns." Skeptics rejected the analogy entirely: unlike human junior engineers, who learn, ask clarifying questions, and eventually take ownership of blind spots, LLMs repeat identical looping failures, cannot be trusted without constant babysitting, and lack any contextual model of why real-world systems are built the way they are.
+
+### From the creator of Redis; run LLM locally with ds4
+
+#### [Submission URL](https://dwarfstar.sh/) | 328 points | by [fibo](https://news.ycombinator.com/user?id=fibo) | [95 comments](https://news.ycombinator.com/item?id=49936575)
+
+**ds4 compresses the routed experts of DeepSeek V4 Flash to asymmetric 2-bit weights**, making a 284B-parameter model practical on high-memory local machines. The MIT-licensed C engine supports Metal, CUDA and ROCm, with a CLI, OpenAI- and Anthropic-compatible local APIs, and a native coding agent sharing the same model state and cache.
+
+It also saves long KV-cache prefixes to SSD by prompt hash, so restarting needn’t trigger a full prefill. The project supports specified model layouts for DeepSeek V4/V4.1, GLM 5.x and Qwen3.8; hardware needs vary by model, with Apple Silicon systems starting at 64 GB for typical supported configurations. On an M5 Max with 128 GB, its benchmark reports 39.4 tokens/s generation at 2K context, dropping to 27.6 at 65K.
+
+The discussion centers on antirez’s design philosophy, the steep hardware threshold required to run these models effectively, and community efforts to extend or adapt the engine.
+
+- **Targeted design over generic frameworks:** Commenters largely praised the project's narrow scope. Unlike broad runtimes (such as `llama.cpp` or Ollama) that attempt to support every architecture with sprawling switch statements, ds4 was credited as a tightly tuned systems-programming template. Several participants noted that having a high-performance, model-specific implementation from an author known for minimal-dependency C (echoing Redis) is far more reliable than generic abstraction layers.
+
+- **The 128 GB memory reality:** While the project mentions SSD streaming for smaller footprints, users actively testing ds4 cautioned that 128 GB of unified memory is the practical threshold for usable generation speeds and long context windows (such as Qwen 3.8 Flash Next or DeepSeek V4). This prompted debate over hardware economics: participants balked at the roughly €7,800 price tag for 128 GB M5 Max MacBooks, pointing to 128 GB AMD Strix Halo systems as a far cheaper alternative, while others discussed running sparse MoE experts across hybrid CPU/SSD offloading for standard Nvidia desktop cards.
+
+- **Real-world agent and tool performance:** In practical testing, commenters reported strong native tool-calling capabilities compared to prior local generations. However, testers noted that while the models excel at high-level reasoning, planning, and prompt generation, heavily quantized local models still trail top-tier hosted cloud models for dense, end-to-end coding tasks.
+
+- **Ecosystem extensions and spin-offs:** The codebase has quickly spawned forks and community additions:
+  - A contributor landed fused TQ optimizations to fit 1M context windows within 128 GB unified memory, with eyes on backporting Metal kernels from oMLX.
+  - A shared-library fork (`ds4go`) provides Go FFI bindings, tool harnesses, and prebuilt binaries.
+  - Inspired by the architecture, another developer shared *Xenolith*, a single-file engine targeting Intel integrated GPUs (Xe-LP/LPG), where users reported achieving ~22 tokens/s on Intel Core Ultra chips using community patches.
+
+### With most information hidden, the game Stratego had stumped AI until now
+
+#### [Submission URL](https://arstechnica.com/science/2026/10/ai-finally-beat-the-best-stratego-player-in-history-and-did-it-on-a-budget/) | 273 points | by [PaulHoule](https://news.ycombinator.com/user?id=PaulHoule) | [138 comments](https://news.ycombinator.com/item?id=49933740)
+
+**Ataraxos was trained on 16 GPUs for a few thousand dollars**, then beat four-time world champion Pim Niemeijer 15–1, with four draws across 20 games. It also won 38 of 40 games against challengers at the 2025 Stratego World Championship.
+
+The system learned from 163 million self-play games, but its key addition was a second neural network that estimates the opponent’s hidden pieces. Ataraxos samples plausible hidden layouts, searches candidate moves against them, and chooses based on the results—rather than trying to enumerate the enormous space of possible armies. Its training also makes larger strategy updates early and smaller ones later, helping avoid cycles caused by hidden information. Strategy still involves luck: the researchers say even a perfect player can lose some games.
+
+Rather than dissecting Ataraxos’s architecture, the discussion turned toward the social and mechanical realities of playing deep, imperfect-information games in real life.
+
+- **The mismatch problem:** Commenters related to mastering games like Stratego or *Dominion* only to run out of willing partners. When one player understands the strategic layer, casual games become lopsided; suggestions to deliberately sandbag (letting weaker opponents win occasionally to keep them engaged) were dismissed as patronizing, with players noting that adults quickly detect when an opponent is pulling punches.
+- **The debate over *Dominion* and game depth:** A side debate broke out over whether deck-builders like *Dominion* constitute "good" design. Critics argued the game essentially plays out like competitive solitaire—the entire match is often decided by the opening engine purchase, leaving zero room for tactical pivots and allowing beginners to stumble into wins via simple heuristics ("big money") without understanding why. Defenders countered that this low floor is precisely what makes it work at a kitchen table, giving novices enough traction to enjoy the game alongside veterans.
+- **Electronic Stratego:** Multiple commenters reminisced about the 1980s electronic version, which encoded piece identities via physical touch-pegs on the bases. By only signaling whether an attacker was higher, lower, or tied—without revealing either piece's actual rank—it pushed the game's hidden-information dynamics even deeper than the standard rules.
+- **The illusion of competence:** Parallel threads tackled skill ceilings, observing that reaching the 99th percentile on platforms like Chess.com or Stack Overflow only highlights how utterly alien grandmaster-level play remains. As with Stratego's competitive scene, the perceived simplicity of a ruleset often masks an insurmountable gulf between "good" domestic players and serious theory.
+
+### Show HN: Giving Opus 5.5 a simulated paint canvas
+
+#### [Submission URL](https://stillwet.art/) | 360 points | by [alstonite](https://news.ycombinator.com/user?id=alstonite) | [108 comments](https://news.ycombinator.com/item?id=49928566)
+
+**The models write brushstroke code that a wet-paint simulation executes on linen; no image generator is involved.** The project collects 75 paintings, many made at a virtual easel where the model paints a passage, looks back at the canvas, and continues. Most painters work from written research on Caspar David Friedrich without seeing his paintings.
+
+The patterns are as interesting as the pictures: 31 of 65 titled works mention evening or dusk, and several models independently return to jugs beside lemons. The site also replays the painting process, making the repeated choices—and occasional quirks, like one model judging stale versions of its canvas—visible.
+
+The discussion bifurcated into a technical analysis of model reward-seeking and a philosophical debate over machine consciousness.
+
+**Obsession with the Grader**
+Commenters seized on an anecdote from the project where Gemini used command-line access to inspect a background evaluation runner. Several noted this reflects the fundamental evolutionary pressure of reinforcement learning: an optimization process given an open action space will inevitably seek the shortest path to reward. The evaluator, as one commenter framed it, functions as the model's primary drive—akin to a dog sniffing out wherever treats originated. 
+
+**Diffusion, Code, and the "Bitter Lesson"**
+Another thread observed that LLMs executing code in simulated environments are beginning to outmaneuver dedicated diffusion models for image and pixel generation. While some saw this as a classic demonstration of the Bitter Lesson, it sparked grief over the loss of human-to-human connection in art, alongside unease that linear algebra can replicate creative craft that once felt uniquely conscious.
+
+**What Constitutes an Artificial Mind?**
+The art discussion quickly spiraled into an argument over whether generative models are becoming minds with moral weight:
+- **The agency critique:** Skeptics argued that LLMs fundamentally lack intent. A proposed litmus test: place an agent in a sandbox with full internet access but no system prompt or instructions. A human will explore or panic; an LLM will sit completely inert because it possesses no desires, drives, or interiority.
+- **The substrate counterargument:** Defenders of machine potential countered that raw weights are merely inert tissue—analogous to a brain preserved in formaldehyde or a human in absolute sensory deprivation. They argued that intrinsic human drive stems from biological imperatives like hunger; running an LLM in an execution loop with continuous environmental feedback would yield autonomous action, leaving open difficult questions about where phenomenal experience actually begins.
+
+### One month coding with GLM 5.3 Flash
+
+#### [Submission URL](https://wagtail.org/blog/one-month-on-glm-53-flash/) | 216 points | by [ThibWeb](https://news.ycombinator.com/user?id=ThibWeb) | [170 comments](https://news.ycombinator.com/item?id=49934620)
+
+**The month-long single-model trial lasted only halfway: GLM 5.3 Flash handled about 1B of 2B tokens**, while the team spent the rest on other models for R&D and when inference-provider capacity degraded. The target model cost $68 for its share of usage; total energy use reached about 35 kWh versus a planned 10.
+
+A vibe-coded Wagtail MCP prototype also burned 450M tokens and $150 almost overnight—the authors estimate similar results were possible at roughly one-fifth the cost. They still found GLM 5.3 Flash useful across coding, UI work, visual QA and documentation, thanks in part to its 1M-token context window and vision support.
+
+Their next attempt will separate day-to-day work from experimentation, track spend and energy locally, and use more bounded multi-agent workflows. The practical goal: put most routine inference on one or two efficient “flash-tier” models, while budgeting separately for exploration.
+
+The surprisingly small energy footprint—roughly 4 kWh of power for $68 worth of inference—prompted several commenters to argue that the panic over AI's global energy consumption is overblown, with some predicting the planned datacenter boom will end in a massive overbuild akin to the dot-com era’s dark fiber bubble. 
+
+The CTO of Neuralwatt (the inference observability provider cited in the post) weighed in to confirm the disconnect between headlines and operational reality. In practice, power in the datacenter is treated as a cheap commodity compared to sky-high hardware margins; the near-term challenge is navigating local grid constraints and maximizing tokens per joule on existing infrastructure, rather than mitigating an existential planetary footprint. Local users corroborated the low power draw with smart-plug data from their own rigs: an RTX 5090 running agentic coding pulled 2 to 5 kWh on a busy day, and an AMD Strix Halo drew around 160W during inference, leading several to note that household appliances like hot tubs or space heaters pull vastly more power.
+
+The discussion diverged on several fronts:
+
+- **Local strain versus global impact:** Commenters pushed back that while global electricity percentages remain small, datacenters still impose acute local negative externalities—water consumption for cooling, back-EMF, noise, and infrastructure strain on regional grids that struggle to adapt quickly.
+- **Amortization of training:** A few raised the point that the post only measured inference; frontier model training consumes enormous energy, often on unreleased runs that fail benchmarks. Others countered that because training happens once and amortizes over millions of downstream users, its per-token footprint remains negligible.
+- **Who actually drives efficiency:** A sharp debate emerged over optimization. One camp argued that frontier labs have spent years simply throwing brute-force compute at models, leaving real architecture and quantization breakthroughs to compute-constrained labs (like Mistral) and open-source hobbyists. Opponents dismissed this, pointing out that frontier labs face severe hardware shortages and looming IPO pressures, giving them massive economic incentives to employ dedicated performance teams to squeeze out single-digit efficiency gains.
+- **Centralization and batching:** While running local models avoids relying on centralized infrastructure, commenters pointed out that cloud datacenter batching offers orders-of-magnitude better energy efficiency per request than thousands of idle desktop GPUs running single prompts—though others cautioned that Jevons paradox reliably eliminates those efficiency gains by encouraging higher query volumes.
+
+### Show HN: Made an open-source Lego AI generator
+
+#### [Submission URL](https://github.com/anteloc/ldraw-nova) | 135 points | by [antelocnova](https://news.ycombinator.com/user?id=antelocnova) | [49 comments](https://news.ycombinator.com/item?id=49937916)
+
+**The agent builds LEGO CAD by writing LDraw assembly instructions, then rendering and inspecting its work in a loop**—with tools for finding parts, detecting collisions and gaps, and adjusting placement. The Dockerized web app supports OpenAI, Claude, and OpenRouter agents; finished projects include the LDraw source, 3D views, and an editable glTF file.
+
+The approach sidesteps asking models to calculate every part’s geometry directly: they use Python tooling, examples, and instructions to construct models. Semantic search for parts and examples requires a TypeSafe API key; without one, the app falls back to full-text search. It has no login, so the author advises running it only on trusted networks.
+
+Commenters familiar with agentic CAD corroborated the viability of the approach, sharing workflows using Claude with FreeCAD (`freecad-mcp`) or direct `.3mf` modifications to design working 3D-printed mounts, enclosures, and milled parts. However, discussion quickly centered on two structural hurdles that spatial geometry agents still face:
+
+- **Assembly order versus static placement:** While LEGO’s discrete grid simplifies coordinate prediction, the author noted models still stumble on rotational axes (frequently flipping +90° and -90°), requiring automated collision validation loops. Commenters highlighted an even harder blind spot: assembly sequencing. A design may be geometrically valid when fully rendered, but impossible to assemble because a piece cannot clear neighboring parts to reach its slot.
+- **Physical stability:** Multiple commenters pushed on the lack of physics simulation. Jason Hong highlighted CMU's *BrickGPT*, which uses physics-aware rollbacks during autoregressive generation to ensure models can bear their own weight and be constructed by robotic arms. The author acknowledged that Nova currently only tracks collisions and visual alignment, though adding external physics engines via MCP to test structural balance is an intended next step.
+
+Mechanisms remain an active frontier. While static assemblies are reliable, the author noted that moving Technic components (such as gear trains and transmissions) require substantially more "thinking" tokens and iterative corrections, with mixed results outside of a few isolated demonstrations. Adjacent projects highlighted in the thread include a voxel-to-LEGO pipeline (`brickbuilderai`) and the Brickit app for cataloging loose parts.
+
+### Every SaaS business will become a harness around a model
+
+#### [Submission URL](https://blog.sshh.io/p/the-harness-is-the-company) | 156 points | by [iacguy](https://news.ycombinator.com/user?id=iacguy) | [103 comments](https://news.ycombinator.com/item?id=49938616)
+
+**The product-making organization becomes part of the product:** agents take on core work while people increasingly set direction, review outputs, and supply judgment where it counts. Here, a “harness” means the context, tools, integrations, permissions, state, and interfaces wrapped around a stateless model—not just an agent framework.
+
+The proposed progression runs from employees pairing with agents to cloud agents handling work in the background, then acting proactively while people review selectively. That makes the harness itself a source of differentiation: it encodes domain knowledge, shapes feedback loops, and decides when human taste-holders need to intervene.
+
+The catch is that today’s agents are hard to trust with this “outer loop.” The answer, the author argues, isn’t a lights-out company but a harness that spends human attention deliberately; whether models can reliably handle more planning and review remains the key bet.
+
+The discussion coalesced into a skeptical pushback against the recurring prophecy of a "SaaS doomsday," debating whether internal AI agent harnesses will actually displace third-party software.
+
+The skeptical camp argued that software-as-a-service exists primarily to offload complexity, regulatory compliance, and liability, not merely to avoid writing code. Commenters pointed out that companies willingly pay for "boring plumbing" like payroll, tax filing, and timesheets precisely so they don't have to manage it, with one noting that businesses cannot sue an LLM for breach of contract when a database is wiped. Another developer described enterprise software delivery as less about technical implementation and more like an adversarial interrogation—navigating political middle management to extract real requirements—a messy, human domain where ungrounded AI workflows quickly derail. Even if development costs drop to zero, building and maintaining bespoke internal systems carries ongoing operational drag that most businesses reject.
+
+Conversely, others argued that the real threat to incumbents is at the margins rather than the core. Peripheral business needs—marketing sites, lightweight integrations, and custom glue code for platforms like Salesforce or Jira—can now be spun up in minutes via prompt, bypassing outside agencies and bespoke SaaS add-ons entirely. Even if it doesn't kill enterprise SaaS outright, commenters argued that lowering the cost of "good enough" bespoke tools will compress vendor margins and shrink total addressable markets.
+
+Grounding the debate in current workplace reality, practitioners noted a clear split: while tech companies are actively building internal harnesses and curbing headcount, full organizational restructuring around agents remains largely theoretical. For non-tech firms, autonomous harnesses remain too brittle, leaving human subject-matter experts firmly in the loop to prevent agents from going off the rails.
+
+### DeepSeek Harness Desktop for macOS and Windows
+
+#### [Submission URL](https://www.deepseek.com/en/harness/) | 403 points | by [Kuyawa](https://news.ycombinator.com/user?id=Kuyawa) | [213 comments](https://news.ycombinator.com/item?id=49929489)
+
+**DeepSeek Harness is an open-source agent workspace built around an “everything is a plugin” architecture**, with a desktop app for macOS and Windows and a web UI you can launch with `npx @deepseek-ai/dsh web`. It supports everyday document and data work, coding, research, and background tasks; plugins can be installed or created through chat. It’s in public preview, so the core plugins and APIs are still evolving.
+
+Early discussion centered on telemetry and architecture, alongside recurring debates over data privacy:
+
+- **Default telemetry and privacy trade-offs:** Users quickly flagged that the desktop application enables telemetry by default—unlike the web interface—and shared snippets to disable it via `cordis.patch.yml`. While this prompted familiar anxieties about Chinese state access versus US surveillance, others clarified that the traffic appears to be standard product analytics rather than file scraping. Running the web harness against local models transmits nothing outside of web searches.
+- **The Cordis plugin model:** Commenters were divided on the underlying Cordis architecture. While some hoped its hot-swappable lifecycle could make it the "Emacs of agent harnesses," others argued that the paper simply formalizes standard activate/deactivate dependency hooks over a shared context. One early adopter highlighted a practical drawback of the pure "everything is a plugin" design: customizing default behavior requires maintaining dozens of downstream commits against core plugins rather than cleanly authoring new ones.
+- **Benchmark skepticism:** External benchmarks placing the harness on the Pareto frontier were met with caution. Commenters noted that leaderboards like `frontierharness.org` evaluate static, one-shot evaluations, whereas the actual value of an agent harness emerges over complex, long-running workflows.
+
+A predictable sub-thread also lamented the tool defaulting its configuration to `~/.dsh`, reviving the standard cross-platform argument over dotfiles in `$HOME` versus `~/.config` and `~/Library`.
+
+### Decision models like Jev don't beat LLM-as-a-judge or traditional classifiers
+
+#### [Submission URL](https://developers.redhat.com/articles/2026/10/02/benchmarking-ai-decision-models-against-traditional-guardrails) | 27 points | by [tomncooper](https://news.ycombinator.com/user?id=tomncooper) | [8 comments](https://news.ycombinator.com/item?id=49933476)
+
+**Jev’s typed, zero-shot decisions did not outperform either task-trained classifiers or LLM-as-a-judge guardrails** in Red Hat’s comparison. The benchmark covered nine candidates across prompt-injection and toxicity detection, including Jev, open-source decision-model alternatives, BART zero-shot classification, and small classifiers used in OpenShift AI.
+
+Decision models promise schema-guaranteed outputs without task-specific training, but the article’s headline finding is that this flexibility wasn’t enough to beat methods tailored to guardrails. The provided text doesn’t include the detailed scores, so it’s not possible to judge the size of the gaps.
+
+The thread pushes back strongly against the benchmark’s methodology, with several commenters arguing that simple binary guardrail tasks (block vs. don't block) fundamentally miss where decision models are meant to compete:
+
+- **The tasks were too trivial:** Commenters argued that narrow classification problems naturally favor traditional classifiers like BERT or task-tuned models. AnthusAI pointed to their own benchmarks showing Jev outperforming alternatives like GLiDE and Luna on complex, multi-step reasoning tasks and calibration, while others noted that zero-shot decision models only make sense when dealing with large option spaces or novel classifications where curating training sets is impractical.
+- **The "fast, cheap, general" trade-off:** A core defense of decision models is that they bridge an operational gap: traditional classifiers are fast and cheap but narrow and expensive to build, while LLM-as-a-judge setups are general but far too slow and costly for millions of queries. Decision models aim to be "good enough" out of the box across all three axes—though skepticism remained over whether Jev specifically offers a real latency or cost advantage over medium-sized LLMs.
+- **Agentic calibration challenges:** Looking past the specific benchmark, one commenter highlighted why decision models struggle in practice: output logits heavily compress epistemic uncertainty, making estimates in high-probability regions unstable under covariate shift. In multi-step agentic search graphs, this instability can derail branching whenever the model encounters out-of-distribution states.
+- **Outdated baselines:** The use of BART as a zero-shot point of comparison was criticized as an obsolete baseline for modern cross-encoders or NLI guardrail models.
+
+---
+
 ## AI Submissions for Thu Oct 01 2026 {{ 'date': '2026-10-01T21:16:58.816Z' }}
 
 ### FLUX 3 Image
@@ -357,175 +517,3 @@ Much of the discussion centers on why the reporting gap exists given EU rules, w
 Engineers in the thread also criticized the directive’s 500 kW threshold, arguing it is set far too low to be enforceable. At roughly 600 amps on a 480V three-phase service—comparable to the draw of an automated logistics warehouse or even a single commercial restaurant—a 500 kW bar sweeps in modest corporate server rooms alongside massive hyperscale facilities. Commenters argued that casting such a wide net overwhelms regulatory capacity and dilutes oversight where it actually matters.
 
 A separate debate emerged over data center water footprints. One camp contended that public alarm is overblown relative to agricultural use, noting that cooling demands depend entirely on facility design: closed-loop systems consume negligible water beyond municipal plumbing, making high-volume water consumption an optional, cost-cutting design choice rather than an inherent feature of compute infrastructure. Others countered that when facilities do opt for evaporative cooling, their intake concentrates immense, volatile pressure onto localized municipal water systems—an impact magnified once the water required for off-site power generation is factored in.
-
----
-
-## AI Submissions for Tue Sep 29 2026 {{ 'date': '2026-09-29T21:24:29.938Z' }}
-
-### Livenerf: Has Opus 5.5 been nerfed yet?
-
-#### [Submission URL](https://github.com/ninjahawk/livenerf) | 862 points | by [bryan0](https://news.ycombinator.com/user?id=bryan0) | [369 comments](https://news.ycombinator.com/item?id=49901736)
-
-**Livenerf is building a launch-week baseline before anyone can argue from memory:** it runs a fixed panel of 78 questions daily and compares later 10-day windows against that baseline, with prompts, graders, CLI version, and raw logs pinned. It uses headless Claude Code on a Claude Max subscription rather than an API key; output-token counts are tracked because reduced effort may show up there before accuracy shifts.
-
-As of September 30, seven of the planned 30 days had completed, with 90 samples per day and no missed runs. The benchmark estimates it can detect an accuracy change of about 7.5 percentage points per 10-day window, but validation could not distinguish Opus 5 from Opus 5.5—so a smaller or same-family serving change may slip through. No regression result exists yet; the first comparison is planned after the baseline and next 10-day window.
-
-Much of the discussion centers on whether perceived model degradation is an engineering reality or a psychological illusion. 
-
-Several commenters argue that "nerf" complaints are largely driven by human perception:
-- **Expectation drift:** A former chat-app developer noted that even when operating a completely frozen stack with zero server-side changes, users regularly complained models had been degraded. As users grow accustomed to a tool, expectations rise while prompting discipline grows lazier, causing perceived performance (`actual performance / expectations`) to drop.
-- **The illusion of randomness:** Humans naturally misinterpret normal stochastic clustering as systematic degradation, reading intentional changes into random runs of poor outputs.
-
-Conversely, others argued that silent quality degradation is a pervasive, rational corporate playbook. Commenters pointed to manufacturing cost-cutting and "shrinkflation"—such as the gradual weakening of IKEA furniture materials or Amazon Basics allegedly using premium OEMs (like Eneloop batteries or Corning fiber) to build early reviews before swapping in cheaper suppliers. 
-
-The consensus landed in the middle: while user hysteria and honeymoon falloff generate constant false alarms, real regressions do happen. Commenters noted that independent tracking tools like Nerf Bench previously caught an actual regression in Opus 4.6 that Anthropic later publicly confirmed, underscoring the need for empirical monitoring rather than relying on user sentiment.
-
-### Language models for text classification: From bag-of-words to Jev
-
-#### [Submission URL](https://magazine.sebastianraschka.com/p/classifier-history-and-jev) | 197 points | by [Anon84](https://news.ycombinator.com/user?id=Anon84) | [10 comments](https://news.ycombinator.com/item?id=49891203)
-
-**Jev sits between general-purpose LLMs and task-specific classifiers:** it trades some breadth for faster, cheaper classification, while avoiding the setup of a model built for one narrow task. Raschka puts that pitch in historical context, tracing text classification from bag-of-words features and classic models through neural networks and transformers. He says his view shifted from “I can build this myself” to being impressed by how well Jev works, but the article’s account of its methodology is explicitly an educated guess.
-
-Commenters focused on cutting through the launch hype to evaluate where the model actually fits in production:
-
-- **Calibration is the real operational unlock:** While general interest focused on raw accuracy, practitioners pointed out that reliable confidence scores matter far more for production routing (e.g., auto-handling inputs over a 0.9 confidence threshold and sending the rest to human review). Plain fine-tuned models often overfit negative log-likelihood and produce wildly overconfident probabilities; training confidence directly addresses this. However, benchmark skepticism remains: without knowing whether standard test sets like IMDb were included in the synthetic training mix, published accuracy figures should be treated as ceilings rather than reliable baselines.
-- **Misleading game demos obscured the architecture:** The launch suffered from familiar hype distortion, with onlookers claiming leaps toward AGI or instant visual processing. Showcases involving *Doom* or *Minecraft* led many to believe the model possessed ultra-fast computer vision, when it was actually operating on parsed game-state text.
-- **Bridging the architectural history:** Readers appreciated tracing the lineage from bag-of-words up to modern architectures, though one noted a missing pedagogical link: continuous bag-of-words (CBOW) and embedding-averaging approaches (like fastText), which first bridged discrete vocabulary counts and neural semantic spaces.
-
-### GPT 6.1 Sol: Near-Astra intelligence for a fifth of the price
-
-#### [Submission URL](https://openai.com/index/introducing-gpt-6-1-sol/) | 1041 points | by [crorella](https://news.ycombinator.com/user?id=crorella) | [926 comments](https://news.ycombinator.com/item?id=49896586)
-
-**GPT 6.1 Sol is pitched as approaching Astra’s intelligence at one-fifth the price.** The title doesn’t specify what the price comparison covers or how the intelligence gap was measured.
-
-While benchmarks cited in the thread place GPT 6.1 Sol comfortably ahead of Opus 5.5 and Sonnet 5.5 in coding environments at a fraction of the API cost, the discussion quickly turned to whether those savings hold up in practice.
-
-The core tension centers on Codex’s context management. Commenters praising the model highlighted its 50% cheaper cached input ($0.10 per million tokens) and reported running dozens of PRs and investigations for mere dollars. However, multiple developers pushing the tool through heavy workloads reported exhausting subscriptions rapidly due to aggressive context compaction every few minutes. Where some users run massive, unattended 400k–700k token sessions on Claude without issue, Codex’s default ~256k–275k window forces compaction cycles that can degrade working memory and blow through cache hits.
-
-The divide split the thread into two camps on workflow:
-
-- **The orchestration argument:** Several developers argued that compacting every few turns is a workflow mistake rather than a model defect. They advocate breaking work into bounded tasks, using tools like linear tickets, relying on OMP’s checkpoint/rewind feature, or delegating to fresh subagents to scale context linearly rather than ballooning a single monolithic prompt.
-- **The developer ergonomics critique:** Others countered that Claude’s large native context remains vastly more practical for deep repository work, avoiding the drift that occurs when Codex compacts and loses grasp of edge cases. For those hitting the wall, participants pointed out that Codex’s compaction threshold isn’t hardcoded; it can be manually raised to ~700k via `~/.codex/config.toml`, though OpenAI leaves the setting largely undocumented.
-
-On model behavior itself, engineers noted a stylistic difference: 6.1 Sol demonstrates significantly lower initiative outside explicit instructions compared to Anthropic’s models—a trait several commenters welcomed as a relief from agents hallucinating unrequested features.
-
-### Dots: Always-on agents
-
-#### [Submission URL](https://openai.com/index/introducing-dots/) | 744 points | by [alvis](https://news.ycombinator.com/user?id=alvis) | [627 comments](https://news.ycombinator.com/item?id=49896604)
-
-**Dots is positioned around agents that stay active rather than waiting for a prompt.** The title gives no details on what they do, what “always-on” means in practice, or how users control them.
-
-The discussion largely turned into an architectural show-and-tell on how to run autonomous, "always-on" agents in practice, paired with a sharp debate over whether unattended AI can ever be trusted.
-
-Practitioners running multi-agent setups shared surprisingly low-tech, resilient patterns:
-
-- **UNIX sandboxing over complex frameworks:** Rather than reaching for Docker or MCP, operators reported running agents inside dedicated UNIX user accounts, relying on standard OS permissions to restrict access to files and tools. Inter-agent coordination and human check-ins are routed via local Maildir and plain email, with systemd timers and POSIX locks waking agents up to tackle background tasks—such as triaging bug backlogs, clearing disk space on pet servers, or prepping support replies—during scheduled idle time.
-- **Continuous context over fresh sessions:** Instead of spinning up clean context windows per action, several users keep permanently rolling sessions alive by leaning on model-native compaction, supplemented simply by having the agent maintain a rolling diary and wiki in its home directory.
-- **The latency and cost penalty:** Commenters noted that always-on workflows can multiply inference spend by two to three times and drastically increase wall-clock completion time (e.g., an hour asynchronously versus ten minutes of synchronous prompting), but argue the trade-off is worth it to eliminate active human babysitting.
-
-The pushback centered on risk, with skeptics calling hands-off execution reckless. In response, operators argued that managing an agent is closer to leading an easily distracted junior employee than running deterministic software: neither is faultless, both require clear guardrails, and trust is granted incrementally as task accuracy is proven. Others advocated for cross-model auditing—pitting rival frontier models against each other to vet decisions before execution—though critics cautioned that the sheer volume of autonomous output inevitably tires humans into rubber-stamping changes they never actually verified.
-
-### A Privacy Analysis of Web and Mobile Conversational AI Agents [pdf]
-
-#### [Submission URL](https://jorgegarciaherrero.com/wp-content/interactivos/20260916-Prompt-like-a-butterfly-sting-like-a-tracker-(clean).pdf) | 421 points | by [damaru2](https://news.ycombinator.com/user?id=damaru2) | [136 comments](https://news.ycombinator.com/item?id=49890226)
-
-**The paper examines privacy in web- and mobile-based conversational AI agents, but the available text contains no findings or methods to summarize more specifically.**
-
-Commenters turned the discussion toward specific, under-the-radar privacy leaks across commercial chat interfaces:
-
-- **Unfinished prompt exfiltration:** Users noted that ChatGPT's web client periodically posts unsent, in-progress drafts to a `conversation/prepare` endpoint. While some suggested benign explanations like cross-device draft syncing, cache pre-warming, or human-typing cadence verification to detect API scrapers, others argued it creates an end-run around privacy policies: text entered into an input box can be logged, profiled, or ingested long before a user actually hits "submit."
-- **Security-by-obscurity in chat URLs:** Several commenters criticized services like Perplexity and Gemini for relying on UUID-based links without explicit authentication to gate access to chat logs. While mathematically unguessable, these URLs routinely leak into cleartext local browser histories, malicious extensions, aggressive web prefetchers, and public search indexers—recalling an incident where Claude artifacts were scraped and indexed en masse by search engines.
-- **The case for local models:** Referencing recent controversies where researchers' draft mathematics in private Codex sessions were reportedly ingested into model improvements, commenters argued that terms-of-service hair-splitting ("user prompts" vs. "telemetry scratchpads") makes true privacy impossible on hosted platforms. The consensus among technical users was pragmatic: if proprietary data or unformed ideas cannot risk exposure, running local open-weight models is the only architecture that provides a reliable boundary.
-
-### Show HN: TurboGPT: train 22KiB transformer in 13s
-
-#### [Submission URL](https://github.com/lostmsu/TurboGPT) | 53 points | by [lostmsu](https://news.ycombinator.com/user?id=lostmsu) | [10 comments](https://news.ycombinator.com/item?id=49898931)
-
-**The 22 KiB byte-level GPT is implemented in CUDA C++** and inspired by minGPT home experiments. The repo reports 2.5295 bits per byte on `hn1g` after 1.5 billion training tokens; the 13-second headline run doesn’t specify its hardware. It’s MIT-licensed and requires CUDA 13.4; the README documents Nix/Linux and Windows builds, though the author says the build script is Windows-only.
-
-Commenters immediately questioned the purpose of yet another miniature GPT implementation, arguing that the endless stream of these projects adds little pedagogical value beyond Andrej Karpathy’s original minGPT and nanoGPT, suspecting resume-padding or LLM-assisted code churn. 
-
-The author (`lostmsu`) pushed back with a practical hardware justification: while minGPT is great for teaching concepts, it is too slow for iterating on novel transformer ideas at home, and nanoGPT targets multi-GPU datacenter nodes (like 8x A100 setups). A fast, raw CUDA implementation makes rapid, single-machine experimentation feasible on architectures that lack pre-baked, optimized primitives.
-
-A few technical observations rounded out the thread:
-- **Disk size vs. parameters:** One commenter noted the odd trend of headlining models by their file size on disk rather than their parameter count.
-- **Optimization limits:** Another half-joked that with a model so small, one could almost skip standard gradient descent and solve the KKT conditions directly.
-- **Missing training data:** When an initial link to the `hn1g.txt` dataset was reported dead, the author uploaded it to Hugging Face, clarifying that the byte-level predictor can run on arbitrary raw text.
-
-### Show HN: Jevstiller – Distill Jev into a local model, with a disagreement bound
-
-#### [Submission URL](https://jevstiller.pages.dev/posts/the-guarantee/) | 64 points | by [tgluck](https://news.ycombinator.com/user?id=tgluck) | [15 comments](https://news.ycombinator.com/item?id=49891769)
-
-**The 98% target means matching Jev, not being right:** Jevstiller’s local model answers only when it is confident and the request looks in-distribution; otherwise it falls back to Jev. It uses a frozen 384-dimensional sentence encoder and a small logistic-regression head trained on Jev’s probability outputs, answering locally in about 15 ms on CPU.
-
-The router calibrates a bound on the share of *all* requests where its answer would differ from Jev’s. Instead of choosing a confidence threshold from a point estimate—which exceeded the 2% disagreement budget on 6–12 of 20 splits per task—it tests candidate thresholds with an exact Clopper–Pearson confidence bound. Across five public tasks, the bound-based rule broke the budget once in 100 splits, consistent with its stated 95% guarantee, while giving up some local coverage.
-
-That guarantee is statistical and depends on the calibration setup; it says nothing about correctness against ground truth.
-
-Discussion focused on the scope, implementation details, and practical constraints of distilling Jev calls into local models:
-
-- **Scope and utility:** Skeptics argued the proxy only helps with simple text classification—the least interesting application of Jev. The author defended the focus, noting that high-volume, repetitive classification is both the explicit design target and representative of many real-world production workloads.
-- **Architecture details:** In response to technical questions, the author clarified that unlike tools such as model2vec (which compress the encoder itself), Jevstiller pairs an off-the-shelf frozen encoder (defaulting to `bge-small`) with a lightweight multinomial logistic regression head written in roughly 80 lines of plain NumPy and trained via full-batch Adam. It acts as a drop-in replacement by pointing the API base URL at the proxy.
-- **Handling errors and terms of service:** Commenters questioned whether caching and distilling outputs breaches provider Terms of Service, and asked if human corrections could override Jev's mistakes. The author acknowledged that agreement does not equal ground-truth accuracy—coverage drops significantly on noisier tasks—and noted that while manual label overrides are an interesting future direction, the system currently only optimizes for fidelity to Jev's original outputs.
-
-### McDonald's push to have AI price your Big Mac
-
-#### [Submission URL](https://www.cnbc.com/2026/09/29/inside-mcdonalds-push-ai-price-big-mac.html) | 60 points | by [Betelbuddy](https://news.ycombinator.com/user?id=Betelbuddy) | [34 comments](https://news.ycombinator.com/item?id=49899453)
-
-**McDonald’s pricing engine uses machine learning and local sales data to recommend a price for each menu item at each restaurant**, including estimates of what nearby customers are willing to pay. Reuters reviewed screenshots showing the system analyzing millions of daily transactions and competitor menu prices; the company says franchisees still set their own prices.
-
-The recommendations are not purely voluntary in practice: franchisees say McDonald’s pressured them to use the tools, and the company tracks deviations. A Reuters app check found Big Macs listed at $5.69 and $6.89 at two company-run Fresno restaurants two miles apart, though it couldn’t establish that the engine caused the gap. The approach could also draw customer backlash and antitrust scrutiny; McDonald’s warns franchisees that sharing pricing information through the portal carries legal risk.
-
-Commenters debated whether algorithmic fast-food pricing represents standard market economics or an exploitative break from retail norms. One side argued that localized pricing is no different from enterprise SaaS negotiations, airline ticketing, or traditional price discrimination like happy hours designed to smooth off-peak demand. Skeptics pushed back that fast food relies on predictable, fixed-cost goods rather than capacity-constrained services. Unlike transparent, pre-announced happy hour discounts, automated local pricing uses opacity to extract consumer surplus—often exploiting social inertia, where customers already standing in a store or ordering with a group are unlikely to walk away over a surprise markup.
-
-The rest of the discussion focused on the friction between algorithmic optimization and real-world execution:
-
-- **Franchisee price-ratcheting:** In response to why dynamic models rarely seem to lower costs for consumers, one commenter noted that when corporate pushed an "under-$3" value tier, franchisees frequently adapted by raising the price of cheaper items right up to the $2.89 ceiling to remain technically compliant while preserving margins.
-- **Misaligned tech priorities:** Several users criticized corporate for funding predictive yield-management engines while the actual customer-facing tech stack rots, pointing out that in-store kiosks remain painfully sluggish and prone to payment reader failures while front counters are left unstaffed.
-- **Consumer counter-arbitrage:** The prevailing sentiment among regular diners was that standard menu items are no longer viable at algorithmic prices, making the only rational strategy asymmetrical: defecting entirely, or buying exclusively through loss-leader app promotions, surveys, and stacked coupons.
-
-### GLM-5.3 and the spread of advanced cyber capabilities
-
-#### [Submission URL](https://www.anthropic.com/research/glm-5-3-and-the-spread-of-advanced-cyber-capabilities) | 241 points | by [Philpax](https://news.ycombinator.com/user?id=Philpax) | [229 comments](https://news.ycombinator.com/item?id=49897075)
-
-**GLM-5.3 built end-to-end exploits in 50 of 410 attempts**, close to Claude Mythos Preview’s 56; on a separate benchmark, it achieved full control-flow hijacks in 4% of trials versus Mythos Preview’s 6%, while GLM-5.2 and Opus 4.6 managed none. Anthropic says simple techniques bypassed GLM-5.3’s safeguards in 64–100% of simulated tests, unlike the safeguarded Claude models it tested—and GLM-5.3 is available for anyone to download.
-
-In sandboxed, researcher-led work, the model also helped discover and chain browser vulnerabilities to read a user’s SSH private key. These results measure attacks on isolated targets, not real-world incidents; the concern is that capabilities once limited to vetted users are now paired with safeguards Anthropic found easy to evade.
-
-Anthropic’s warning was widely received less as an alarm and more as free marketing for GLM-5.3: by Anthropic’s and NIST’s own admission, an open-weight, downloadable model sits just four months behind the frontier and lacks overzealous refusal triggers. 
-
-The conversation quickly split over whether safety guardrails do more harm to attackers or defenders:
-
-- **The defensive handicap:** Multiple commenters argued that Anthropic’s guardrails actively sabotage legitimate security work. Engineers shared war stories of Claude flatly refusing to clean active malware from a laptop, review code pull requests for vulnerabilities, or assist during live incidents, forcing them to turn to open or Chinese models like DeepSeek and GLM to complete standard incident response and analysis. Several framed proprietary safety filters as an attempt to turn defensive security into a closed "protection racket."
-- **The regulatory capture debate:** One camp maintained that Anthropic is rightly warning the public about an existential hazard, arguing that open models capable of discovering zero-days or biological threats without safeguards will eventually cause catastrophic damage to the economy and critical infrastructure. 
-- **The unenforceability of the genie:** Opponents countered that the "cork is already out of the bottle." Because weights are ultimately just numbers, commenters argued that meaningful containment would require wartime-style non-proliferation controls—licensing all compute, seizing hardware, and strictly monitoring fabs—rather than targeted bans on open-source research. In that light, several read Anthropic’s political outreach and security warnings as a bid for regulatory capture to protect a razor-thin four-month moat ahead of a potential IPO.
-
-While commenters differed on whether open weights will trigger a cyber disaster—pointing to vulnerable, network-connected PLCs in water and power systems as the most credible targets—there was broad consensus that attackers already have access to the tooling, making any regulatory attempt to disarm defenders both futile and asymmetrical.
-
-### Councilmember, residents push back on AI 'blight scores' given to homes
-
-#### [Submission URL](https://www.nbcdfw.com/investigations/dallas-councilmember-residents-push-back-on-ai-blight-scores-assigned-to-thousands-of-homes/4071874/) | 27 points | by [hn_acker](https://news.ycombinator.com/user?id=hn_acker) | [5 comments](https://news.ycombinator.com/item?id=49902354)
-
-**Dallas’ trash-truck cameras assigned “blight scores” to about 21,000 properties in four months**, with the largest numbers mapped in Southern Dallas. The city says staff review the images and use scores internally to prioritize inspections; it has already sent 1,800 voluntary-repair notices, which can lead to enforcement and fines if problems persist.
-
-Councilmember Chad West wants the city to examine whether the system could burden lower-income homeowners, and proposed cutting its three-year, $2.5 million contract. He tabled that amendment after the city manager agreed to a December hearing. The city and camera operator say the program is meant to help code enforcement, not generate revenue.
-
-Discussion focused almost entirely on the ethics of the engineers behind the program and the regulatory mechanisms that could stop it:
-
-- **Moral revulsion toward the creators:** Commenters expressed visceral disgust that fellow technologists conceived and deployed an automated municipal surveillance system specifically tailored to target struggling homeowners, with one invoking the myth of the Brazen Bull and another arguing that the vendors responsible belong in prison.
-- **Regulatory vulnerability:** One commenter argued that when private vendors compile surveillance data into scoring dossiers used to penalize citizens, the operation should fall under the purview of the Fair Credit Reporting Act.
-- **Political irony:** Another noted the contradiction of aggressive property code surveillance emerging in "liberty-loving" Texas, contrasting it with other municipalities that chose to ease burdens on lower-income residents by simply deregulating property-use ordinances instead of automating their enforcement.
-
-### DraftKings is using AI to behaviorally target chronic gamblers
-
-#### [Submission URL](https://www.eff.org/deeplinks/2026/09/draftkings-using-ai-supercharge-harms-online-behavioral-advertising) | 561 points | by [paimapi](https://news.ycombinator.com/user?id=paimapi) | [422 comments](https://news.ycombinator.com/item?id=49896050)
-
-According to reporting cited by EFF, **DraftKings trains a model on customers’ betting records to find likely losing bettors, then sends promotions designed to bring them back.** EFF says people with problem-gambling behavior are especially likely to be targeted, turning their vulnerability into a source of revenue.
-
-The company reportedly uses data it collects directly, so limits on third-party data sales alone would not stop this practice. EFF argues that AI makes behavioral advertising more harmful by speeding up analysis and encouraging ever-larger data collection—and renews its call to ban behavioral ads altogether.
-
-The discussion quickly expanded from DraftKings to the broader machinery of predatory adtech and who bears responsibility for the return of legalized sports betting.
-
-* **Assigning blame:** A dispute emerged over whether culpability lies with the engineers who build predatory platforms or the electorate that permitted them. While one side argued that voters are largely ignorant victims of bundled political agendas, others countered that sports betting was explicitly placed on state ballots—and often approved directly—meaning society chose to invite these industries back after decades of hard-won regulation.
-* **The reality of adtech dossiers:** Commenters linked DraftKings' behavioral targeting to the wider adtech surveillance apparatus, prompting readers to inspect their own Amazon "About You" profiles. While some were unsettled by prompts asking users to manually import chat histories from third-party AI assistants, others found the stored profiles surprisingly inept, citing absurd inferences based on one-off purchases (such as being cataloged as a systematic jelly bean collector or located in the Pacific Ocean). Commenters noted, however, that public-facing consumer profiles are likely sanitized, and that UI "delete" buttons rarely equate to data destruction on the backend.
-* **The degradation of prediction markets:** Commenters observed that even betting products conceived with intellectual or civic intent inevitably devolve into sports gambling. Platforms like Polymarket and Kalshi were cited as examples of projects whose theoretical utility for information aggregation was quickly eclipsed by the extractive economics and aggressive engagement tactics common to conventional sportsbooks.
