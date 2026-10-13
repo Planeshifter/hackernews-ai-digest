@@ -2,7 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const axios = require('axios');
 const cheerio = require('cheerio');
-const OpenAI = require('openai');
+const { generateText } = require('./claude.js');
 const jsonSerializeCompressed = require('./serialize_compressed.js');
 
 // Configuration
@@ -18,18 +18,10 @@ const CONFIG = {
   MAX_COMPLETION_TOKENS: 8000,   // generous — a low cap starves reasoning models and yields empty output
   MIN_SUCCESS_RATIO: 0.5,        // abort (do not publish) if fewer than this fraction of attempts succeed
   MODELS: {
-    SUMMARY: 'openai/gpt-6-luna',
-    DISCUSSION: 'google/gemini-3.8-flash'
+    SUMMARY: 'claude-sonnet-5-5',
+    DISCUSSION: 'claude-sonnet-5-5'
   }
 };
-
-// Initialize OpenAI client. maxRetries: 0 so retryWithBackoff is the single
-// retry authority (otherwise the SDK's internal retries nest and multiply).
-const openai = new OpenAI({
-  baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: process.env.OPEN_ROUTER_API_KEY,
-  maxRetries: 0
-});
 
 // Date setup
 const TODAY = new Date();
@@ -47,25 +39,26 @@ function errorStatus(error) {
   return error?.status || error?.response?.status;
 }
 
-// OpenRouter returns 402 (and/or a "requires more credits" message) when the
-// account balance is exhausted. This is fatal for the whole run — every
+// Anthropic reports a low credit balance as a 400 error. Detect the message
+// as well as payment errors so credit exhaustion aborts the run. An exhausted
+// account balance is fatal for the whole run — every
 // subsequent call will fail the same way.
 function isInsufficientCredits(error) {
   const msg = (error?.message || '').toLowerCase();
   return errorStatus(error) === 402
     || msg.includes('requires more credits')
-    || msg.includes('insufficient credits');
+    || msg.includes('insufficient credits')
+    || msg.includes('credit balance is too low');
 }
 
 async function retryWithBackoff(fn, retries = CONFIG.MAX_RETRIES, context = '') {
   try {
     return await fn();
   } catch (error) {
-    // Do not retry client errors (4xx) — e.g. 402 insufficient credits or a
-    // 404/403 on a fetch — they will not succeed on retry and only waste time
-    // and credits.
+    // Retry timeouts and rate limits, but fail immediately on permanent client
+    // errors such as insufficient credits or a 404/403 on a fetch.
     const status = errorStatus(error);
-    if (status && status >= 400 && status < 500) {
+    if (status && status >= 400 && status < 500 && status !== 408 && status !== 429) {
       throw error;
     }
     if (retries > 0) {
@@ -163,8 +156,8 @@ async function main() {
   const startTime = Date.now();
   
   // Check API key
-  if (!process.env.OPEN_ROUTER_API_KEY) {
-    console.error(`[${new Date().toISOString()}] ERROR: OPEN_ROUTER_API_KEY environment variable is not set`);
+  if (!process.env.ANTHROPIC_API_KEY) {
+    console.error(`[${new Date().toISOString()}] ERROR: ANTHROPIC_API_KEY environment variable is not set`);
     process.exit(1);
   }
   
@@ -234,12 +227,13 @@ async function main() {
 
       console.log(`[${new Date().toISOString()}]   Generating submission summary with ${CONFIG.MODELS.SUMMARY}`);
       const submissionCompletion = await retryWithBackoff(
-        async () => openai.chat.completions.create({
+        async () => generateText({
           model: CONFIG.MODELS.SUMMARY,
-          reasoning: { effort: 'medium' },
+          thinking: { type: 'adaptive' },
+          output_config: { effort: 'medium' },
           max_tokens: CONFIG.MAX_COMPLETION_TOKENS,
+          system: SUBMISSION_PROMPT,
           messages: [
-            { role: 'system', content: SUBMISSION_PROMPT },
             { role: 'user', content: submissionUser },
           ]
         }, { timeout: CONFIG.LLM_TIMEOUT }),
@@ -247,7 +241,7 @@ async function main() {
         'submission summary'
       );
 
-      let submissionSummary = submissionCompletion.choices[0]?.message?.content || '';
+      let submissionSummary = submissionCompletion;
 
       // Drop the whole story if the model refused or had nothing usable.
       if (isSkip(submissionSummary) || isRefusal(submissionSummary)) {
@@ -265,12 +259,13 @@ async function main() {
         const comments = jsonSerializeCompressed(story.comments).substring(0, CONFIG.COMMENT_MAX_LENGTH);
         console.log(`[${new Date().toISOString()}]   Generating discussion summary with ${CONFIG.MODELS.DISCUSSION} (${comments.length} chars)`);
         const discussionCompletion = await retryWithBackoff(
-          async () => openai.chat.completions.create({
+          async () => generateText({
             model: CONFIG.MODELS.DISCUSSION,
-            reasoning: { effort: 'medium' },
+            thinking: { type: 'adaptive' },
+            output_config: { effort: 'medium' },
             max_tokens: CONFIG.MAX_COMPLETION_TOKENS,
+            system: DISCUSSION_PROMPT,
             messages: [
-              { role: 'system', content: DISCUSSION_PROMPT },
               { role: 'user', content: `Submission summary (context only — do NOT recap it):\n${submissionSummary}` },
               { role: 'user', content: `Comments to summarize:\n${comments}` },
             ]
@@ -278,7 +273,7 @@ async function main() {
           CONFIG.MAX_RETRIES,
           'discussion summary'
         );
-        discussionSummary = discussionCompletion.choices[0]?.message?.content || '';
+        discussionSummary = discussionCompletion;
         // A thin/refused discussion omits ONLY the discussion section; it never
         // drops an otherwise-good submission.
         if (isSkip(discussionSummary) || isRefusal(discussionSummary)) {
@@ -309,7 +304,7 @@ async function main() {
       // Never write a placeholder into the digest — skip the story entirely.
       // On credit exhaustion, abort the run: every later call will also fail.
       if (isInsufficientCredits(error)) {
-        console.error(`[${new Date().toISOString()}]   FATAL: OpenRouter reports insufficient credits — aborting run.`);
+        console.error(`[${new Date().toISOString()}]   FATAL: Anthropic reports insufficient credits — aborting run.`);
         fatalError = true;
         break;
       }

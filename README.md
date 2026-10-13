@@ -9,3 +9,5 @@ A daily digest of AI news, research, and projects shared on Hacker News.
 Each edition pairs AI-generated summaries of linked stories with highlights from
 the Hacker News discussions, with links to the original sources and comment threads.
 Browse the archive, follow via RSS, or subscribe on the site for email updates.
+
+For pipeline setup and local generation, see [the setup guide](docs/setup.md).

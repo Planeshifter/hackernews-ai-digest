@@ -1,7 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const axios = require('axios');
-const OpenAI = require('openai');
+const { generateText } = require('./claude.js');
 
 // Configuration
 const CONFIG = {
@@ -13,19 +13,13 @@ const CONFIG = {
   MAX_RETRIES: 3,
   RETRY_DELAY: 2000,
   MAX_COMMENT_DEPTH: 10, // Prevent infinite recursion
-  CLASSIFIER_MODEL: 'openai/gpt-6-luna'
+  CLASSIFIER_MODEL: 'claude-haiku-5-5'
 };
 
 const API_URLS = {
   TOP_STORIES: 'https://hacker-news.firebaseio.com/v0/topstories.json',
   ITEM: 'https://hacker-news.firebaseio.com/v0/item/'
 };
-
-// Initialize OpenAI client
-const openai = new OpenAI({
-  baseURL: 'https://openrouter.ai/api/v1',
-  apiKey: process.env.OPEN_ROUTER_API_KEY
-});
 
 // Date setup
 const TODAY = new Date();
@@ -158,48 +152,31 @@ async function isAIRelated(title) {
     console.log(`[${new Date().toISOString()}]     Classifying: "${title}"`);
     
     const completion = await retryWithBackoff(
-      async () => openai.chat.completions.create({
+      async () => generateText({
         model: CONFIG.CLASSIFIER_MODEL,
-        // A title classifier needs no reasoning tokens; keep the 50-token JSON budget usable.
-        reasoning: { effort: 'none' },
-        messages: [
-          { 
-            role: 'system', 
-            content: `You classify story titles as AI-related or not. 
-            AI-related includes: artificial intelligence, machine learning, deep learning, neural networks, LLMs, GPT, ChatGPT, Claude, transformers, AI tools, AI companies, AI research, computer vision, NLP, robotics with AI, AGI, AI safety, AI ethics.
-            Return JSON: {"is_ai": true} or {"is_ai": false}` 
-          },
-          { 
-            role: 'user', 
-            content: title 
-          },
-        ],
-		temperature: 0,	
-		max_tokens: 50,
-        response_format: { 
-          type: "json_schema",
-          json_schema: {
-            name: "ai_classification",
-            strict: true,
+        thinking: { type: 'disabled' },
+        system: `You classify story titles as AI-related or not.
+          AI-related includes: artificial intelligence, machine learning, deep learning, neural networks, LLMs, GPT, ChatGPT, Claude, transformers, AI tools, AI companies, AI research, computer vision, NLP, robotics with AI, AGI, AI safety, AI ethics.
+          Return JSON: {"is_ai": true} or {"is_ai": false}`,
+        messages: [{ role: 'user', content: title }],
+        max_tokens: 128,
+        output_config: {
+          format: {
+            type: 'json_schema',
             schema: {
-              type: "object",
-              properties: {
-                is_ai: {
-                  type: "boolean",
-                  description: "Whether the title is AI-related"
-                }
-              },
-              required: ["is_ai"],
-              additionalProperties: false
-            }
-          }
-        }
+              type: 'object',
+              properties: { is_ai: { type: 'boolean' } },
+              required: ['is_ai'],
+              additionalProperties: false,
+            },
+          },
+        },
       }, { timeout: CONFIG.REQUEST_TIMEOUT }),
       CONFIG.MAX_RETRIES,
       'AI classification'
     );
     
-    const result = JSON.parse(completion.choices[0]?.message?.content || '{"is_ai": false}');
+    const result = JSON.parse(completion);
     console.log(`[${new Date().toISOString()}]     AI-related: ${result.is_ai}`);
     return result.is_ai;
     
@@ -307,8 +284,8 @@ async function main() {
   const startTime = Date.now();
   
   // Check API key
-  if (!process.env.OPEN_ROUTER_API_KEY) {
-    console.error(`[${new Date().toISOString()}] ERROR: OPEN_ROUTER_API_KEY environment variable is not set`);
+  if (!process.env.ANTHROPIC_API_KEY) {
+    console.error(`[${new Date().toISOString()}] ERROR: ANTHROPIC_API_KEY environment variable is not set`);
     process.exit(1);
   }
   

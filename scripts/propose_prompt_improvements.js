@@ -15,7 +15,7 @@
 // stage a change. Any failure downgrades the run to a report-only PR.
 //
 // Env:
-//   OPEN_ROUTER_API_KEY   required (unless DRY_RUN with FAKE_PROPOSAL_FILE)
+//   ANTHROPIC_API_KEY     required (unless using FAKE_PROPOSAL_FILE)
 //   GITHUB_TOKEN          required for gh (provided by Actions)
 //   PROMPT_REVIEW_SINCE   optional YYYY-MM-DD (default: until - 7d)
 //   PROMPT_REVIEW_UNTIL   optional YYYY-MM-DD, exclusive (default: today UTC)
@@ -26,14 +26,15 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { execFileSync } = require('child_process');
-const OpenAI = require('openai');
+const { generateText } = require('./claude.js');
 const CURRENT = require('./prompts.js');
+const REVIEW_SCHEMA = require('./prompt_review_schema.js');
 const G = require('./guardrails.js');
 
 const CONTROL_CHARS = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/; // all control chars except \t \n \r
 
 const CONFIG = {
-  MODEL: 'openai/gpt-6-luna',
+  MODEL: 'claude-opus-5-5',
   WINDOW_DAYS: 7,
   MAX_PR_DIFF_LINES: 400,
   MAX_TOTAL_INPUT_CHARS: 120000,
@@ -162,7 +163,7 @@ function readPriorMachineState() {
 
 function scrub(s) {
   let out = String(s == null ? '' : s);
-  for (const k of ['OPEN_ROUTER_API_KEY', 'GITHUB_TOKEN']) {
+  for (const k of ['ANTHROPIC_API_KEY', 'GITHUB_TOKEN']) {
     const v = process.env[k];
     if (v && v.length > 6) out = out.split(v).join('***');
   }
@@ -368,18 +369,17 @@ function unifiedish(oldText, newText) {
 }
 
 async function callModel(meta) {
-  if (!process.env.OPEN_ROUTER_API_KEY) throw new Error('OPEN_ROUTER_API_KEY is not set');
-  const openai = new OpenAI({ baseURL: 'https://openrouter.ai/api/v1', apiKey: process.env.OPEN_ROUTER_API_KEY, maxRetries: 0 });
+  if (!process.env.ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY is not set');
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
-      const completion = await openai.chat.completions.create({
+      const completion = await generateText({
         model: CONFIG.MODEL,
-        reasoning: { effort: 'medium' },
+        thinking: { type: 'adaptive' },
         max_tokens: CONFIG.MAX_COMPLETION_TOKENS,
-        response_format: { type: 'json_object' },
+        output_config: { effort: 'medium', format: { type: 'json_schema', schema: REVIEW_SCHEMA } },
         messages: [{ role: 'user', content: meta }],
       }, { timeout: CONFIG.LLM_TIMEOUT });
-      let text = (completion.choices[0]?.message?.content || '').trim();
+      let text = completion.trim();
       text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
       return JSON.parse(text);
     } catch (e) {
