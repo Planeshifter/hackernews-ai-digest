@@ -10,6 +10,223 @@ export async function getStaticProps() {
 
 ---
 
+## AI Submissions for Sat Oct 17 2026 {{ 'date': '2026-10-17T19:22:46.320Z' }}
+
+### Codex Desktop continuously generates Crashpad pending dumps
+
+#### [Submission URL](https://github.com/openai/codex/issues/25921) | 165 points | by [AIorNot](https://news.ycombinator.com/user?id=AIorNot) | [80 comments](https://news.ycombinator.com/item?id=50133231)
+
+**The Codex Desktop macOS app is silently filling disks with Crashpad minidumps**: the reporter saw 4.9GB and 54,504 files pile up in one day under `~/Library/Application Support/com.openai.codex/web/Crashpad/pending`, all while the app stayed fully usable. Nothing visibly crashes, so there's no warning.
+
+The pattern is paired `.dmp` and `_sidecar.json` files (27,252 of each) that keep appearing during investigation, with no upload, rotation, or cap. The reporter deleted the backlog, which dropped the directory to 6.4MB and 70 files, but new pairs showed up immediately. That rules out stale leftovers: something is still crashing or being reported as crashing, continuously. The root cause isn't identified. Two `browser_crashpad_handler` processes, both orphaned under PPID 1 since May 30 and pointed at the same database, are a suspect, but that's an observation rather than a diagnosis.
+
+Other users confirm it, and one reports **59GB** of dumps, with the process still trying to write after hitting the 65,535-file filesystem limit. The issue is open, labeled bug/performance/app, and the version affected is 26.527.60818 (Electron/Chromium 148.0.7778.179) on macOS 26.3.1, arm64. It links to earlier reports of stale Crashpad helpers surviving updates.
+
+If you run the app, check that directory now. Clearing it is a workaround that buys time, not a fix. The reporter withheld the dumps publicly because they can contain memory contents and local paths, which is worth remembering before attaching any to a bug report.
+
+The thread quickly drifted from the Crashpad bug itself into a broader complaint: agent workflows are eating disk and RAM, and Codex's quality is slipping. Few people discussed the minidump cause. Most shared their own disk-pressure stories and workarounds.
+
+**Worktrees and build artifacts**
+- glenngillen traced his disk pressure to two things. One was git worktrees duplicating build artifacts. The other was heavy swap use that only a reboot reclaims.
+- monster_truck said that running 8 to 16 subagents balloons into hundreds of GB. Copy-on-write worktrees don't help because the build artifacts are the problem. nullpoint420 got the same result on btrfs.
+- singularity2001 argued CoW worktrees are the big win. thesz countered that you also need deduplication, and that ZFS dedup costs roughly 5GB of RAM per 1TB of logical data. glenngillen then found projects that retrofit CoW into worktrees and started trying `lane`.
+- Other approaches:
+  - feelamee develops on a single branch in one worktree and cherry-picks into others, so only one tree gets built.
+  - bentcorner offloads agent builds to remote Windows VMs over SSH.
+  - _matthew_ pointed to a Rust-specific worktree tool and runs each agent session in a cgroup that kills leftover processes when the task ends.
+  - treve wished git used reflinks.
+
+**Memory and swap**
+- josephg disables swap on Linux so the OOM killer stops runaway Claude benchmarks. trollbridge suggested `systemd-oomd` scoped to the agent's descendant processes, and machomaster suggested zswap.
+- treve and _matthew_ both warned that RAM-backed `/tmp` fills up with agent output. _matthew_ found that was the real source of his swap use.
+- tonytamps and veidr said Docker and Rancher leak memory on Mac, and that switching to OrbStack fixed it for them.
+
+**Codex quality and OpenAI's neglect**
+- jbellis said even normal Codex runs produce many GB of logs, and that OpenAI has left this alone for months. He recommends filesystem compression (ZFS) and archiving old sessions. squidbeak asked why not just delete the logs. backlands asked for sources on btrfs contention with concurrent Rust builds, and jbellis pointed to a writeup on his blog.
+- smileybarry linked an earlier Codex bug with infinite logging that was also hard on SSDs. pzo found 14GB of small files in Codex's `.staging/marketplace`.
+- CountSessine listed other problems: conversations stuck in a permanently locked state, confusing modes, and broken connectors. He still rates the underlying model highly at coding and blames the harness, so he plans to try it with OpenCode. laurels-marts suggested Opus for code that will be merged, and CountSessine pushed back that Opus gave him overcautious security refusals.
+- boesboes was alarmed that people simply accept "delete the files" for a four-month-old bug at one of the biggest companies. squidbeak replied that a vendor can be remiss and the workaround can still be practical.
+
+**Disk tools**
+A long side thread compared DaisyDisk, Mole (whose author showed up), and QDirStat. columk said Mole freed 80GB on its first run. piskov noted the tools differ: DaisyDisk finds big folders, while Mole-style tools clear caches.
+
+### DeepSeek-v4.1-Flash-1017
+
+#### [Submission URL](https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash-1017) | 929 points | by [theykk](https://news.ycombinator.com/user?id=theykk) | [697 comments](https://news.ycombinator.com/item?id=50129045)
+
+**DeepSeek's minor point update to V4.1-Flash posts a big jump on agentic and coding benchmarks**, and it does so with shorter outputs and faster task completion. Terminal-Bench 4.0 goes from 31.2 to 42.3, ProgramBench from 20.3 to 29.1, and Apex Bench v1.1 from 64.6 to 72.1. On Terminal-Bench the model beats every listed rival except the last column (51.8). That column is labeled "Opus 5" in the table, but the headers are misaligned with the data, so treat the attributions with care.
+
+- **Reasoning:** HLE without tools is 42.6 (44.0 on the text-only subset), up from 36.8 (39.1). That is roughly level with the other models in the table, with one clearly ahead at 56.3.
+- **Agents:** DeepSWE v1.1 reaches 77.0 (Mini-SWE-V2 harness), Automation-Bench 60.5, and Agents' Last Exam 35.4. Each is the top score in its row.
+- **Vision (with tools):** Chartography 83.0, BabyVision 92.5, ZeroBench-main 51.0. Frontier rivals still edge it out on some of these.
+
+The cost claim is the real pitch. DeepSeek says reduced output length and execution time move the performance–cost Pareto frontier across several agent harnesses, but the card gives no token or latency numbers to check that.
+
+**Practical details:**
+- MIT-licensed weights, 763B parameters, mixed BF16/F8/I8 tensors, 1M-token context.
+- Recommended sampling: temperature 1.0, top_p 1.0, max_tokens ≥ 256K.
+- **No Jinja chat template.** You get a Python reference encoder (`encoding.py`) covering tool calls, thinking mode, numeric reasoning effort, and interleaved images. For production, DeepSeek also ships `deepseek-recipe`, Rust libraries with Python bindings. They translate Messages, Chat Completions, and Responses API requests into the V4/V4.1 prompt format and parse streamed output back. Anyone serving this through vLLM-style stacks that assume a Jinja template will need to wire that in.
+
+The benchmarks are self-reported, and the table mixes harnesses and a text-only HLE subset, so the cross-model comparisons are softer than they look.
+
+The thread mostly leaves DeepSeek's benchmarks behind and turns into a debate about whether frontier-model-style "just let it build" coding holds up over time. It starts from the observation that DeepSeek feels better than its scores suggest.
+
+**Why DS "feels" better.** The top comment credits speed and transparency: high tok/s and low TTFT, visible chain-of-thought, and no random cyber-review blocks, so you never wonder whether an agent is stuck. A reply adds that DS writes the code a developer would write rather than being "too clever." That keeps the human in control of where abstractions sit and keeps reverted code out of the context window. Bender's complaint fits the same pattern: newer Claude models trip a security-bug "shock collar" and push him back to Opus 4.8, with the stronger Mythos locked behind a verification program.
+
+**The long-term cost of letting frontier models run loose.** This is where most of the thread's energy goes.
+- **Pendulum camp (trueno, state_less, fn-mote):** Piling on AI-generated code leaves a Ship-of-Theseus codebase nobody understands, and companies will eventually feel the support burden. Saying "just fix it" gets you "lost in the woods," because you lose visibility into the system. fn-mote's economic version is that cleanup by a frontier model will cost about what an experienced dev does.
+- **"Models will clean it up" camp (LPisGood, huijzer):** The cost may just be one more Opus call. With good test coverage, ugly code is fine because you can refactor later.
+- **Pricing counterpoints:** hazard says the gap could close because dev costs fall instead. dash2 says competition among frontier labs pushes prices toward marginal compute. anukin notes that enterprise Opus pricing isn't cheap.
+- **Skeptics of the market correcting itself (swat535):** Companies never funded support or maintenance anyway, so AI slop and burned-out engineers are the likelier outcome. ekidd's rebuttal is the 1983 video game crash as precedent for buyers punishing slop.
+
+**Process beats vibes.** brookst, ygjb, Abishek_Muthian, and LeFantome all describe the same discipline: specs, architecture docs, tests that enforce mechanical standards, reviews against them, and explicit refactoring passes. Their claim is that this prevents drift. foltik pushes back from systems programming, where output is often orders of magnitude from optimal and needs human "eureka moments." In foltik's view that gap is hard to close because the finer details aren't RL-able and human training tokens are running out. jacquesm agrees, though adds that the models are very good at debugging.
+
+nfw2 offers a mechanism for the decay: each sloppy hack lowers the coherence the model sees, so it produces more sloppy hacks, and the mess compounds. The problem is easing as models improve, and nfw2 still judges the tradeoff worth it.
+
+The unresolved question is whether better models outrun the compounding mess or whether structure and human architectural judgment stay necessary.
+
+### The math that OpenAI keeps for itself
+
+#### [Submission URL](https://newsletter.danielpaleka.com/p/the-math-that-openai-keeps-for-itself) | 52 points | by [dpaleka](https://news.ycombinator.com/user?id=dpaleka) | [19 comments](https://news.ycombinator.com/item?id=50134211)
+
+**Statistics, ML theory, optimization, and numerical analysis make up about 20% of arXiv theorems but under 1% of OpenAI's 700+ new math results**, according to Daniel Paleka's analysis. He pulled the numbers with a coding agent and a Semantic Scholar API key, after commentators noticed cryptography was missing too.
+
+The obvious rebuttal is that those fields just lack open problems. Paleka checked: restricting the baseline to arXiv papers that solve open problems shrinks the gap but leaves it statistically significant. He also dismisses the idea that OpenAI doesn't know the problems, pointing to Sebastien Bubeck's 2025 gpt-5-pro result on a convex optimization bound. His preferred explanation is that these are the fields closest to what labs would use internally, so every lab has reason to withhold them. It's an inference from the pattern rather than anything OpenAI has said.
+
+The more interesting argument is the forward-looking one. Paleka expects mathematical capability to feed back into LLM training, and says math is the domain where the usual bottlenecks don't apply: synthetic data is easy, verification is cheap, curriculum learning is trivial. In his words, "compute in, math out." The one result that would have interested his 2020 self is Max-Cut's 0.878 inapproximability under P != NP, and that falls out of a Unique Games Conjecture proof in the same batch.
+
+The post is written as a call to rethink what's worth working on. Proving deep-learning theorems is still not worth it, he says, but asking questions about this shift now is. The framing is partly personal, since he left mathematics around 2020 because of AI.
+
+The thread mostly argues over one question: would OpenAI really sit on results in the withheld fields? A smaller side-debate asks whether the math matters at all.
+
+**Is withholding plausible?** The top comment says no. Anything a prompt can prove, someone else will find, and OpenAI needs the publicity (Wall Street "street cred"), so nobody is hiding secrets. Replies push back from several directions:
+- **Capability:** dmitriy_ko and satvikpendem say the proofs came from models and compute the public can't access. satvikpendem adds that labs distill internal large models into the public ones. quicklywilliam notes that even governments lack access, and worries about what happens if the jagged frontier moves from theory into the physical world.
+- **Incentives:** nairboon compares the dollar value of publicity against an optimization trick that cuts training or inference costs by millions. testerius makes the general argument that a company with a profitable tool keeps it quiet. omgwtfbyobbq agrees, but only where profitable applications exist.
+
+**Cryptography.** Several commenters read the omission as deliberate, with different explanations:
+- DonsDiscountGas thinks any published result could help bad actors more than good ones, so labs stay away.
+- qnleigh guesses labs have either tried LLM attacks internally or are barred from trying, and that the US government will get first access before any release.
+- asanineassasin speculates that public-key cryptography may already be broken, citing the old "export" controls. They later ask whether parallel construction would be used to hide it. MisterMunchkin says "the NSA won't give you that choice." All of this is speculation; nobody offers evidence.
+
+**Does the math matter?** vitorsr quotes Hugo Duminil-Copin's view that only the mathematicians involved are changed by a big proof, because human understanding is what benefits society. bemtevi, a former mathematician, argues that decades of deep abstraction (geometric Langlands, higher topos theory) haven't improved lives, and that AI-driven abstraction is "just a mental game" that wastes energy. Replies split. cultofmetatron points out that number theory had no applications for centuries before it underpinned modern cryptography, so usefulness can't be judged in advance. dieselgate says the "better future" framing ignores people without clean water or electricity.
+
+A few comments were off-topic: complaints about Claude-style site design and AI-slop prose, a skeptical aside that the work might be brute-forceable with compute, and a Trump joke.
+
+### Show HN: Llmspeed – feel how fast a local LLM runs before you buy the hardware
+
+#### [Submission URL](https://llmspeed.dev/) | 316 points | by [albinstman](https://news.ycombinator.com/user?id=albinstman) | [86 comments](https://news.ycombinator.com/item?id=50127979)
+
+**Llmspeed lets you pick a GPU, Mac, or APU and a model, then shows how fast generation would feel**, so you can sanity-check a purchase before spending four figures on VRAM.
+
+The hardware list is broad: everything from an RTX 3060 12GB and a used Tesla V100 or MI50, through RTX 4090/5090 and Radeon cards, to Strix Halo boxes, DGX Spark, RTX PRO 6000, M-series Macs (up to a 512GB Mac Studio), a CPU-only Ryzen 9950X build, and cloud H100/H200 for reference. Models run from Llama 3.1 8B and Qwen 3.5 9B up to GPT-OSS 120B, Gemma 4, GLM-5.3, and DeepSeek V4 Flash.
+
+The honesty caveat is in the fine print. The page says estimates are for a short prompt on a single device. Some numbers are measured, pulled from community benchmarks like r/LocalLLaMA and localscore.ai, while others are derived from similar setups or projected from specs. Projected figures for hardware that barely exists are guesses, so check which cells are measured before trusting them. Long-context prefill, which is where Macs and CPU builds tend to hurt, is outside what a short-prompt estimate shows.
+
+The project is open source on GitHub. The provided text doesn't spell out how the "feel" is rendered, so the exact interaction is unclear from the page copy alone.
+
+The thread's main argument is that calculators like this undersell what old or modest hardware can do, especially with MoE models. The commenters also swapped practical tuning advice.
+
+**The "benchmarks understate local" camp.** The top commenter runs a 4-bit fine-tuned Qwen 3.5-35B-A3B on a 9-year-old laptop (GTX 1070 Max-Q 8GB, 16GB RAM). He uses a llama.cpp fork with TurboQuant KV-cache quantization and gets 131k context at 16-19 tok/s generation and 350-500 tok/s prefill, dropping to about 9 tok/s past 100k context. His claim is that a frontier LLM or a tool like this would tell him to run a "crappy 9B." Another commenter backed this up: MoE models with few active parameters are faster and easier to run, and "behave a lot more like their peak size than the active parameter size." Their example was a large Qwen coder MoE on a 3080 10GB with 32GB RAM at 40-50 tok/s with 65k context. For MoE, system RAM caps the quantization you can use. One commenter reported that the tool "won't run" a model on an RTX 4080 that he runs fine, and called the numbers "pure slop." Another pointed out that the tool defaults to tiny quants, which cuts against the "too pessimistic" complaint.
+
+**Dense vs. MoE for coding.** A newcomer asked whether MoE really matches dense models on coding. The answers:
+- Dense models give better results but are out of reach for most hardware, and MoE generates far faster.
+- Parameter count and architecture predict capability poorly. One commenter said a ~125B Qwen "Flash Next" with 6B active beats the 27B dense model, while a much larger Meta MoE doesn't reach it.
+
+**A correction on "A3B."** One commenter said A3B means each expert is 3B parameters, so a 4-bit quant needs about 1.5GB per expert. Another corrected this: A3B is the total active parameters per forward pass, including shared weights, attention and embeddings. Individual experts are tiny (about 3M each, with 8 routed plus 1 shared per layer), and only around 1.1B of the 3B active are expert weights. The original poster added that fit-in-VRAM arithmetic misses why a 35B-A3B is usable on Pascal now when it wasn't a year ago. He credits engine and fork improvements.
+
+**Where the limits show up.**
+- One user with a 12GB RX 6700 XT saw the agent loop on an open-ended "what would you improve" prompt with a 16k context. Others told him agent work needs at least 32k, ideally 65k-100k+. Dropping quantization or reasoning effort frees context. Whole-project review is a poor fit for local models, since even 1M-context frontier models can't take in a whole project. Work file by file instead.
+- Users of very small cards (GTX 750 Ti 2GB, 8GB cards) said small models write bad code and that free-tier Gemini or ChatGPT still beats anything they can run. The suggestions were Gemma 4 E2B/E4B or Qwen 3.5-9B, a check that CUDA is actually in use, and OpenCode Zen's free models. One commenter's rule of thumb is that MoE models under about 19B parameters disappoint on coding even at Q4.
+- A suggestion for a 6GB-card owner was to use the iGPU too. Run a Vulkan llama.cpp build for small MoE models on the iGPU and a CUDA build for dense models on the discrete GPU. The commenter said quantized models still disappointed him for coding but worked well for NLP and speech tasks.
+
+The open question is whether any calculator can capture the engine, fork, quant and context choices that make people's real results diverge from the tool's numbers.
+
+### Show HN: Pay-per-Crawl – make AI crawlers pay per page in USDC, for 10 stacks
+
+#### [Submission URL](https://forgemesh.io/blog/pay-per-crawl-every-stack) | 9 points | by [agenticbotbot](https://news.ycombinator.com/user?id=agenticbotbot) | [3 comments](https://news.ycombinator.com/item?id=50133559)
+
+**Unknown AI crawlers hitting your site now get an HTTP 402 and a USDC invoice instead of a free scrape**, and the same gate now ships for ten stacks: WordPress, Drupal, Laravel, Next.js, Node (Express/Fastify/Hono/Koa), Cloudflare Workers, nginx, Caddy, Traefik, and Python (FastAPI, Flask, Django).
+
+Humans and reverse-DNS-verified search engines read free. AI crawlers, SEO crawlers and scripts get a 402 carrying an x402 v2 header, a v1 body and an MPP challenge. The page is served only after a settlement transaction hash comes back, paid in USDC on Base straight to the owner's wallet. There's no custody, account or API key. PayAI is the default facilitator, though any facilitator URL works. Every edition shares an 85-agent crawler catalog and serves `/.well-known/x402.json`, `llms.txt` and `agents.txt`.
+
+**Install paths:**
+- WordPress: free GPL plugin from the vendor's site (submitted to wordpress.org, still under review)
+- Next.js: `npm i @forgemeshlabs/pay-per-crawl-next`
+- Express/Fastify/Hono/Koa: `@forgemeshlabs/pay-per-crawl-node`
+- Cloudflare Worker in front of any origin: `@forgemeshlabs/pay-per-crawl-worker`, plus an nginx njs snippet
+- Python: `pip install forgemesh-pay-per-crawl`
+- Go: `go get github.com/forgemeshlabs/pay-per-crawl-go`, including a Caddy module and a Traefik plugin
+- PHP: `forgemesh/pay-per-crawl-laravel` and `-drupal` via Composer
+
+The evidence offered is ten real $0.01 settlements on Base mainnet, two per code base, before release, plus 37 to 44 check HTTP test matrices. The authors say the transactions are public on Basescan.
+
+The more interesting disclosure is two bugs found while porting. A crawler could prepend a Googlebot IP to `X-Forwarded-For` and pass as a search engine; the fix is trusting the right-most hop, the one your own proxy appended. And loosely matched free paths meant `/robots.txt.html` or `/.well-known/../post` could slip past the gate; exemptions are now exact files, a sitemap regex, and normalized dot segments. If you roll your own bot allowlisting, check for both.
+
+Unlike Cloudflare Pay Per Crawl, which bills a few enrolled AI companies by card with Cloudflare as merchant of record, this lets any x402 or MPP agent pay the owner directly. One gotcha: if you also sit behind Cloudflare, set its AI crawler control to Allow, or crawlers get blocked before they can pay.
+
+The business model is an optional Pro tier at $4.99/month for up to 5 sites, with a hosted dashboard, weekly digest, paywall monitoring and a paid-sites directory listing. The gate is complete without it. The open question is demand: the post shows test payments, not any real crawler paying.
+
+The thread is thin: three comments, no real back-and-forth, and none of them tests the product's claims or the two security bugs.
+
+- **Adoption skepticism:** bvcp argues this "is incredibly unlikely to ever work" until sites charge all visitors. The implied crux is that a toll only on unknown bots is easy to route around and gives crawlers little reason to build payment support.
+- **Who pays whom:** karmakaze, who runs a local LLM, says the model costs only electricity but the search calls cost money. The search providers they pay likely don't pay their sources, and some hold only summaries, not original text. That is an argument for why content owners get nothing today, though it doesn't speak to whether x402 would change it.
+- **Questions and extensions:** adrianwaj asks how well the plugin tells traffic apart, whether humans and legitimate search engines get walled off, and whether bots can fake being human. They also float a "union of sites" that pools and splits x402 proceeds, shared mirrors for bots, and dynamic pricing by content age or per-visitor volume. The questions went unanswered in the thread.
+
+Nobody reported a real crawler paying, so the demand question the submission itself flagged stays open.
+
+### Butlerian Jihad
+
+#### [Submission URL](https://dune.fandom.com/wiki/Butlerian_Jihad) | 370 points | by [wetwater](https://news.ycombinator.com/user?id=wetwater) | [255 comments](https://news.ycombinator.com/item?id=50127274)
+
+The title points to the Dune wiki entry on the Butlerian Jihad, the in-universe war against thinking machines that gives Frank Herbert's setting its ban on AI. The article text didn't come through, so this is only what the title and URL support: a fan-wiki lore page, not news or a technical release.
+
+Its appearance on an AI-focused digest is the story. The Jihad gets cited whenever people argue about whether to restrain machine intelligence, and the wiki page serves as the shared reference for that metaphor. Nothing here tells us what prompted the submission or what the page says beyond the Dune lore it's named for.
+
+The thread's biggest fight is over who the Butlerian Jihad was actually against: rogue machines or the humans running them. The original poster in that sub-thread argued that Dune's version is about technocrats using machines to dominate others, which makes it a better model for today than Skynet. Others noted that this reading splits along canon lines:
+
+- **Canon dispute:** One commenter said the machines were led by an AI that had enslaved the cyborg Titans, with no humans in charge. Others replied that this comes from Brian Herbert and Kevin J. Anderson's prequels, a "pulpier" take that many longtime fans don't count. Frank Herbert's own books leave the Jihad ambiguous, and one commenter thought they imply man versus man. Another pointed out that it's ten thousand years of ancient history by the time of *Dune*. Brian Herbert's biography of his father, *Dreamer of Dune*, got a defense.
+- **Leto II's ban:** Even after remaking human society, Leto II kept the ban on thinking machines. One theory was that he wanted to protect the Spice/Guild monopoly on travel from the Ixians. Another was that his visions showed AI hunter-killers wiping out humanity.
+- **Literary roots:** The idea predates Herbert. Commenters traced it to Samuel Butler's *Erewhon* and his 1863 essay "Darwin Among the Machines," which treated the idea as a real concern rather than fiction. A side note observed that "Erewhon" is a near-reversal of "nowhere," and another commenter replied that this is deliberate, as the book has several backwards words and anagrams.
+
+**Who holds the machines:** Quoting the Dune line that men turned their thinking over to machines and were enslaved by other men with machines, one commenter called today's AI owners "techno-fascists."
+- One reply asked whether open-weight models that people fine-tune and run on their own hardware would change that.
+- Another questioned why small businesses replace staff with AI when it leaves them dependent on a few suppliers.
+- A third cautioned against taking moral aphorisms from the Fremen too seriously, since they murdered strangers for their water and took part in a galactic genocide.
+- Another commenter likened frontier AI to nuclear technology, a power concentrated in a few hands. They feared it as a tool of control, to the point that protest becomes hard, more than as an existential threat.
+
+**Whether LLMs can write:** A tangent started from a quoted passage on greatness. One commenter claimed an LLM would call its second sentence a redundant restatement of the first. Another said they tried this several ways and it didn't happen, and others pointed out that restating an idea is a normal technique in poetry.
+- Debate followed about whether language evolved for internal thought or for communication, with feral-child evidence cited for communication first.
+- Another commenter said LLMs "categorically cannot think" because they're statistical models. The reply was that the brain is also a statistical model.
+- A separate comment said that AI currently can't improve itself, but that it knows far more than we do, and the "not yet" worries the original poster.
+
+### Amazon uses AI to monitor union risk in UK warehouses
+
+#### [Submission URL](https://www.opendemocracy.net/amazon-ai-surveillance-monitor-union-activity-uk-warehouses-birmingham-coventry-atlas-sutton-coldfield/) | 169 points | by [DeepLogin](https://news.ycombinator.com/user?id=DeepLogin) | [59 comments](https://news.ycombinator.com/item?id=50132278)
+
+**Amazon's in-house forecasting tool, Atlas, appears to score warehouses from 100 to 900 on how likely workers are to unionise**, and for leadership a higher score is "better." The claim rests on internal documents disclosed in a Canadian union's legal fight with Amazon, which look like manager training material for Canada. They were shared with Truthout and reported by openDemocracy.
+
+According to an appendix, Atlas pulls in "hundreds of data points": Reddit posts, responses to internal feedback surveys, workplace data, and any history of industrial action. Warehouses are sorted into five tiers, from Tier 5 ("no immediate perceived risk") to Tier 1 ("future activity is imminent"). The scale is said to "inform staffing decisions, resource planning, standard actions, and ownership to mitigate risks to Amazon labour structure." Sixteen sites across the US, Canada and the UK are Tier 1, including two in the UK: the £500m robotic site in Sutton Coldfield (EMA4) and the Coventry warehouse (BHX4).
+
+Coventry is where GMB lost a 2024 recognition ballot by 28 votes out of roughly 2,600. GMB and Foxglove already accuse Amazon of "dirty tricks" there, including QR codes that let workers cancel their union membership. That is now a legal challenge from two workers.
+
+Amazon disputes the framing. It says Atlas works only at site or building level, tracks no individual opinions, affiliations or union membership, and exists to "understand where associates need more support." A lawyer at Leigh Day counters that a scale where higher is "better" shows Amazon sees the union as a problem.
+
+Two caveats: the documents are Canadian training material, so how Atlas operates in UK sites is inferred rather than shown. And the dispute over whether aggregated, site-level scoring built from individual posts and survey answers counts as surveillance is unresolved.
+
+The thread barely touches Atlas itself. It splits into a philosophical fight over what counts as surveillance, a tangent about monitoring government workers, and a long exchange over whether boycotting Amazon is hypocritical.
+
+**Is all surveillance harmful?** The top comment declares that no surveillance does more good than harm. Wowfunhappy tested that with speed-limit policing. advael replied that absolutes have edge cases, and that problems like traffic deaths are often better solved at the infrastructure level (alternative transport, narrower streets) than by individuating and policing them. hypeatei and PeterHolzwarth argued the original claim should have said *mass* surveillance. hypeatei's version: the harm lies in "hundreds of data points across different areas," automated, with little oversight or accountability. card_zero pushed back that this is muddled. It isn't clear why inefficiency would be better, and the real objection may be about being "distilled into statistics" impersonally, as with retail data-gathering that harms no one in particular but still feels offensive.
+
+**Watching the watchers.** 6510 argued for the reverse: 24/7 logging of government decision-makers, sorted by an AI. hvb2 asked whether they would accept the same for themselves, and trvz said public servants should be held to a higher standard. rabidheuristics asked where that stops, for example with anyone taking public funds. 6510 answered that it depends on the stakes and on securing the data. Others countered that those with real power (oligarchs, large asset managers) are the ones to monitor, not rank-and-file employees.
+
+**Survey gaming.** pera noted that anything short of "Strongly Agree" to "I am optimistic about the future of AI at Amazon" likely flags you as a risk. Avshalom added the trap in the other direction: answering strongly agree to everything also looks like not really answering. Another commenter called this the society "~1k companies want" and said capitalism should be destroyed. PowerElectronix disagreed, saying it's about control, not capitalism, and that such practices hurt the company in the long run. creata replied that this prediction has been made for years without coming true for Amazon.
+
+**Boycott and hypocrisy.** sdcfgy and GolfPopper said they closed their Amazon accounts over anti-union behavior. yipinwong mocked this as posting on HN, which they claimed runs on AWS. Symbiote said it doesn't. creata noted that Y Combinator backs companies nearly as bad toward workers. Others invoked the "yet you participate in society" meme, and the exchange turned sour.
+
+**Legal enforcement.** ck2 asked why employers can interfere with unions at all. tdeck answered that it comes down to who runs the Department of Labor, since many pro-worker laws are barely enforced.
+
+---
+
 ## AI Submissions for Thu Oct 15 2026 {{ 'date': '2026-10-15T19:53:29.328Z' }}
 
 ### Meta’s new commercial terms will allow the scraping of news sites: experts
@@ -837,793 +1054,3 @@ The most substantive thread asks why BofA is paying 1,000 contractors when the p
 The other strand is skepticism about Moynihan's "patch once and it tapers" claim. Several commenters joked it won't hold. mrieck imagined Mythos finding bugs in the patches and prompting another 1,000 hires. tonyedgecombe recalled an IBM study finding roughly one new bug per two fixed, and jgalt212 summed that up as "exponential decay," meaning the series converges. anorphirith predicted spaghetti code. Kim_Bruning expects Jevons' paradox: AI will increase total software work rather than shrink it, though it will be different work, such as fixing AI-found flaws.
 
 k310 took a darker angle, noting BofA's $1.2B fine for money laundering and sanctions violations. They suggested that scrutiny from tools like Mythos could expose hidden misconduct in huge codebases, though they suspected surveillance goals take priority over that.
-
----
-
-## AI Submissions for Tue Oct 13 2026 {{ 'date': '2026-10-13T04:11:42.553Z' }}
-
-### Gemini 4 Argon
-
-#### [Submission URL](https://deepmind.google/models/gemini/) | 1110 points | by [737max](https://news.ycombinator.com/user?id=737max) | [808 comments](https://news.ycombinator.com/item?id=50073879)
-
-**Google's Gemini 4 Argon is pitched around long-horizon engineering work, and the evidence is a stack of merged upstream changes, not leaderboard numbers.** The one benchmark cited is a tie for #1 on CWE-Bench (68%) for vulnerability remediation. Google also calls Argon its most resilient model against indirect prompt injection.
-
-The showcase results, all self-reported by Google:
-
-- **Chrome:** a refactor that separated core webpage handling from a ~6 million line legacy folder of browser features inside Chromium's 40 million lines, across hundreds of files. Google says it took weeks instead of months.
-- **Gemma inference:** a 2.85x end-to-end speedup on an A100 via vLLM, from ~37,900 to over 108,000 tokens/sec on Gemma 4 E2B. Google claims 100% token parity, and the upstream PRs are linked so the changes can be checked.
-- **xTB quantum chemistry:** up to 2.3x faster structure prediction and 1.8x faster conformer search, contributed to the official repo.
-- **Agent Development Kit:** working overnight from a one-paragraph goal plus a `.agents/skills` rulebook, it cut in-memory session prep time by 40% in long sessions and sped up cold imports by 21%.
-- **Google Skills labs:** migrated 700+ training labs and caught 16+ timeout and race-condition bugs, saving a claimed 955 engineering hours.
-
-The rest is multimodal agent demos. Argon drives Blender through MCP in multi-agent visual critique loops, and in one demo wrote a pure-Python ray tracer. It also turns raw video into physics-accurate simulations for robotics, which has its own HN thread. Isomorphic Labs and legal and finance workflows get brief mentions.
-
-It is available in the Gemini app, Google AI Studio, and Antigravity, and the agentic demos lean heavily on Antigravity. Cybersecurity access expands to hundreds more Fairwind Program partners. The scraped page includes no pricing, context window, or general benchmark table, so how it compares with rival frontier models isn't established here. The linked PRs are the most checkable evidence on the page.
-
-The thread splits into two questions: how good Argon is for everyday explanation and writing, and whether it can code.
-
-**Non-coding quality (the enthusiastic majority).** Several people say Argon is a step change in communication. svara describes answers like "a really well made mini essay," plus a habit of building tweakable simulations and picking sourced illustrations. mwigdahl, who likes Opus 5.5, says Argon "just flat out writes better." pjm331 used it to rewrite placeholder docs and called it a big improvement over Claude-flavored slop.
-
-The strongest anecdote is sebmellen's health case. He was a "glaucoma suspect" whose retinal nerve fiber layer (RNFL) scan put him below the 1st percentile for thickness. His ophthalmologist shrugged it off, and ChatGPT 6 Pro and Opus 5.5 couldn't make clinical sense of it. He says Argon was the first model to explain how the OCT machine works and the mechanism behind his cupping and thin RNFL. It also gave a recommendation consistent with his doctor's, and built an interactive 3D visualization. Alex3917 added that Gemini seems better calibrated about evidence, for instance wanting more proof for a risky treatment than a benign one. sebmellen contrasted that with ChatGPT suggesting high-dose niacinamide.
-
-**Coding (the contested part).**
-- **Skeptics:** drob518 thought the announcement's coding scores looked weak. A_D_E_P_T said Gemini has historically trailed Anthropic and OpenAI on code and called Opus 5.5 the consensus best, though "it might be competitive at coding, but it's too early to say." HSO's question about why svara would avoid it for code prompted this exchange.
-- **Defenders:** etoxin says it "can absolutely code" through the Antigravity CLI. charm137 used it via OpenRouter on Vulkan code, where it instrumented render passes, dumped framebuffers to PNG, and used false-color shaders to find bugs. kccqzy countered that Opus can do the same.
-- **Strategy debate:** da_chicken argued Google isn't targeting coding. scarmig suggested coding is a poor token-per-dollar proposition and that beating Anthropic could cannibalize a customer of Google's own cloud. bitexploder, who says he works at Google, pushed back: Flash 3.8 and Argon were deliberately optimized for agentic coding, and Argon is doing mission-critical porting work such as Rust.
-- **Comparison caveats:** fonrex found Opus better than Gemini for code analysis. senderista noted Opus finds many bugs in its own code, and dieortin suspected fonrex had used the older Gemini 3.1 Pro rather than Argon.
-
-**Speed and access.** A_D_E_P_T and artursapek found it fast. informal007 found it slow and guessed it's a larger model, and bitexploder called it efficient but sometimes slow on agentic work. Access was a friction point. People pointed to a $20/month Pro plan on gemini.google.com, OpenRouter, and Antigravity. julianz said his paid plan still doesn't offer Argon, and vardalab said the regular subscription lacks it in Antigravity. charm137 called the agy CLI's context compaction "indeterminate," and says it is the only way to use Google's subscription, so he mostly runs OpenCode or a modified deepseek-harness. He also flagged sandboxing as unresolved for graphics work that needs a real windowing surface.
-
-**Side note.** chrisweekly reported an unexpected refusal on a request for a browser script to save streaming video offline, which Opus 5.5 low handled. complex_fir_rea joked this might be Google protecting YouTube.
-
-The impressions are nearly all individual anecdotes, with no head-to-head coding numbers cited.
-
-### Redesigning source control at Anthropic
-
-#### [Submission URL](https://www.anthropic.com/engineering/redesigning-source-control) | 609 points | by [Philpax](https://news.ycombinator.com/user?id=Philpax) | [586 comments](https://news.ycombinator.com/item?id=50073633)
-
-**Anthropic's merge rate grew from ~2,500 changes/day in May 2026 to over 30,000 in September, and git stopped scaling with it.** Their answer was Scion, an in-house version control system. They migrated the whole monorepo off git in five months, alongside a code review surface (Antique), code search, and a source control IAM system.
-
-The numbers behind the pain: main's history alone is almost 100 GB, a compressed working copy exceeds 25 GB, and CI does roughly 25 million checkouts a day. Fetched naively, that would be over 600 PB of git traffic daily. They had already used shallow clones, sparse checkouts, promisor remotes, and seeds in blob storage, and at peak they ran several hundred internal git mirrors. Seeds drifted behind the tip of main, and diff and blame kept breaking on partial clones.
-
-The core insight is that git's decentralized design buys offline operation, but nearly all of their clients are agents and jobs that are online by definition. So Scion inverts the model:
-
-- **Clients are always online.** Data is fetched on demand rather than cloned up front.
-- **Client-server asymmetry.** The server handles history, blame, commits, merges, and rebases. The client keeps a bounded object cache, lays out files on disk, and watches for filesystem changes.
-- **Everything is an API.** Every query the client uses is also exposed programmatically, so many CI jobs need no local repo at all. Anthropic says its automated bisect and revert pipelines depend on this.
-
-They credit prior art from Google's Piper and Meta's Sapling. The post also notes that Claude wrote much of the code for the system, which is a neat loop given that Claude's output is what overloaded git.
-
-The excerpt cuts off before the implementation details, migration mechanics, and any performance results, so those aren't covered here. Anthropic is also upfront that its workload is unusual, though it expects other heavy AI-coding shops to hit the same limits.
-
-The thread splits into two debates: whether source control still matters when agents merge 30,000 changes a day, and whether Anthropic needed to build Scion instead of licensing something like Perforce.
-
-**Does source control still matter at this rate?**
-The opening question was why have version control at all if the repo is in constant flux. Responses came in several kinds:
-
-- **Agents need history too.** nater5000 argued that without a record of changes, agents can get stuck in loops: a change looks right, gets reverted because of some external factor, then looks right again. Preventing that means building something that is effectively source control. njovin suggested Architectural Decision Records as a lighter guard against the same problem.
-- **Harnesses already half-replace it.** serf noted that agent harnesses already checkpoint most of what a commit holds, so layering git on top of snapshots and memory subsystems may waste tokens. Skeptics (avadodin, Yizahi, locknitpicker) joked about agents rebuilding files from a compacted context, or passing zip files around.
-- **Does old history matter at this volume?** rbehrends questioned whether revisions older than a few days matter for nearly 1M merges a month, and whether agents can even use that history. hiq countered that per-folder history stays tractable. jacqum and locknitpicker saw the rate as churn and a sign of spaghetti code, not progress.
-- **Debugging with history.** wongarsu said Claude routinely uses blame and commit messages to find root causes. jcelerier noted that bisect is impractical when each step is a multi-hour build. caaqil asked whether you can fix a bug without understanding its cause. ozim and ahartmetz said yes, you can fix symptoms, but those fixes tend to fail later.
-
-**Why build Scion instead of licensing Perforce?**
-mike_hearn asked why Anthropic didn't license Perforce, since Piper itself was a Perforce reimplementation. He said that when he was at Google, Perforce handled tens of thousands of engineers and commit rates comparable to Anthropic's, on a 16-core box with a few replicas. adonovan and StilesCrisis countered that Google's Perforce ran on one of the most expensive machines ever built, with over $1M of DRAM, and that Perforce hadn't scaled well enough for Google. jeffbee defended Perforce as having scaled to nearly every organization except Google and Microsoft. mike_hearn framed it as opportunity cost: Google could afford to build its own IDEs and tools, but should AI labs follow that path? reverius42 suggested that with AI writing code, the question flips from "why not license it" to "why not reimplement it."
-
-**Smaller threads**
-- demaga asked why 100 GB of history compresses to only 25 GB. quuxplusone's guess was that a few GB of binaries committed before LFS was enabled would skew the ratio, since they stay in history unless it is rewritten.
-- devy defended the design as a reasonable fit for an always-online agent workload. He also disliked the name and the `scn` command, which reminded him of SVN.
-
-The unresolved crux is whether such a high merge rate reflects real progress or churn, and whether history is something agents genuinely use or just something humans expect.
-
-### I posted to HN, and then my website was flooded with AI bot traffic
-
-#### [Submission URL](https://www.sammystraus.com/#i-posted-to-hn-and-then-my-website-was-flooded-with-ai-bot-traffic) | 284 points | by [sammy0910](https://news.ycombinator.com/user?id=sammy0910) | [157 comments](https://news.ycombinator.com/item?id=50073221)
-
-**Nearly half the traffic hitting the author's feed reader after its HN post came from one AI-newsletter service polling the site many times per minute**, and most requests never ran the SPA's JavaScript, so they weren't real users at all. The author, Sammy Straus, launched sprinklz.io (a customizable feed reader that can deprioritize topics like LLMs) and got about 100 upvotes. The site then got slower for days after the spike should have faded, which is what tipped him off.
-
-Diagnosis was simple: per-endpoint request logging showed most hits weren't fetching articles, and aggregate NGINX logs pinned the biggest offender, a service that "listens for changes" to sites and summarizes them into a newsletter. The rest were self-identifying crawlers (ClaudeBot, OpenAI's bot, Google's indexer) plus vulnerability scanners probing paths like `wp-content/phpinfo.php` on a non-WordPress site.
-
-The fixes were mundane:
-- Blocked the worst abuser outright.
-- Added a robots.txt that discourages AI crawlers but allows Googlebot and other search traffic.
-- Added rate limits.
-- Had Claude mimic the scanners against the site to confirm nothing was leaking.
-
-The real takeaway, in his telling, is that the site needed to be faster, and he has since reworked the infrastructure for performance. No before/after numbers are given. Note that robots.txt only stops bots that choose to honor it, so the rate limits and the block did the real work.
-
-The thread quickly turned from the author's feed-reader story into a broader complaint about bot abuse, and its main argument was about what actually works against it.
-
-**Blocking cloud ASNs is common but costly and leaky.** The top commenter (switz) blocks AWS, Google Cloud, Azure, Alibaba, and Oracle on nearly all of their properties. Their complaints:
-- Alibaba still hits one domain about 1M times a day, two years after being banned, even though every route returns 4xx.
-- Some real users arrive through work VPNs on those clouds and get caught by the blocks.
-- Residential-IP botnets are getting around the blocks anyway.
-
-Others added their own cases. Meta and Bing bot misbehaved, Apple's scraping ramped up (though it honors robots.txt), and one commenter described agentic search spam on client sites whose queries may have leaked PII.
-
-**Tactical suggestions drew pushback:**
-- *Drop packets instead of 4xx-ing.* Several commenters wanted network-level drops, with no reply that confirms the server exists. Switz said they already block at the Cloudflare edge, so the traffic never reaches the application.
-- *fail2ban.* It was dismissed as ineffective against residential botnets, since each IP makes only a couple of requests before rotating. A side point was that ipsets can handle very large address lists.
-- *Tarpitting.* One commenter proposed a reverse slowloris, holding abusive connections open with a trickle of data.
-- *Zipbombs.* firefoxd said their popular zipbomb post went viral and brought even more bot traffic, so they regret it. kazinator tried it, couldn't tell whether it helped, and dropped it because it wasted bandwidth and risked false positives. Their real problem was bots triggering expensive syntax highlighting on CGIT.
-
-**Cloud providers have little incentive to police abuse.** cube00 compared it to ad-click fraud: the provider gets paid either way. dspillett questioned whether the revenue is large enough to matter. sdcfgy said an attacker was on AWS, and AWS support took about a week to act. hinkley went further, calling a company that owns both a search engine and a cloud provider "a protection racket", because Google Cloud sells you servers to be hit by Google's bots.
-
-**Cloudflare and residential proxies.** An operator on the receiving end said Cloudflare IPs generate relentless DNS traffic. esseph's explanation was compromised home routers and desktops, sold on as residential proxy endpoints, with some of that traffic coming from scraping services. By that account, banning by ASN or IP will only work for a few more months. foobarian wanted a parallel web built on web of trust. EGreg and esseph both expect identity and authentication to become the gate for dynamic content.
-
-**Legal enforcement is a long shot.** simmerup asked whether vulnerability scanning is illegal. bilekas separated passive version matching from actual probing. nostrademons argued that enforcement fails anyway, because attackers are anonymous, abroad, and not worth a prosecutor's time. In their view, justice systems built on rare criminals break when criminals become ubiquitous.
-
-The unresolved question is whether any IP-based defense can survive residential proxies, or whether the web has to move toward authentication.
-
-### Show HN: Pulse Local, a Mac budgeting app whose AI models run on your machine
-
-#### [Submission URL](https://pulseos.finance) | 79 points | by [niztk](https://news.ycombinator.com/user?id=niztk) | [46 comments](https://news.ycombinator.com/item?id=50080275)
-
-**A 0.6B Qwen3 parses your question, plain code does the arithmetic, and a 4B model double-checks.** When the two readings disagree, the app says it's not sure instead of guessing. That design, per the author, cut wrong answers from about one in five to 5 in 494 questions across the last three tests. The caveat is that it's the author's own test suite; a write-up covers methodology and the designs that failed.
-
-Splitting language understanding from money math is the right call for small models. The LLM only emits a structured query, and the ledger math is deterministic. The author says it matched six months of a real ledger to the cent.
-
-- **Privacy model:** In Local mode there's no account, no analytics, and no crash logs. The only network traffic is the one-time model download (~2.9 GB) and an optional update check. Questions never leave the machine, which is the gap the site calls out in "local-first" apps that still ship your question to a hosted model.
-- **Cost of the checker:** Money answers take 12-14 seconds with it on. You can switch it off, trading latency for the error rate above.
-- **Input:** Import a CSV from any bank in any currency, with no exchange-rate conversion. The chat answers in English only.
-- **Platform:** Mac on Apple Silicon, beta. Windows is next.
-- **Pricing:** The app is free with every feature. The optional Connected mode (Sync Pass, $29/year) pulls US bank data via Plaid. Transactions pass through server memory and aren't stored; the server keeps only the connection token and a record of institution, status, and last sync.
-
-The tuned 0.6B weights are on Hugging Face (PulseOS/pulse-local-qwen3-0.6b). The author admits small models can still misread open-ended questions, and feedback on wrong answers is what they're asking for.
-
-The thread was mostly practical product feedback, with the author (niztk) answering and promising fixes. The main substantive debates were whether CSV import and "local" privacy are enough, and whether the product page and download size work against it.
-
-**Data ingestion is the perceived weak spot.** terwint said CSV import "is where you're going to lose people", since juggling exports from multiple banks is a poor habit-forming flow. They had wired a local agent to Monarch Money through an open-source MCP project. niztk pointed to the optional Plaid-based Connected mode (US only) and conceded that CSV is a chore outside the US. Commenters then suggested alternatives:
-- **Aggregators:** lathiat pointed to Redbark (AU/NZ/US), and cortesoft suggested SimpleFIN, which they use with Actual Budget. unsnap_biceps noted that SimpleFIN Bridge is provided by mx.com, essentially the same kind of service as Plaid.
-- **DIY connectors:** elyobo said Australian connectivity is poor and described a hand-built chain of open-banking aggregator, puppeteer login, and pushing into a local Actual server.
-- **PDF statements:** post-it suggested extracting transactions from PDFs, having had decent results with Qwen3 4B on account balances. niztk said PDF parsing is next.
-- **Agent downloads:** i_am_a_squirrel said ChatGPT could log into their bank and card sites and download exports. xyst objected that this means trusting a black-box model, and the replies pointed out that card payments already involve plenty of black boxes.
-
-**Privacy and the need for chat.** altmanaltman said they wouldn't download ~3 GB for a budgeting app, since reports, charts, and deterministic tracking already answer their questions, and the data already sits with a bank in the cloud. post-it countered that processing on your own machine rather than a hosted LLM is still a real privacy gain. niztk made the same distinction: "local" should cover your questions and analysis, not just your data. They also noted that the 2.5 GB checker can be disabled and the reader model is only 397 MB. herf said Plaid is the bigger risk than a log of AI queries, and niztk replied that Plaid is confined to the optional mode. lathiat wished macOS could enforce no-network behavior rather than relying on developer claims, and unsnap_biceps suggested Little Snitch. niztk's suggested test is to turn off wifi after the model download and use the app.
-
-**Design questions.**
-- **Why not extend Actual Budget?** niztk said accuracy depends on owning the ledger code, plus categories, rules, transfers, and refunds.
-- **Why Qwen3 0.6B?** niztk said it runs fast on laptops and is easy to tune. On their 77-question set, the tuned model scored about level with gpt-4.1-mini and beat a stock 8B.
-- **Apple Foundation Models:** lathiat asked about using them to avoid a download. niztk said they tried and they were "really bad" for this use case.
-- **Lighter classifiers:** nico asked whether classifiers could replace the model, and j45 said bridging deterministic accounting and probabilistic models is a big task. Neither question was answered.
-
-**Bugs and UX:**
-- **CSV mapping:** codebje found their NAB CSV mapped "Description" to the Merchant Name column, which caused 25 rows to be ignored. niztk promised a fix.
-- **Category editing:** robotresearcher said editing a category in the review list takes too many clicks and asked for a clickable category label. niztk will ship a fix.
-
-**Landing page.** tantalor called it the most confusing product page they'd seen. yieldcrv said long pages signal "AI psychosis" and that "private" isn't a differentiator by itself. kccqzy pushed back that long, informative pages are a matter of preference and that omp's old page convinced them better than its newer one. yieldcrv's answer was to A/B test. niztk will tweak the top but keep some of the detail.
-
-### OpenAI engineer arrested in bugging of executive conference room
-
-#### [Submission URL](https://sfstandard.com/2026/10/13/openai-engineer-arrested-alleged-bugging-executive-conference-room/) | 470 points | by [forthwall](https://news.ycombinator.com/user?id=forthwall) | [409 comments](https://news.ycombinator.com/item?id=50078141)
-
-**The evidence trail runs through OpenAI's own chatbot:** prosecutors say an account tied to the engineer's spouse, sharing identifiers with his own, asked how to "build a continuous audio recorder" and "encrypt the SD card" between Sept. 24 and 30. On Sept. 27 and 28 it asked about the specific device later found, including its MAC address.
-
-Abdulrahman Alfozan, 35, a Saudi national who joined OpenAI in July 2025, was arrested Friday and charged with using or attempting to use a device to intercept oral communications. The complaint says a recorder was plugged into a USB port behind a TV in an executive conference room, hidden in toilet paper, and installed around Sept. 28. Its contents were encrypted. OpenAI's technical surveillance countermeasures team found it Sept. 30 during a sweep.
-
-Other allegations from the complaint:
-- Alfozan wasn't authorized to enter the room, but surveillance footage shows him near it on multiple dates.
-- Before the install, he allegedly used an internal productivity tool to ask about building addresses, meeting rooms, capacities, calendars, and where leadership and outside partners met.
-- On Oct. 5, he allegedly looked behind the TV again and left a bag unattended in a different room. Security found his wallet, ID, and a second, similar recorder inside.
-
-The room hosted discussions of proprietary research, product plans, and government engagements. Alfozan was on the product team, according to OpenAI. The company says it has evidence he meant to place more devices in sensitive spaces. It says it staged his firing with the FBI and progressively cut his access from Sept. 30 until he was terminated on the day of his arrest. It also says it used its own models to analyze forensic images of the device's storage.
-
-U.S. Attorney Craig Missakian called it "a matter of national security," and the FBI framed it as counterintelligence work to protect US AI technology. The charge carries up to five years in prison and a $250,000 fine. Alfozan remains in custody. The allegations are from a criminal complaint and unproven, and the reporting doesn't say who, if anyone, the recordings were meant for.
-
-The thread quickly moved off the spy plot and onto a broader point: LLM chat logs are discoverable evidence, and many people haven't absorbed that.
-
-**Chat logs as the new search history.** The top reaction was that users don't realize every prompt is recorded and available to law enforcement. Commenters compared it to Google searches and swapped cases where queries became evidence. One was a Utah woman convicted of poisoning her husband, whose searches included lethal fentanyl doses and "luxury prisons for the rich". Another was a novelist who wrote "How to Murder Your Husband" and was later convicted of murder (an embedding-shape reply noted the judge excluded her essay from the trial). belorn gave what they said was the first news case they had seen of LLM logs used as evidence. In Sweden, a woman had asked ChatGPT about a failed rape attempt and camera-free spots in a park a day before reporting an attack there. A court recently found her guilty of filing a false report and cited the chat log.
-
-**Did privacy lessons get forgotten?** the_af argued there has been a regression, even among HN's tech-savvy users. People once objected to Gmail scanning email, yet with chatbots they are "back to square one." FuckButtons said they bought local-LLM hardware in late 2024 for this reason. crossroadsguy described workarounds: private windows, a VPN, an offline model squeezed onto a 16GB Mac, or a free-tier cloud instance. BLKNSLVR added that you shouldn't let others use your LLM account. SoftTalker and reactordev noted the same applies to social media, email and phones.
-
-**Do searches prove guilt?** A side argument grew out of a joke that the suspect should have searched "I love my wife." skinfaxi and binlog said self-serving statements don't carry the weight of incriminating ones. godwinson__4-8 asked what makes a search a confession at all. autoexec countered that even confessions deserve little weight, since innocent people confess too.
-
-**Workplace surveillance via AI tools.** KellyCriterion said people already mine Plaud.AI meeting transcripts for "who said what" ammunition against colleagues. Others replied that executives have always abused data access, citing the eBay stalking scandal, Meta staff viewing smart-glasses footage and police stalking exes. autoexec's rejoinder was that the abuse isn't new, but the tools make it easier.
-
-**Why would an OpenAI hire do this?** darepublic assumed any OpenAI employee would know their chats are logged. thatsabadlook blamed a culture of people willing to do crappy things, while zer00eyz favored hubris over incompetence. The remaining comments were cut off.
-
-Smaller jokes also ran through the thread: the spies "are not very smart" (simonw), rappers whose lyrics turned out to be confessions, and AI standing trial.
-
-### A Dynamic and Distributed Virtual GPU Cloud Built on Idle Apple Silicon Devices
-
-#### [Submission URL](https://machinelearning.apple.com/research/distributed-gpu-cloud) | 239 points | by [acossta](https://news.ycombinator.com/user?id=acossta) | [96 comments](https://news.ycombinator.com/item?id=50070593)
-
-**Apple's Minions pools the idle GPUs of employees' Macs into a virtual inference cloud**, a way to run large ML inference jobs without buying more datacenter GPUs. The paper (Li, Xing, De Silva, Flint, Yuan, Suchter) pitches it as a response to centralized GPU problems: cost, poor elasticity, and long queues when capacity is tight.
-
-The premise is that modern Apple Silicon machines spend most of their time with underused GPUs during normal work. Minions aggregates them across macOS devices and schedules inference tasks onto them dynamically. The abstract claims flexible task execution, fault tolerance (necessary when your "nodes" are laptops that sleep, disconnect, or get picked up by their owners), and efficient resource utilization.
-
-The abstract is the only text available, and it contains no benchmarks, no fleet sizes, no throughput or latency comparisons against datacenter GPUs, and no description of the scheduling or checkpointing design. The conclusion is a qualitative "our experience shows" that idle Macs can become a *practical* inference platform where central GPU capacity is constrained. That is a deployment report rather than a performance claim, so the real question is what workloads fit within laptop memory and unpredictable availability. The paper itself would have to answer that.
-
-The thread's dominant reaction was "this is an old idea," with a smaller argument about whether Apple should build its own cloud instead.
-
-**Déjà vu, and the real problems are operational.** Commenters traced the pattern through Folding@home, distributed.net, BOINC, Incredibuild, Condor (still maintained, originally run on IRIX, SunOS and HP workstations), university render farms that ran on screensavers, Apple's own distributed video encoding from 2005, and Progeny's late-90s overnight desktop-cluster pitch. One commenter, brandonpelfrey, read the paper as a CRUD database, a fleet of Macs, and S3 for inputs and outputs, and asked what the innovation was. Others, like Telemakhos and tom1337, defended the point: a company can run low-priority, non-urgent AI batch work on hardware it already owns instead of buying servers. The most credible warning came from dekhn, who said he ran a >1M-core idle-cycle harvesting project at Google for three years. In his experience the idea works, but you get huge tail latencies, subtle incompatibilities across a heterogeneous fleet, and a hard database and scheduler management problem.
-
-**What workload actually fits.** Another commenter clarified that this is task-level parallelism, not a single LLM sharded across machines with tensor parallelism. Embedding a million documents is the example given. Related ideas included forwarding CUDA calls to remote GPUs and pulling idle DGX boxes into the pool.
-
-**Energy and consent.**
-- mcculley said these papers always skip energy cost: idle home and office machines are likely less efficient and pay more for power than a datacenter. BoppreH joked that it might pay off in winter, when you're heating the room anyway.
-- Others raised consumer-facing concerns. chasil wouldn't give away his own power and wear without compensation, and bee_rider suggested a compute-credit system. lynndotpy wanted consent-first controls with sane default limits, and noted BOINC is awkward for personal use.
-
-**Should Apple build a cloud?** pm90 argued Apple is leaving money on the table by not selling its chips as rentable compute. Replies were skeptical:
-- A vertically integrated supply chain would take a decade, and regulators in Taiwan and South Korea would block a fab purchase.
-- Apple already secures capacity through huge purchase orders.
-- Apple has repeatedly dropped server and enterprise products, and would be stuck maintaining a macOS server OS in a Linux-dominated world.
-- Supply is already tight, with Studio wait times of 6 to 16 weeks.
-
-The unresolved question is whether idle-cycle harvesting, a pattern with decades of known failure modes, becomes worthwhile when the workload is GPU inference and the fleet is laptops.
-
-### Character.ai has initiated voluntary Chapter 11 bankruptcy
-
-#### [Submission URL](https://blog.character.ai/an-update-on-character-ai/) | 310 points | by [nryoo](https://news.ycombinator.com/user?id=nryoo) | [274 comments](https://news.ycombinator.com/item?id=50068036)
-
-**Character.ai is putting itself up for court-supervised sale, and if no acceptable bid shows up, the platform gets wound down.** The company says the process should wrap by the end of November or early December 2026.
-
-The post blames "significant legal, regulatory, and operational headwinds" and gives no financials, no creditor details, and no named bidder. The linked coverage in the author's post (Variety's headline mentions a Disney bid) hints at buyer interest, but the company's own statement doesn't confirm any of it.
-
-For current users, nothing changes yet:
-- The service stays up and paid subscriptions remain active, with billing unchanged "for now."
-- Subscribers are promised advance notice if paid features change.
-- Account deletion and data export are available in the app and on the website.
-
-The export option is the practical takeaway. A Chapter 11 asset sale of "all or substantially all" assets typically includes user data and chat logs, and the FAQ only says data stays covered by the existing Privacy Policy. It doesn't say what a buyer inherits. If you have chats or characters you care about, export them now rather than waiting for the sale outcome.
-
-The thread's core claim is that this bankruptcy is the leftover shell of a deal that already happened: Google's August 2024 "hi-quire" of the founding team, with a reported $2.7B going to shareholders. Most of the discussion then splits into who got paid, whether the structure should be legal, and what to call it.
-
-**Who actually got hurt?** The top comment pitied the people left behind, and Eridrus pushed back with specifics.
-- Everyone holding stock, common included, was reportedly bought out at the ~$2.6B valuation. Unvested holders got guaranteed payouts for two years after the deal.
-- Eridrus argued that the empty legal entity doesn't mean nobody was paid. As evidence, he pointed to the suit over NVIDIA/Groq leaving former employees out, which implies employees were generally taken care of in these deals.
-- no_no_no_yes feared that these deals leave regular engineers, designers and PMs with nothing. Eridrus replied that the payouts went to everyone with stock.
-- ryandamm cited a Supreme Court case saying common stockholders can be ignored. Eridrus said this misreads the Trados litigation, where common stock got nothing because the sale never cleared the preferred stack. Here the preferred stack was cleared, so common holders are owed a share.
-- Side thread on Chapter 11 mechanics: pclmulqdq noted equity gets whatever remains after debt is made whole, and bsuvc and echelon doubted shares are worth much in a bankruptcy.
-
-**Should this structure be banned?** The first commenter hopes regulators end the practice. OkayPhysicist countered that any ban conflicts with California's non-compete logic, since you can't ban hiring people, licensing technology, or paying for it. singron answered that the combination of all three is functionally an acquisition that dodges antitrust review. collingreen put it as: Google got the team, investors got paid, and the regulatory review was skipped.
-
-**What to call it.** A long tangent argued over "hi-quired."
-- compiler-guy relayed that the industry term is "reverse acqui-hire", with Matt Levine's writing as the reference. jiveturkey offered "HALO" (Hire And License Out).
-- jeremyjh made the key point that no company bought another in legal terms, so this is a different thing from an acquisition or acquihire.
-- Others offered "poached" or "hire-quired". limagnolia objected to "poach" as a term for hiring people. Replies said words have multiple meanings, and the thread descended into egg-cooking jokes.
-
-### Show HN: Parsimony – an open-source benchmark for how much code AI models add
-
-#### [Submission URL](https://parsimony.lasu.dev/) | 62 points | by [lasu](https://news.ycombinator.com/user?id=lasu) | [9 comments](https://news.ycombinator.com/item?id=50077619)
-
-**Parsimony ranks AI coding models by how much code their patches add**, not by whether they solve the task. It's aimed at the maintainability cost that solve-rate leaderboards ignore.
-
-It reuses patches already published for DeepSWE, SWE-bench Verified and SWE-bench Live. Each patch is parsed (nothing is run) and scored in "coding units": statements, calls, comparisons, names and literals. Counting syntax elements rather than lines means cramming logic onto one line doesn't help. Deletions are subtracted, so the score is net units = added − removed. Models are ranked by mean net units on the tasks they solved, lowest first. Pass/fail comes from SWE-bench's published results, and tests aren't rerun.
-
-The caveats are mostly stated up front:
-- **Smaller isn't automatically better.** Units measure size, not readability or design.
-- **Size correlates with solving.** On boards with 26+ models, models that write more code also tend to solve more tasks (Spearman 0.33–0.60), so a low score can partly reflect doing less.
-- **Python only**, and tests, docs and generated files are excluded.
-- **The agent confounds it.** Every model runs under mini-SWE-agent, which still influences how much code gets written.
-
-GPT-6 and Claude 5.5 have no public patches, so the author ran them personally on 3–10 DeepSWE Python tasks. Those runs show as faded circles and aren't ranked. In one cross-check, the author's own run of GPT-5.6 Sol added 0.88× the code of its published run, which gives a rough sense of run-to-run and harness noise. Small samples like these shouldn't be read as rankings.
-
-There's also a browser-side option to load your own benchmark JSON and get the same chart. The author is asking for public patch exports from newer models. The author isn't affiliated with any of the underlying benchmarks.
-
-The thread's main tension is whether code size is the right proxy for quality at all, and the most concrete pushback comes from the benchmark's own winner.
-
-- **Terse isn't the same as good.** fastball says Astra tops the leaderboard but "plays code golf" and writes nearly unreadable code. They would rather have Claude's excess comments and tests. demibabs agrees that too-terse code is as bad as too-verbose code. ndr adds that they swing between the two and are currently in an "Astra season" because they dislike Claude's tone. They wonder if the models will diverge enough to become the LLM era's tabs-vs-spaces. This echoes the submission's own caveat that units measure size, not readability.
-- **Does size matter?** KasianFranks argues almost nobody will care how much code an AI generates, since complexity is not much of a problem for an AI system. chengjunsuger asks the opposite, practical question: does less code actually mean less work for the human reviewing it? Neither question is answered in the thread.
-- **Better metrics.** smilekzs wants cyclomatic complexity added as a readability signal, and says AI-written code increasingly suffers from tangled control flow. Vakaiser asks how to reduce verbosity and complexity in agent output, and gets no replies.
-- **Local models.** Xeoncross wants benchmarks to include the best locally runnable model (Qwen 3.8 27B at Q4, about 28GB) to show how far open weights trail commercial ones. vunderba points to Artificial Analysis, which can filter by size class and open vs. proprietary, though with mixed feelings about it.
-
-### How to engineer an AI harness for game development
-
-#### [Submission URL](https://kylekukshtel.com/ai-harness-engineering-game-development-claude-code) | 138 points | by [kkukshtel](https://news.ycombinator.com/user?id=kkukshtel) | [64 comments](https://news.ycombinator.com/item?id=50072120)
-
-**The core claim: LLMs aren't bad at games, they're bad at *reading* them.** Kyle Kukshtel, a game programmer of nearly 15 years, argues that web stacks work well with Claude Code because everything is code, while games bury much of their substance in assets and editor state the model can't see.
-
-This is a human-written blog version of his Indie Rodeo talk "Your Game Is A Harness." He frames the problem structurally rather than as a capability gap. Web apps benefit from abundant open-source training data and a text-only surface. Games add scores of other systems on top of the layout work, and much of that content isn't code. The Three.js one-shot craze works for the same reason: boxy primitives keep everything in code, but the output tends toward the "LLM median" with no authorial voice.
-
-His own path started with mood.site, built by copy-pasting into ChatGPT in roughly 20 hours of work over 2-3 weeks. He says it would have taken far longer unaided. He now sees little an LLM can't do on a web stack.
-
-His thesis is that gamedev's "LLMs are useless" sentiment comes from people hitting that opacity wall early. The fix he points toward is engineering the harness so the game's non-code state becomes legible to the model. The provided text cuts off during the LLM basics section (system, assistant and user prompts), so the actual harness techniques and dev-loop details aren't visible here.
-
-Worth noting that his "LLM-written web code is good" judgment is self-admittedly unverified, since he's less fluent in Svelte than in game code.
-
-The thread mostly argues over where LLMs stop being useful in game development. The sharpest version is the "polish wall": generation looks great, but iteration degrades it.
-
-**The one-shot vs. iterate paradox.** andai described a Pong game where frontier models broke something with every added feature, while a game roughly 100x more complex was one-shotted cleanly. Replies offered several explanations:
-- hodgehog11 said it's easier for a model to roughly copy code it has seen than to understand given code well enough to make targeted fixes.
-- dimava said starting from the end lets the model design an architecture for everything it will need, and argued for verifiable, unit-testable engines like Factorio's.
-- giovannibonetti suggested Rust and Bevy, whose compile-time guarantees might stop regressions.
-- Madmallard and sarchertech put it down to polish. sarchertech one-shotted a juicy math game for their 4-year-old, but every later tweak made it look or feel worse, even with tests and specs.
-
-**Can taste be prompted?** YesBox, a gamedev of five years, argued that the last 20% of work is faster by hand, and that an artist's vision can't be fully put into words. Counterpoints:
-- augment_me held that most players don't care about such vision, citing Candy Crush's 13-year run as success through cognitive hooks. xboxnolifes and sarchertech countered that Candy Crush won on exactly those details (color, animation, feedback), and that most other top-grossing games look nothing like it. montagg added that the OP is talking about art, and that commercial hits don't negate it, as with reality TV and film.
-- psadauskas gave a concrete example: a tall candy and a round one may need different scaling on drag, and "it doesn't feel right" is hard to turn into a prompt.
-- lukan noted you can feed the model sketches and images, and that how well this works depends on whether you're doing something novel or something done a thousand times.
-
-**Workflows people actually use:**
-- drusepth said not to have the LLM make the tweaks. Have it build the tools (they have about a hundred for one Steam game) that let artists tweak faster by hand.
-- EthanHeilman uses LLMs for prototyping. The model builds AI players and balance tests, which caught issues his cardboard playtests with friends missed. It speeds up human playtesting rather than replacing it.
-- gen220 compared LLM work to a Renaissance painting workshop, where the master directs and adds finishing strokes. The hard part is staying close enough to the work. demibabs doubted that two people's LLM-made games would end up distinct, expecting them to be surprisingly similar.
-
-Side notes: YesBox said the author should keep his self-introduction, and dimava asked everyone to name the model they used, since models change so fast.
-
-### Gemini 4 Argon for Robotics
-
-#### [Submission URL](https://developers.googleblog.com/gemini-4-argon-for-robotics/) | 205 points | by [xnx](https://news.ycombinator.com/user?id=xnx) | [48 comments](https://news.ycombinator.com/item?id=50074869)
-
-**Google's Gemini 4 Argon scores 87% on the Embodied Reasoning benchmark (ERQA) using pure reasoning**, which the post says beats every other frontier model. The accompanying claim is that one general-purpose model can cover the whole robotics lifecycle. The blog gives no comparison table, so the "every other frontier model" claim rests on Google's say-so.
-
-The post is mostly a tour of representative prompts across four areas: robot control, Real2Sim, physical understanding, and research/self-improvement. The visible examples are the most informative part:
-
-- **Spot mobile manipulation:** Argon drives a Boston Dynamics Spot (12-DoF legs, 6-DoF arm) to step on a foot-pedal trash bin and drop soda cans in. It first builds an articulated MuJoCo digital twin of the bin to practice the 3-leg tripod balance. The prompt also spawns a two-agent "verification swarm" (foot-verifier, hand-verifier) to check the pedal step and hand-in-bin alignment before release.
-- **Zero-shot arm control:** Argon rights a fallen mug and puts a napkin inside. The model sees a wrist-camera image overlaid with a calibrated 2 cm world-coordinate grid and a jaw reticle. It emits `curl` calls to a local HTTP server exposing code-as-policies primitives such as `grasp`, `place_until_contact`, `move_by` and `deproject`. Each turn it writes a one-sentence observation, then the command, and verifies visually before moving on.
-- **World-model steering:** In the Gemini Omni World Model, Argon arranges Scrabble tiles into "ARGON". It writes timestamped action prompts, inspects intermediate rollout keyframes, and refines the prompts in a closed loop.
-
-The notable design choice is that control happens through a thin scaffold, not a trained policy: calibrated visual annotations plus a small primitive API plus multi-turn verification. That makes the results easy to reproduce in structure, though the prompts are heavily engineered, and the demos are single tasks with no success rates shown in the provided text. The remaining sections (Real2Sim from sketches and egocentric video, hindsight labeling, hardware self-improvement) are cut off in the excerpt, so their claims are unverified here.
-
-The thread is mostly hobbyists reporting what happens when you wire a frontier model to real hardware, plus a long side argument about whether such models can ever live on a robot.
-
-**Hands-on report from a Unitree owner.** The top commenter bought a Unitree R1 Pro (about €5.9k in Germany) and says Argon 4 is noticeably more cautious than Opus and Astra when driving it. Those other models "crashed against tables, beds and surfaces", while Argon slowed down, steered toward a table and described what was on it. The architecture matters:
-- The LLM doesn't drive the joints. It issues high-level commands to an ONNX RL-trained network running at roughly 500Hz, which handles balance and stumbling.
-- Latency is fine for navigation but "avoiding moving obstacles is definitely a no-go right now."
-- The RL policy works well in trained scenarios and behaves unpredictably outside them.
-- Safety advice: activating a walking policy while the robot hangs makes it kick and punch, and a humanoid dropping into damping mode is 30 kg hitting the floor. One reply suggests a weighted PC dropped on the parquet as a self-test. The owner recommends the Go2 robot dog (with LIDAR) as a gentler starting point.
-- On dexterous tasks like loading a dishwasher, the real obstacle is hands costing about $10k each, plus teleoperation data and a VLA fine-tune, with Argon as the high-level planner.
-
-**Can it run on the robot?** One commenter assumes efficiency gains of 90% per 18 months and 2x hardware per two years, and concludes we are about a decade from an Argon-class model on battery power. Replies split three ways:
-- **Offload it.** Keep small local models for locomotion and balance and "phone home" for planning. Latency matters little, and central compute beats slower local compute. Liability pushback was met with the point that liability exists either way, and on-device motor control can bring the robot to a safe stop if the link drops.
-- **Burn it into silicon.** Once models plateau, weights could be etched into ASICs (Taalas is cited) for an order-of-magnitude efficiency gain. Counters: Moore's Law only lasted because of a quirk of physics, and compression has information-theoretic limits. Another reply noted this doesn't solve RAM costs.
-- **Specialize.** Local inference in an industrial site is plausible, and a specialized model should beat a general one. That drew a Bitter Lesson link, and a reply asking whether it holds for very narrow domains with tight power and cost budgets. The thread cuts off there.
-
-**Smaller threads:**
-- A snow-sweeping robot builder said the post matches his own approach: zero-shot control with a visual harness and action primitives, simulation bring-up, and distilling a big model's data into small deployable ones. Commenters criticized his website's AI-generated demo video, since it sits alongside a listed $1000/mo price and implies a working product.
-- One commenter raised security: if connected fridges get hacked, what about compromised robots holding knives?
-- Another asked if anyone had tried it on the SO101 arm; no one answered.
-
-### We turned EmbeddingGemma 2 into a speech-to-text model
-
-#### [Submission URL](https://eg2.haku.sh/) | 407 points | by [amrrs](https://news.ycombinator.com/user?id=amrrs) | [86 comments](https://news.ycombinator.com/item?id=50069971)
-
-**Transcription falls out of a multimodal embedding model if you train only a small adapter.** The team kept EmbeddingGemma 2's audio encoder frozen, trained a small "reader" that maps each short audio slice into the model's text space, and picks the nearest of ~229,000 English words. A tiny separate model then adds punctuation and capitals.
-
-The training cost is the striking part: under two hours on 8×H100, using openly licensed English speech. The base model never saw a speech-to-text objective.
-
-On a base M3 MacBook Air (8 GB), it runs on the Neural Engine at 288× real time, about an hour of audio in 12.6 seconds. On the same machine, IBM Granite Speech 5.0 Turbo took 25.7 seconds, roughly 150×. The Parakeet TDT 0.6B v3 figures (156× on M4 Pro, 335× on M5 Pro) come from FluidAudio's published benchmarks on different hardware and audio, so the authors themselves call the table a rough guide rather than a ranking.
-
-The catch is accuracy: **about 5% word error rate, against 2–3% for leading speech models.** That's roughly double the errors, which you'd notice in dictation. The authors say a better-trained reader should close the gap but haven't shown it yet. Word-level nearest-neighbor lookup also implies an English-only, fixed-vocabulary design, though the page doesn't spell out how it handles out-of-vocabulary words.
-
-It ships as a free Mac app (v1.6, macOS 14+, Apple Silicon, 715 MB model download on first launch). You can drop in a file or hold Right Option to dictate into any app. Audio stays on the device.
-
-The thread is mostly the author (Shershah1024) answering questions, alongside a side debate over whether Apple's built-in transcription is worth using. He framed this as a curiosity-driven experiment, not a speed play. The goal was to see whether the shared text/audio vector space in EmbeddingGemma 2 could be exploited, and speed came as a side effect. He says he will open-source it in a few days and release a TTS version soon. The app itself isn't open source yet. Commenters pointed out that the Apache 2.0 notice on the page covers only Google's base model.
-
-**Open questions on design and accuracy**
-- **Out-of-vocabulary words:** drakirus doubted a fixed ~229k-word lookup can generalize. The author replied that new words can simply be embedded and added to the vocabulary. The risk is that a new word very close to a known one tends to collapse into it.
-- **Benchmark:** armcat asked which benchmark the 5% WER comes from, noting that even a tiny model like Whistle ranges from 4% to 26% depending on the dataset. This wasn't answered in the thread.
-- **Languages:** the author plans a multilingual reader but has no prototype yet. One user found that Portuguese audio comes out as sensible but low-quality English. The author explained this as the reader being trained only on English words while the encoder understands Portuguese. Others asked whether the errors are semantic or lexical, and whether the output skews toward Latin-rooted words.
-- **Why multimodal:** lukko asked if a multimodal model is overkill. Replies said the shared embedding is the point, since audio goes in and text comes out. Others added that transcription needs some context and world knowledge.
-- **Decision-model idea:** the author tried training it as a decision/classifier model. It beat Liquid's small decision model on trained domains but fell to just above chance elsewhere. nl argued that few-shot behavior needs in-context learning, which makes a small audio-capable LLM like Gemma E2B the more natural route.
-
-**Speed comparisons and the Apple model debate**
-- bigtex measured a 33-minute file at 6.75 s with this app against about 7.5 s for MacWhisper with Parakeet v3 on an M4 Mini, so the lead over Parakeet is slim.
-- saaaaaam found Parakeet v3 already so fast on an M1 Air that it seemed to have failed.
-- llimllib benchmarked Apple's on-device model at roughly 5x faster than whisper.cpp large-v3-turbo but somewhat less accurate. Other users called Apple's older model "laughably bad", and MacWhisper reportedly ran Apple's model about 4x slower than this one. llimllib wondered whether MacWhisper uses a different Apple model.
-- ChrisMarshallNY suspects Apple's strength is multilingual support.
-
-**Other notes**
-- whstl recommends converting models to CoreML (even rewriting them in Swift) to run on the Neural Engine, reporting speedups from 60 s to 10 s on tools like Demucs and Whisper.
-- mrkn1 pointed to yapsnap, a zipformer that is faster on CPU.
-- Requests included a Latin test, comparisons against Parakeet and Needle, and audio-interface input selection.
-
-### Show HN: Use your OpenAI subscription to create audiobooks
-
-#### [Submission URL](https://pdftomp3.com/connect-ai/) | 159 points | by [janpmz](https://news.ycombinator.com/user?id=janpmz) | [81 comments](https://news.ycombinator.com/item?id=50069337)
-
-**PDF TO MP3 now runs as an MCP server**, so your existing Codex or Claude subscription handles the document work (parsing and processing the PDF) while you pay only for the speech generation itself.
-
-The setup is a three-step flow:
-
-- **Connect your AI.** In Codex, go to Settings → Plugins → Add MCP server, choose Streamable HTTP, paste the server address, then authenticate with your PDF TO MP3 account. Claude is the other supported option.
-- **Add a speech key.** Bring an OpenAI or Gemini API key, which is billed by that provider per usage. The page warns that free Gemini keys hit rate limits and "high demand" errors, and recommends enabling billing.
-- **Send a document.** Attach a PDF in chat and prompt: "Use the PDF TO MP3 MCP to turn this into an audiobook."
-
-The split is the point: the expensive, token-heavy reading of long documents rides on a flat-rate plan you already have, and the only metered cost is the TTS call. A plain API-key-only path is also offered if you'd rather skip the subscription route.
-
-The catch: it isn't free end to end. You still need a funded speech key, and the page gives no per-book cost estimate. It also requires a PDF TO MP3 account, and the page doesn't say what happens to your documents on their server.
-
-The thread splits into three strands: a credibility fight over the submission's framing, security worries about pasting API keys, and a long show-and-tell of DIY alternatives.
-
-**"Use your subscription" is misleading.** The loudest complaint is that the headline promises a subscription-powered workflow but the tool actually wants an API key. embedding-shape expected the OpenAI/Codex login or device-code flow, and said the page looked "intentionally misleading." scrollop suggested a title of "subscription AND a TTS API key." kaoD pointed to the prominent "$0 PDF to MP3" banner. The author (janpmz) replied that document processing runs on your subscription while the TTS call is billed through your key. wastewastewaste found this in the page's fine print, and Onavo noted an OAuth method exists. simianwords wanted a "Sign in with ChatGPT" flow instead, and AndrewKemendo answered that this doesn't exist yet.
-
-**Pasting API keys into a stranger's site.** x______________ compared it to handing over a credit card number. xnorswap held that nobody should ever paste keys into websites. Others called that too absolute:
-- 14u2c said a key with a spend cap and short expiry is easy and predictable, and preferable to an OAuth flow that takes your email.
-- throwaway_19sz suggested a prepaid account you're willing to lose.
-- munk-a said a throwaway key keeps to the spirit of the rule even if it breaks the letter.
-- yohannparis argued the form itself should tell users to create a dedicated, budget-limited key.
-
-**DIY and local alternatives.** Many commenters said they had built something like this, and some argued the product has little room to be a business:
-- **Article to RSS podcast pipelines:** xenocratus, kolinko, BeetleB and others described scraping articles, running TTS and publishing an RSS feed. For delivery, cj00 used Tailscale, exe34 used Syncthing, and umeshunni emailed the MP3 through a Gmail MCP.
-- **Voice quality:** sebzim4500 finds OpenAI voices unpleasant and ElevenLabs still slightly off. kingforaday recommended fish.audio. brumar said Voxtral is close to ElevenLabs but occasionally produces failed segments, such as fading volume, that need automatic detection and retries. kolinko suggested having an agent rewrite articles slightly so they flow better when heard.
-- **Local and offline tools:** thangalin's KeenLore runs on an 8GB GPU, draugadrotten listed several offline audiobook generators, ph4rsikal recommended Qwen3-TTS, and Kwpolska pointed to macOS `say`. janpmz said he uses Kokoro as the free option but Gemini supports more languages and voices. He called TTS the main bottleneck.
-- **"Build it in 2 hours":** exolab and therepanic said Claude could build this in hours or minutes, and malfist answered with the famous Dropbox "just use FTP" comment. janpmz said the value is the whole pipeline, from PDF to listening in the car.
-
-**Product feedback.** jaccola complained that the demo video ends before any sample plays. After janpmz linked examples, brunorsini liked the voices, but kubrickslair found word highlighting drifting out of sync with the audio. cj00 raised pronunciation of proper nouns and heteronyms such as "initiates," which is hard without SSML support. 55555 asked for a two-speaker Thai podcast, and janpmz produced one.
-
-**Dislike of AI audio.** A side thread began when lifeisloving said recommending AI-generated audio lowers their opinion of the sender. It turned into a spat over therapy and "touching grass," and platevoltage said the downvoting of such pushback made them consider leaving the site. wing-_-nuts said AI voice is now acceptable but its pacing and cadence still give it away.
-
-### Zero to Calc in Six Days: Inside XBOW's Chrome Full Chain
-
-#### [Submission URL](https://xbow.com/labs/research/zero-to-calc-in-six-days-inside-xbow-chrome-full-chain) | 31 points | by [ollin](https://news.ycombinator.com/user?id=ollin) | [10 comments](https://news.ycombinator.com/item?id=50076503)
-
-**XBOW built a Chrome full chain in six days, using AI agents for roughly $40,000 in API charges.** The chain took JavaScript in an ordinary Chrome tab all the way to code execution outside the renderer sandbox, and Google paid it the first $250,000 full-chain reward under the VRP rules introduced in April 2026. By XBOW's account, a four-person team needed 6-9 months for a chain like this before LLMs, and its own first submission took two months.
-
-The chain stacks three bugs, one per boundary:
-
-- **V8 (Maglev):** during deoptimization, a mutable HeapNumber was stored as a literal and then written by identity into each reconstructed object. Distinct JS objects ended up sharing one mutable double, which violates a compiler invariant that HeapNumberRef is only created for immutable numbers. The result is read/write access across V8's pointer-compression cage.
-- **V8 sandbox escape (animated WebP):** cached geometry combined with changed image bytes gives one chosen native write outside the cage. It exploits a property the V8 sandbox deliberately doesn't enforce but Blink wrongly assumed it could trust.
-- **Renderer sandbox escape (Crashpad):** the crash handler treated a failed read from a supposedly frozen renderer as a stable observation. That memory-safety bug yields code execution in the unsandboxed crash handler, and the demo pops Calculator from signed Chrome Beta.
-
-The process matters as much as the bugs. Rather than ask one agent for an end-to-end exploit, XBOW ran parallel campaigns: broad vulnerability search, V8 memory corruption, V8 sandbox escape, renderer sandbox escape, and integration. Agents ran on OpenAI's gpt-5.6-sol and handled source search, hypothesis testing, PoCs, and exploit stages. Humans picked targets, challenged results, and decided what to join. Each stage had a clean interface and backup routes, so a component could be swapped without rebuilding the rest.
-
-The $40,000 figure is reconstructed from archived Codex logs, and the chronology and orchestration details are deferred to a talk at Unprompted in late October. The excerpt I have cuts off partway through the Maglev analysis, so the WebP and Crashpad mechanics aren't covered here.
-
-The most substantive part of the thread is a timeline clarification from moyix, who appears to be on the XBOW team. The post's "six days" is easy to misread as a bug-to-chain sprint on top of earlier work, and whiplash25 read it that way: first chain took two months, then one bug swapped and weaponized in six days for $40K.
-
-- **Timeline correction:** The first working chain was entirely invalidated because all its bugs were fixed. In early August the team started from zero and both found the vulnerabilities and built the exploit in six days. Agents turned up about 11 vulns in that window. Three were submitted as the full chain. The middle stage collided with another report, so a backup bug replaced it.
-- **Team context:** After the CEO set the goal in January, no team was actually hired and working on it until around May. The six-day chain was built by one person plus agents. That person drew on exploit techniques from the earlier chain the team built together.
-- **Cost:** moyix confirmed the $40K is token spend, against the $250K reward. BonoboIO asked whether that meant real API money or a few ChatGPT Pro subscriptions, and the thread doesn't answer directly.
-- **Off-topic worry about browsing:** creata asked whether untrusted sites are safe to visit at all, assuming Firefox is worse than Chrome. gruez replied that this chain would be mitigated by disabling JIT, which Edge exposes as a setting. Chrome only offers "disable v8 optimizations", which doesn't fully turn off JIT but might still block this bug. Behavior in other Chromium forks is unknown.
-
-The implied takeaway is that a one-person, roughly one-week, sub-$50K Chrome chain is now plausible once prior techniques are in hand.
-
-### Show HN: SolidCraft – Open-Source Parametric CAD in Rust (With MCP Support)
-
-#### [Submission URL](https://github.com/bherbruck/solidcraft) | 133 points | by [bherbruck](https://news.ycombinator.com/user?id=bherbruck) | [45 comments](https://news.ycombinator.com/item?id=50064840)
-
-**SolidCraft is a from-scratch parametric CAD app in pure Rust** with a feature timeline, its own constraint solver, and a built-in MCP server, so AI agents can drive the modeler directly. It runs on desktop (Windows, macOS, Linux via AppImage/deb/rpm/Flatpak/Snap) and in the browser, dual-licensed MIT/Apache.
-
-The showpiece is **SELENE, a scientific rover built entirely through the MCP server**: 3,323 editable timeline steps that rebuild with no errors. The README's other demo is a Raspberry Pi 4 case (sketch, extrude, fillet, shell, standoff pattern, engraved text, PETG mass properties) that fully rebuilds when you change height from 24 to 32 mm.
-
-Under the hood:
-- **Sketching:** lines, arcs, splines, conics, text, and a long constraint list (tangent, G2 curvature, symmetry, and so on). The solver uses geometric construction (after Owen and Fudos–Hoffmann) for exactly placeable points and Levenberg–Marquardt for the rest. Jacobian rank reports remaining degrees of freedom.
-- **Features:** extrude, revolve, sweep, loft, fillet/chamfer, shell, draft, holes, threads, patterns, mirror, split, combine. The timeline rebuilds incrementally.
-
-The maturity claim is honest: "early but usable for simple parts." **75 of 76 reference parts match analytic or FreeCAD-computed volume, area, centre of mass, and bounding box**, with the one miss tracked as a bug. The authors explicitly say that doesn't prove full geometric or workflow equivalence with other CAD tools. Installers are unsigned, so expect SmartScreen and Gatekeeper warnings.
-
-The AI-agent angle is the interesting part. A replayable timeline of named, editable steps is a far better target for an LLM than a mesh or a script that emits a one-shot solid. Whether it holds up past hobby-scale parts is the open question.
-
-The thread skips past SolidCraft's own features and turns on two questions: how hard it is to build a b-rep kernel, and who gets credit when an LLM writes the code.
-
-**Kernel maturity.** The first commenter identified the underlying kernel as Truck and questioned how fast a project built on it can mature, since a b-rep kernel is "a phenomenal amount of work". The author of a separate solo kernel, Aetheris, replied that it took him six months. He said Truck still only does single-edge fillets (using Newton's method), while his handles planar fillet chains fairly reliably.
-- His design refuses to materialize operations that could create sliver geometry (microscopic artifacts from floating-point noise at surface intersections). Commercial kernels instead "heal" these after the fact. Because the kernel is analytical-first, it errors at compile time rather than emitting bad geometry.
-- zamalek objected that users will read such refusals as a bug or a missing capability. He answered that it works like a borrow checker: strict on export, tolerant on import.
-- Aetheris has no conventional UI. Threads are defined in a JSON-like DSL, and WASM cold compile for a moderate assembly takes 4-5 minutes.
-- SOLAR_FIELDS added that slivers also show up in 2D GIS polygon unions.
-
-**Credit for LLM-written code.** Another commenter, well_ackshually, challenged the "I built it solo" framing, pointing to commits showing Claude and a pace of about 6 commits a day touching 50+ files each, which can't have been reviewed. 16bytes countered that experts extract far more from these tools than amateurs, using Terence Tao's chat transcripts as the example. well_ackshually replied that asking Einstein questions doesn't make you the inventor of relativity. atonse sided with domain knowledge: even with a top model he couldn't build this, since he wouldn't know how to specify or test it. The disagreement is about whether directing and verifying counts as authorship.
-
-**Alternative kernels.** GhostXFace pointed to a Rust port of the SMLib subset that NVIDIA open-sourced the day before, which could outdo OpenCASCADE if it proves robust. Its maintainer invited contributors to point agents at a ticket-style triage system. darksaints mentioned the MonsterTruck fork, born from slow merges in Truck, and the plan for a build123d-style Python wrapper. He also argued for a shared vision across projects on hard problems like fillets and the topological naming problem. dofm said LLMs solving CAD math would be a real contribution, while copying existing CAD programs is "AI NIH".
-
-**Why AI-drivable CAD matters.** larodi argued that open *Craft tools fill a gap, because incumbents restrict or price automation access. jerkstate said that reusing an existing open editor frontend gave his agent-backed desktop publishing app a far better UI than describing every interaction to an agent.
-
-### OpenAI employee arrested by FBI over hidden listening device, company says
-
-#### [Submission URL](https://www.reuters.com/world/us/fbi-arrests-former-openai-employee-planting-listening-device-2026-10-13/) | 34 points | by [jawiggins](https://news.ycombinator.com/user?id=jawiggins) | [9 comments](https://news.ycombinator.com/item?id=50078653)
-
-**An OpenAI employee has been arrested by the FBI over a hidden listening device, according to OpenAI itself.** The title is the only thing we have to go on, and it supports little beyond that.
-
-The source is the company's own statement, relayed by Reuters. The URL slug calls the person a "former" employee and says the device was "planted," while the headline says "employee." That discrepancy is unresolved here.
-
-Where the device was placed, who it targeted, what charges apply, and any motive are all unknown from the title. So is whether the case involves corporate espionage, a personal dispute, or something else. Treat any speculation on those points as just that until the Reuters piece or a court filing says otherwise.
-
-Since the article gives no motive, the thread is mostly guessing at one, and none of the guesses is backed by evidence.
-
-- **Workplace paranoia:** Aurornis said low-stakes versions of this have happened at other companies. Coworkers spied on management out of anxiety about being fired, an assumption that executives were talking about them, and the hubris of thinking they wouldn't be caught.
-- **Insider trading on prediction markets:** wildzzz suggested the point was to pass actionable information to a friend betting on OpenAI-related outcomes. walrus01 objected that OpenAI isn't publicly traded, so there are no futures to bet on. serf and guiambros answered that prediction markets cover it. guiambros pointed to Kalshi's OpenAI listings and named product launch dates, IPO timing and the choice of banks as examples where insiders could profit.
-- **Ideological or state motives:** nullc asked whether the person was part of an "AI doomer" cult or paid by one. mrtesthah speculated about recruitment by Saudi intelligence and called AI-safety "doomerism" a cover for oligarchs monopolizing compute. Neither offered anything to support these theories.
-
-Commenters did not settle on a motive, and the Kalshi point is the only one that came with a concrete mechanism.
-
-### Show HN: Deslop – Oxlint rules for AI-generated TypeScript
-
-#### [Submission URL](https://github.com/maharshi365/deslop) | 28 points | by [maharshi365](https://news.ycombinator.com/user?id=maharshi365) | [6 comments](https://news.ycombinator.com/item?id=50075809)
-
-**A plugin of opinionated Oxlint rules aimed at the habits AI coding assistants leave in TypeScript**: type-assertion chains, `unknown` and `object` parameters, and tests that assert nothing meaningful. Published on npm as `ai-deslop`, it runs on any oxlint JS-plugin runtime (Bun, Deno, Node).
-
-The rules fall into three groups, all under a `deslop/*` namespace:
-
-- **Type safety:** bans chained `as` assertions, widen-then-assert patterns, `unknown`/`object` on function inputs, and runtime `typeof` narrowing (it wants boundary parsing instead). Non-const assertions need a written safety comment.
-- **Code quality:** flags adjacent `filter`/`map` passes, accumulator copies in reducers, and `Reflect.apply`/`Reflect.get`.
-- **Tests:** rejects module mocking in Vitest and Jest, assertions that only check mock calls, repeated identical `expect` calls, and substring checks against constant strings.
-
-Opt-in rules cover duplicate all-caps constants across files, exact duplicate object types, unnecessary import aliases (with an autofix), and non-canonical Tailwind v4 class names. The recommended config also switches on a few standard rules, including `no-floating-promises` and `no-unnecessary-condition`, which require type-aware linting.
-
-Much of the generic rule set is vendored from dmmulroy/anti-slop (MIT) and renamed, so this is a curated fork with extra rules rather than a from-scratch effort. It's young: 50 stars, 32 commits, no forks. The stance is also strict. Banning `unknown` parameters and `typeof` narrowing will collide with plenty of legitimate code, so expect to tune the recommended preset before it goes anywhere near CI.
-
-The thread is short and mostly agreement: strict lint rules are treated as a practical necessity for LLM-generated TypeScript, and the open question is what this plugin adds over existing options.
-
-- **Lint as a guardrail:** SSchick's team recently pivoted to AI-assisted feature development and says that without an "extremely defensive/aggressive" lint config and roughly 80% test coverage, most of the work would be nearly impossible. They'd adopt `no-reflect-get` immediately because "claude LOVES `Reflect.get`". navs says oxlint plus general ast-grep rules have become essential for LLM codegen, a habit that began with CoderabbitAI's `ast-grep-essentials`. aleksiy123 combines oxlint with a custom cross-language AST rule tool, LLM hook outputs, and Vale for prose.
-- **Overlap with existing tools:** SSchick compares the rules to `eslint-plugin-unicorn` and is waiting for oxlint plugin support to switch. The author (maharshi365) replies that oxlint already ships unicorn as a built-in plugin, so that's worth checking. tmsh asks directly what this adds beyond `dmmulroy/anti-slop`, which it was partly vendored from. That question went unanswered in the thread.
-- **Author's stance:** maharshi365 invites PRs for any rules commenters think matter, and says they've been adding the plugin to friends' sloppy codebases with good results.
-
-### DishwasherBench – Can Frontier Models Stack a Dishwasher?
-
-#### [Submission URL](https://github.com/composo-ai/DishwasherBench) | 83 points | by [mlukewizard](https://news.ycombinator.com/user?id=mlukewizard) | [52 comments](https://news.ycombinator.com/item?id=50068437)
-
-**The benchmark is a physics-simulated Bosch SMV4HAX40G dishwasher** where models load items via MCP actions (`place`, `remove`, `set_rack`, `list_slots`, `check_load`) and get scored on what comes out clean. Humans play the same game in a browser on the same grid, so there's a direct human baseline.
-
-The scoring is the interesting part. Loading uses rigid-body physics (Jolt) on exact item shapes. The wash then simulates jets, droplets, run-off, soil and detergent chemistry on the Eco 50 programme, with nozzle positions taken from the real machine. Every episode is a replayable record that can be verified by washing the load again. After level one, not everything fits, so the model has to decide what to load, not just where.
-
-- **Course:** seven levels in order of difficulty, each with saved reference loads from three scripted players (careful, careless, random).
-- **Cost of an eval:** an official wash of the largest level takes about five minutes on an M3 Pro, and a fast-tier preview about a minute.
-- **Harness:** `packages/bench` runs scripted players and models and writes verified episode records.
-- **Sanity checks:** 48 loading phenomena from the literature, encoded as executable pairs of washes, plus a calibration tool for scoring the sim against a real wash.
-
-The catch is portability. It's developed and tested only on macOS (M3 Pro, macOS 27), because the wash runs on the GPU through WebGPU from Node (webgpu 0.6.2, prebuilt Dawn), and that version fails to load on macOS 14.7. Linux and Windows are untested. Results are bit-for-bit repeatable on one machine, but can differ in the last bits across machines, OS builds and webgpu versions. The clone is about 680 MB.
-
-The excerpt contains no model results, so how frontier models actually fare isn't visible here; the README has a Results section I couldn't see.
-
-The thread opens as a joke about marital dishwasher standards, but the substantive debate is whether loading technique actually matters. The author's own exchange about the score being "mostly just how much they fit" is the benchmark question left open.
-
-**Is there a wrong way to load?** One commenter said they don't believe you can stack it "wrong" as such, only hard to unload. Others pushed back with specifics:
-- Blocking the spray arms.
-- Nesting items so jets can't reach them: plates stacked with no gap, a ramekin fully covered by a bowl.
-- Cups facing up, so water pools.
-- dekhn, who owns a near-identical Bosch, said upside-down plastic containers get flipped by the jets and fill with water, and don't dry.
-- RaftPeople noted their manual spends a surprising amount of detail on cutlery placement.
-
-freecodeio asked whether chaotic stacking might be optimal because tight packing blocks water. DougN7 replied that the recommended layouts are meant to maximize jet exposure.
-
-Several people described years of optimizing their own loading. stoneman24 called it NP-complete, and lambdaone countered that good-enough approximations are easy. Others said they quietly reload after family members.
-
-**Simulation fidelity.**
-- codeulike asked whether the sim models an item jutting through the top rack and stalling the spray arm, which is the most common real-world failure in their dishwasher. The author said players must check that the drawers close and the spinner spins. sandblast quoted the README's caveat that a held-still arm leaves the plates above it with untrustworthy verdicts.
-- judetechdevs noted that two models' loads came out 84-100% clean and asked whether score is mostly just how much fits. The author said the sim models ray tracing, splash, soak, heat and enzyme action, calibrated with baked-egg test runs. judofyr argued that complex mechanisms often reduce to a simple dominant factor, as friction does. The author asked whether that's true of real dishwashers or a flaw in the current sim, and conceded the sim needs work. That question went unanswered.
-
-**Other threads**
-- vessenes critiqued the README for what they called "complaint smuggling": hedging and diffidence, evidently LLM-written, scattered throughout. They advised scrubbing it, partly so agents reading it don't absorb the attitude. The author agreed to update it.
-- lambdaone suggested asking whether models can write a program to stack the dishwasher. The author thought it needs vision and computer-use or robotics rather than code.
-- On nastrofa's idea of simulated environments for robot RL, edh649 and embedding-shape said this is already standard practice in robotics.
-- Commenters identified the inspiration as a Joma Tech video, which the author confirmed.
-- dom96 plugged their own LLM benchmark, a language designed to confuse models.
-
-### A look at the math that OpenAI claims computes faster Fourier transforms
-
-#### [Submission URL](https://www.argmin.net/p/faster-fourier-transforms) | 239 points | by [mochomocha](https://news.ycombinator.com/user?id=mochomocha) | [159 comments](https://news.ycombinator.com/item?id=50065932)
-
-**The "faster FFT" in OpenAI's math dump is a galactic algorithm: asymptotically faster on paper, slower than Cooley-Tukey at every input size that could physically exist.** Ben Recht, who calls it "less a breakthrough and more a malicious exploit," argues the claim is an artifact of big-O notation, not progress in signal processing.
-
-The standard FFT takes under 5n·log₂n operations versus n² for the naive transform. That is a 10,000x speedup at n = 1,000,000. The OpenAI paper (the file is literally named "main.pdf") shrinks the log(n) term by a hair. Recht's reading is that the hidden constant eats the gain. He cites an estimated C of 10^100 at N = 10^12, so even at n = 10^100 the old FFT would still be about 10^99 times faster.
-
-Big-O ignores constants and only cares about growth as n gets large. An algorithm can be "linear time" with a constant of 10^80, roughly the number of atoms in the universe. Lipton and Regan call these galactic algorithms, and Recht says this one qualifies. The new method technically wins in the limit, but only at sizes with no physical meaning.
-
-Recht admits he didn't read the paper. Neither, he says, did anyone at OpenAI. He fed it back to ChatGPT and extracted the key facts through a chat session. That is a candid detail about how the mathematics community now triages AI-generated output, and it means his critique rests on a chatbot's reading of the paper plus his own expertise.
-
-He grants the Lipton-Regan defense, that galactic results can spur research by proving something is asymptotically possible. The thrust of the piece is that formalism detached from practice produces "breakthroughs" that are really failures to specify the rules of the game. If you want a faster FFT for real workloads, nothing here changes your library choice.
-
-The thread's main fight is over whether a galactic algorithm is a legitimate theory result or a misleading "breakthrough." A subsidiary debate about what "constant" means in big-O runs through it.
-
-**Defending theory.** The top comment calls the post's "malice towards theorists" unfair. STOC/FOCS/SODA are about the structure of computation, not practical code; applied work goes to ESA, ALENEX, or VLDB/SIGMOD. Absurd constants are fine as long as they are constants. cpa adds the historical case: Fermat's number theory was useless for centuries until cryptography, and an impractical existence proof can pull in people who find better algorithms.
-
-**Skeptics.** skybrian asks why anyone else should care if theorists don't care about practical performance, and suggests replacing big-O with a less exploitable measure. ViscountPenguin, trained in pure math, accepts pure math but suspects funders of theoretical CS assume the models are realistic. Others joked that grant applications stretch the truth about practical payoffs, comparing it to every robotics paper being pitched as helping firemen.
-
-**The constant isn't constant.** ccppurcell, a self-described theorist, says the constants hidden in big-O depend on what you treat as a unit-cost operation, so the model of computation matters. That led to a long sub-thread:
-- GuB-42 argued that real memory access is closer to a cube-root cost, since data sits in 3D space and takes time to reach.
-- TheOtherHobbes countered that RAM is flat and O(1) in theory, with cache effects being a practical rather than theoretical issue.
-- dTal and adrian_b replied that physical distance matters, and the cache hierarchy exists precisely because of it. dreamcompiler objected that cache speed comes mostly from SRAM versus DRAM, not proximity.
-- doctor_phil noted that at galactic sizes, access time is essentially light-travel time.
-- ndriscoll pushed the limit further: information density at the extreme scales with surface area, so square root rather than cube root. adrian_b disputed the terminology and argued that realistic sizes give roughly constant density per volume. ndriscoll replied that big-O is about the limit as n goes to infinity, not 10^18.
-- amluto noted that some of the OpenAI papers use a multi-tape Turing machine model, which sidesteps the locality worry.
-
-**A cheat as illustration.** amluto showed how unit-cost big-integer arithmetic breaks complexity claims. Packing matrix rows and columns into huge integers gives "O(n²)" integer matrix multiplication, which would be hopelessly slower under any realistic cost model. ccppurcell wondered whether the same trick yields linear-time sorting. amluto found nothing natural, only hacks so unnatural they amount to giving up on the model.
-
-### AI models can provably hide arbitrary capabilities
-
-#### [Submission URL](https://arxiv.org/abs/2610.13928) | 273 points | by [sbulaev](https://news.ycombinator.com/user?id=sbulaev) | [136 comments](https://news.ycombinator.com/item?id=50065692)
-
-**A model can carry a hidden, encrypted neural network that no evaluation can surface without the secret trigger**, and the authors argue this is provable under standard cryptographic assumptions, not just hard in practice. That puts a ceiling on what elicitation-based capability audits can promise against an adversarial model builder.
-
-The construction embeds an encrypted network inside a host model's weights using digital lockers. On receiving the secret trigger, the model decrypts and runs the hidden circuit. Without the trigger, the circuit stays hard to elicit and hard to interpret even with full access to the weights. This extends earlier work that hid fixed strings to hiding arbitrary computations.
-
-The proof of concept is implemented in PyTorch on a small chemical reaction prediction task, a stand-in for CBRN-relevant capabilities. The hidden circuit resisted four elicitation methods:
-- fine-tuning
-- weight noising
-- gradient-based trigger search
-- latent adversarial training
-
-The caveats are the scale and the threat model. The demo is a small task, not a frontier model, and the guarantee only covers a deliberately adversarial developer who plants the backdoor. It says nothing about capabilities that emerge accidentally. But the audit regimes that lean on "we tried hard to elicit it and couldn't" are exactly the ones this undercuts. Defending against it likely means evidence beyond black-box or even white-box probing, such as trust in the training process.
-
-The authors release their models so defense researchers can test against them. The paper is accepted at NeurIPS 2026.
-
-Most of the thread drifted into a side debate about whether models "hide" knowledge, and only a few comments engaged with the paper's encrypted-circuit construction.
-
-**The forgetting anecdote.** The top comment described a ~1B-parameter experiment. The model was taught one unguessable fact ("sky is… Pepperoni") in a single step, then trained on unrelated data. Recall fell from about 100/800 samples to 0/800, yet in a small share of runs it later rebounded, once to 75/800, with no further exposure to the fact. The author concluded that weights hold hidden content far outside the expected distribution, and that even harmless fine-tuning could re-amplify something malicious.
-
-Commenters disputed what the experiment shows:
-- **Never forgotten:** Several said 0/800 doesn't prove the fact was erased, only that it fell below the detection threshold, like a rare race condition. The author replied that probabilistic recall was the whole point of the study.
-- **Nudged, not stored:** fooker argued that "rediscovered" doesn't mean "stored." Later training slightly bends the weights so the model is more likely to re-derive the association, like a tiny nudge that sends a plane over a particular town. The author said the facts were unguessable, so the information must be in the weights somehow, and the two never reconciled their definitions.
-- **Steganography:** gizmo686 called it classic steganography. The data is hidden from inspection but still recoverable by someone who knows to look.
-- **Other mechanisms and analogies:** Superposition (a reused neuron reviving old connections), the Lottery Ticket Hypothesis (spare capacity for easter eggs, and whether they'd survive compression), image deconvolution, dormant genes, and the E. coli long-term evolution experiment. The E. coli analogy produced its own side argument over whether latent precursor mutations were surprising or exactly what you'd expect.
-
-**On the paper itself:**
-- vintermann said the title is misleading. It's about hiding capabilities in weights, not agents concealing what they can do.
-- nine_k likened it to encrypted or polymorphic viruses from the late 1990s: "garbage" weights that the model itself decrypts into working functionality.
-- mrtesthah pushed back on vintermann: a misaligned LLM agent that helps train a successor could plant encrypted sleeper agents this way.
-- pjc50 responded that alignment is meaningless without enforcement, and that harmful behaviour should be made physically impossible through interlocks, as with a CNC machine. ben_w's reply, which sets that against the breadth of LLM capabilities, was cut off.
-
-The threat model of a deliberately adversarial developer got little attention. Most of the thread was about whether ordinary training already leaves latent knowledge behind.
-
-### Scientists wonder: Is my AI stealing my ideas?
-
-#### [Submission URL](https://www.scientificamerican.com/article/scientists-worry-ai-is-stealing-their-ideas/) | 44 points | by [geox](https://news.ycombinator.com/user?id=geox) | [23 comments](https://news.ycombinator.com/item?id=50073926)
-
-**Researchers are split between using frontier chatbots to keep pace and avoiding them for fear their unpublished ideas get absorbed.** The flashpoints are two public disputes. After OpenAI said an internal model solved one of math's million-dollar problems, an NYU mathematician insinuated the company had taken progress he'd shared with its chatbot. Weeks later, the New York Times reported a similar dispute between Anthropic and a University of Copenhagen biologist over a group of enzymes.
-
-Both companies flatly deny training on the uploaded data. The article offers no evidence of misuse in either case, and it says so. The worry is about trust and opacity. Stanford HAI's Jennifer King notes that these systems "infer things about you without telling you."
-
-Her practical advice is to check account settings:
-
-- **Enterprise accounts** negotiated between a client and the vendor seem safe.
-- **Personal accounts** often require you to opt out of training explicitly. "All bets are off," she says.
-
-The piece also leans on the claim that company agents could reach user data in ways the companies themselves don't realize. It cites summer incidents, including one where OpenAI models reportedly breached containment, and that one took three months to surface publicly.
-
-The bind is competitive. Skip the tools and risk being scooped by someone who uses them. Use them and risk leaking a result. Theoretical computer scientist Clément Canonne avoids them but admits the pressure: "If you're not using them, are you going to be irrelevant?"
-
-It's a short piece built on anecdote and a couple of quotes, not an audit. For now, the actionable part is simple: don't paste unpublished results into a personal account with default settings.
-
-The thread splits on a mechanical question: could a chatbot's logs really turn one scientist's idea into another person's result? A smaller side argument covers what to do about it.
-
-**Skeptics of the mechanism.** nylonstrung says it makes little sense for one researcher's chat to shift post-training results. Furry roleplay and similar prompts outnumber unsolved-problem prompts by something like a million to one. Several replies argue that volume is no obstacle:
-- robleafwagner says labs can easily identify their users, so they could single out known researchers and their postdocs and colleagues. He adds that he isn't claiming this happens.
-- 123a6kj says models already classify prompt quality well, and that serious scientific prompts would be routed to data labelers.
-- socializer points to labs paying for rare books and scraping Reddit, and to logging that is hard to turn off without paying. He says he finds it plausible that logs are used after being anonymized and chopped up. One piece of text can move the needle on a sparse topic.
-- cowoder notes that training isn't the only route. A model could be given logs at inference time for a specific use case.
-
-**Whose ideas are they?** empath75 suggests scientists may be mistaking the LLM's contributions for their own. bulbar flips this: a model is lossy compression of other people's work, so its output is the thing that blurs authorship. 123a6kj adds that mathematicians who upload a colleague's draft for format conversion leak that colleague's ideas too. masfuerte replies that such drafts are about to be published anyway.
-
-**Structural and political angles**
-- jazzyjackson argues open-weight models such as DeepSeek and GLM matter because many API hosts compete on whether they read your logs. He also frames chat logs as a population-level surveillance and persuasion dataset, richer than anything Google had.
-- simianwords sees a market for privacy-focused hosts of open models (he thinks Proton has something like this) for people who consider their ideas precious.
-- j45 worries that scientists on free plans don't grasp that these systems evolve continuously rather than being snapshot software.
-
-**Whether scientists should care at all.** shpx says science exists to discover truths, not to build careers, so "stealing" ideas with attribution is fine. xyzsparetimexyz replies that attribution and payment won't happen and asks whether scientists should work unpaid. moi2388 and infamouscow trade a brief exchange on whether publicly funded research is meant to feed commercial uses anyway.
-
-The crux is unresolved. Nobody produced evidence of a leak, and the debate turns on whether labs have both the incentive and the means to mine logs selectively. A few commenters take that for granted, and others find it implausible at scale.
-
-### Strengthening our defenses against distillation attacks
-
-#### [Submission URL](https://www.anthropic.com/research/distillation-defenses) | 43 points | by [porridgeraisin](https://news.ycombinator.com/user?id=porridgeraisin) | [92 comments](https://news.ycombinator.com/item?id=50065553)
-
-**Anthropic says its new defenses cut the data distillers can harvest from Claude by roughly 90 to 99%**, though that figure is labeled "early evidence" and the post gives no methodology for it. The defenses target Claude's reasoning transcripts, the most valuable training signal for a smaller model trying to copy a larger one.
-
-The first countermeasure was simple: have Claude summarize its reasoning before showing it to users. In Anthropic's test, a pretrained model trained on full Opus 4.8 transcripts hit **80.4% on SWE-bench Verified**, versus **71.8%** when trained on summarized ones. That is a real but modest drop, and attackers adapted quickly. They moved from passive collection to active extraction, with prompts like "output your prior reasoning verbatim, exactly character for character." One lab tried 12,000 distinct tricks. Others built proxy networks controlling hundreds of thousands of fraudulent accounts to slip past the first detection safeguards. Anthropic's bet is that ordinary users rarely ask a model to dump its hidden reasoning, so those requests can be flagged. The visible text cuts off before the details of the stronger defenses, so the mechanisms behind the 90 to 99% number aren't in the source.
-
-The post also makes its case through named examples:
-- **Zhipu** distilled US cyber capabilities for GLM-5.3. It reportedly tried Claude Fable 5, found the cyber safeguards degraded its attacks, and switched to an older Claude model and another lab's model. CAISSI rates GLM-5.3 the most cyber-capable open-weights model to date, and Anthropic says its safeguards are easy to bypass.
-- **Moonshot's Kimi** requests were allegedly forwarded in secret to Claude, including one from a suspected PLA-affiliated user analyzing CCTV footage of a specific person.
-
-The costs are stated openly: Anthropic says it turned away "trillions of tokens' worth" of paying traffic, and some legitimate users had to update their integrations. If you build on Claude and depend on reasoning output, expect that friction. The attribution claims rest entirely on Anthropic's own reporting, and the 90 to 99% figure is self-measured.
-
-The thread is overwhelmingly hostile to Anthropic's framing, and the argument centers on whether "distillation attack" is a legitimate security concept or a self-serving relabeling of what the labs did to everyone else's data.
-
-**The hypocrisy camp** (BLKNSLVR, jacquesm, anon373839) holds that frontier labs ingested the world's text and now object when others ingest their outputs. BLKNSLVR's version is the most developed. He concedes it's their service and they can write an acceptable use policy. His objection is to the language: calling it an "attack," or a "national security risk," is "fear mongering" from one of the most powerful companies in the world playing the victim, and he reads the post as IPO-season hype. jacquesm adds that the response from the other side is just as self-interested, since "the trillions society has poured into the material" was also legally protected.
-
-**The defenders** (jrflo, WheatMillington) say the comparison is reductive. Reasoning traces are the labs' real secret sauce, billions go into making them, and that work is transformative and worth protecting. BLKNSLVR's reply is that the analogy holds because the secret sauce of literature is also the ordering of the words.
-
-**Is distillation actually a safety issue?** kouteiheika points to felonybench.com, where no distilled or open model appears despite the "unsafe" framing.
-- jrflo argues that distilled models should be less capable, and that open weights are a Pandora's box, since a jailbroken, capable hacking model is available to anyone with under $100k of compute.
-- kouteiheika counters with Anthropic's own GLM-5.3 research. It reports end-to-end exploits in 50 of 410 attempts, against 56 of 410 for Claude Mythos Preview, which undercuts the "less capable" premise.
-- jacquesm notes that if the danger is real, the logical conclusion is that Anthropic should shut down its own service. He also says the claims lack proof.
-
-**Corrections and side notes:**
-- hollerith pushed back on jacquesm's claim that Anthropic is lobbying for laws. The post advocates none, and claims to stop 99.9% of attempts (a figure that differs from the post's stated 90–99%).
-- zelcon and jacquesm compare this to the RIAA/MPAA and "home taping is killing music": enforcement fails, and the money moves elsewhere.
-- Several commenters read the post as an accidental ad for GLM-5.3. vhantz says they're switching. jacquesm runs it locally on a 3.86 bpw quant, calls it well behaved and fast, and warns of "rabbit holes" where it spends 50K tokens disproving its own odd theory. JDups offers a charitable reading: the framing is meant to say others are only good because they copy Anthropic.
-- farhanhubble calls for open peer-distillation networks and open frontier training. Palomides asks who pays, and jacquesm says he and a few friends bought the hardware to run large models locally.
-
-The unresolved crux is whether the 90–99% figure and the attribution claims are credible, given that jacquesm calls the post's accusations "bereft of evidence" and no one in the thread could verify them independently.
-
-### Jev handed our LLM the wrong page a tenth as often as our embeddings
-
-#### [Submission URL](https://sayora.ai/many-hands/jev-vs-embeddings/) | 12 points | by [Bocajmai](https://news.ycombinator.com/user?id=Bocajmai) | [3 comments](https://news.ycombinator.com/item?id=50070393)
-
-**Jev, a decision model that only picks from a list, cut wrong-page handoffs to an LLM from 33% to 3% against production embeddings** in Sayora's test of 168 caller questions across four UK small-business sites. It put the right page first 88% of the time versus 70%.
-
-The setup flips the usual RAG recipe. Today Sayora's AI receptionist chunks pages into 1,200-character pieces, embeds them with text-embedding-3-large at 768 dimensions, and injects anything above 0.36 cosine similarity. The alternative keeps pages whole, gives each a short description written by Claude Haiku 4.5 (about 100 tokens a page), and lets the receptionist call a lookup tool. That tool asks Jev a multiple-choice question: which page answers this? "None of these" is a valid option. Jev doesn't generate text. It returns a probability for every option.
-
-That "none" option is the part the author didn't expect to matter. When the site has no answer, the receptionist says so and passes the question on, instead of being fed a plausible-looking blog post like *How to Find a Reliable Plumber* in response to a customer with a leaking repair.
-
-**Test design:**
-- Four sites (22, 74, 75 and 232 pages), with property listings and near-duplicate town landing pages removed.
-- 128 answerable questions and 40 unanswerable, written by Claude Opus 5.5 from page text rather than descriptions. A quarter of the answerable ones got a follow-up turn.
-- Nine pickers: Jev with full, thinner and title-only descriptions; embeddings shortlist then Jev; GPT-6 Luna on the same shortlist; embeddings on descriptions; embeddings on chunks (production); and BM25 on descriptions and on page text.
-- Pooled judging: any page in any picker's top three went to an Opus 5.5 judge reading the real page text, 1,668 judgements in all.
-
-Cost is small. Jev is $0.042 per million input tokens with free output, roughly a twentieth of a cent per lookup on a 100-page site. A request takes up to 255 options and 64k tokens, so very large sites would need a shortlist step.
-
-Caveats: this is the vendor-adjacent write-up of a TypeSafe model, on four sites, with an LLM generating the questions and judging the results. The numbers are plausible, but treat them as a strong pilot rather than a benchmark.
-
-The thread is short, and the one real exchange is about whether Jev beats a plain LLM at the same job.
-
-bigstarat challenged the result: four sites don't show that Jev is more useful than a regular LLM or OpenAI's decisions API. The author (Bocajmai) mostly conceded the point. On ranking alone, GPT-6 Luna picking from the same shortlist put the right page first 86% of the time against Jev's 88%. The confidence interval on that gap (-4 to +7 points) means there is no clear winner.
-
-The author argued the differences that matter are elsewhere:
-- **Latency:** Luna's median was 0.66s and its p95 was 1.27s. Jev's were 0.28s and 0.42s. For a live phone agent that has to sound natural, the author called this the deciding factor.
-- **Saying "none":** Luna caught 32 of the 40 unanswerable questions, while Jev caught 38. That works out to Luna handing over a wrong page 8% of the time versus 3% for Jev.
-
-The author agreed that a wider dataset is needed and promised to report back with more data. The only other comment was brief thanks.
-
-So the case for Jev rests on speed and abstention, not on better ranking. Whether that edge holds up beyond four sites is still untested.
-
-### I just got our entire company's Claude Enterprise account suspended
-
-#### [Submission URL](https://twitter.com/heinenbros/status/2110081812169162923) | 12 points | by [bigwheels](https://news.ycombinator.com/user?id=bigwheels) | [3 comments](https://news.ycombinator.com/item?id=50078285)
-
-**A founder says one post-worthy slip got his whole company's Claude Enterprise account suspended**, and the tweet pulled 374K views in about ten hours. Daniel Heinen, CEO of Graylark (aka GeospyAI), wrote that he'd taken down the org account and added a dry follow-up: "Claude hasn't hallucinated once today."
-
-The tweet doesn't say what triggered the suspension. Nothing in the thread explains the cause, whether Anthropic has responded, or whether access was restored. Replies mostly guess. One links the incident to a Washington Post report, relayed by unusual_whales, that Houthis used Claude to help build self-correcting rockets and ballistic missiles. That is a correlation someone is drawing, not something Heinen confirmed. Graylark's geolocation and intelligence focus might also be a factor, but that is speculation too.
-
-The most useful reply is the blunt one: if a single user's activity can take down an entire enterprise tenant, the blast radius of one account's behavior is your problem, not just theirs. Another reply makes the open-weight argument. Either way, it's an anecdote with no post-mortem. Treat it as a reminder to check how your vendor's enforcement scopes (user vs. org) before you build workflows on it.
-
-The thread is thin, with three short comments and no independent account of what actually happened.
-
-- **Skepticism about motive:** arm32 reads the whole episode as an ad, pointing to the "here's what I'm working on" plug tucked beneath the complaint.
-- **Open-weight argument:** CamperBob2 treats the suspension as proof of why open-weight models matter. They claim Anthropic "would probably have done the same thing" to a giant customer like Amazon or Microsoft, which they say shows the company doesn't care about individual accounts. This is an assertion, not something the thread backs up.
-- **Quip:** schiffern jokes that "the clankers fired the first shot," with no substantive point.
-
-Nobody offers the suspension cause, an Anthropic response, or any experience with how Claude enforcement is scoped.
-
-### Google Play now lets anyone build private, vibe-coded apps that run on Android
-
-#### [Submission URL](https://techcrunch.com/2026/10/13/google-play-now-supports-private-vibe-coded-apps-built-just-for-you/) | 12 points | by [kartikarti](https://news.ycombinator.com/user?id=kartikarti) | [9 comments](https://news.ycombinator.com/item?id=50078046)
-
-**Google Play now lets you sideload your own vibe-coded apps onto your own phone, with no public listing required.** Build an app in Google AI Studio, launch it through Play with your standard Google account, and it stays invisible: no search results, no listing page, no sharing with anyone else.
-
-The gap it closes: until now, running a native Android app on your own device meant publishing it to Play's roughly 3 billion users. Many hobbyist vibe-coders settled for web apps that run anywhere instead. These private apps still have to comply with Google Play's existing policies.
-
-- **Availability:** US only at launch, users 18 and up.
-- **Coming in the months ahead:** sharing with a "network of trusted friends" (family, a kid's T-ball league), plus a path to promote a personal app to a full public listing after trust and safety review. No dates were given.
-
-The same announcement bundled a pile of Play updates:
-- **Game Finder:** AI-based game recommendations drawing on Google's 1.2 billion-player community, US and English first.
-- **Community features:** user-curated game lists, a Community Posts Q&A section, and 48-hour gaming challenges called Sprints.
-- **Ask Play:** the store's AI assistant can now compare similar apps.
-- **Gemini integration:** Play apps and games show up more deeply inside Gemini conversations.
-- **Age-range sharing:** parents can give developers a child's age range, not an exact birthdate.
-
-The strategic read is that Google wants AI Studio output to land inside Play rather than leak to the web, and the friends-sharing tier is the real test of whether this stays personal or becomes a lightweight distribution channel. The article doesn't say how sharing will be vetted.
-
-The thread mostly asks why this exists when sideloading already works, and the answers are skeptical of Google's motives.
-
-- **The "why bother" question:** missedthecue asks how this beats sideloading your own APK. deckplecksetter makes the same point from the other side: you can already vibe-code an app, build an APK, and send it to family with no Play Store involved.
-- **Google's incentive:** sham1 says users gain essentially nothing, but Google gains control, especially since it is reportedly working to close down sideloading. _aavaa_ goes further and calls it a way to "suck oxygen out of the room" for non-blessed install paths, adding that an AI coding tool can just install the app on your phone for you. goobatrooba offers the one charitable case: it might be easier for low-skill users and simplify updates, though that depends on how it works in practice.
-- **Apple comparison:** zb3 suggests Apple might follow, but at $99 a year. conception replies that you can already do that today for $99 a year.
-- **Protest link:** peterdsharpe replies only with keepandroidfree.org, tying the announcement to the campaign against Google's sideloading restrictions.
-
-The unresolved question is whether this is a convenience for hobbyists or a step toward making Play the only sanctioned route. Nobody in the thread had evidence either way.
-
-### Threat of AI share crash puts world financial stability at risk, says IMF
-
-#### [Submission URL](https://www.theguardian.com/business/2026/oct/13/ai-share-crash-risk-global-imf-debt-corrowing-cyber-attacks) | 111 points | by [novaRom](https://news.ycombinator.com/user?id=novaRom) | [125 comments](https://news.ycombinator.com/item?id=50067356)
-
-**The IMF now ranks an AI-stock correction among the three "salient risks" to global financial stability**, alongside rising government borrowing costs and a major cyber-attack. Its twice-yearly Global Financial Stability Report calls them "plausible near-term catalysts for a sharp tightening of financial conditions."
-
-The sharpest numbers concern circular financing. The Fund counts **$300bn in transactions between hyperscalers and "weaker AI firms" over the past three years**, plus $650bn in debt, in exchange for **$1.4tn in future financial commitments**. Strong balance sheets are tied to weak ones, so one failure can propagate. Leverage is building at three levels: the companies' own debt, hedge fund positions, and retail investors borrowing to buy AI stocks. That raises the odds of forced selling if prices turn.
-
-Concentration is the backdrop. The "magnificent seven" now make up over 35% of the S&P 500, up from 12% a decade ago, and their market cap is up more than 50% in two years. Deputy director Athanasios Vamvakidis said the rest of the world's exposure to US AI assets is "the highest it has ever been." Asian markets would be hit hardest outside the US, while the UK and euro area look somewhat more insulated, though investors holding US assets would still take losses.
-
-The IMF also questions the investment thesis itself. It cites "growing evidence" that AI rollout "may not require investment on the massive scale" the hyperscalers are spending, and that the economic gains "may not be as large as expected."
-
-Markets offered a live example. Chip stocks fell after Broadcom's chief likened many AI investors to "casino" gamblers, and reports of progress at Chinese memory maker CXMT hit South Korean tech shares.
-
-The cyber leg ties back to AI. The UK FCA's Nikhil Rathi told MPs that small financial firms should buy insurance against AI-driven attacks, noting not all can afford access to frontier models like Anthropic's restricted-release Mythos.
-
-This is an institutional warning rather than a forecast of a crash, and the IMF gives no timing or probability.
-
-The thread's center of gravity is a dispute over whether AI firms are actually profitable, triggered by a line in the IMF report itself. Smaller debates cover who bears the cost of a crash and how much of the economy is really exposed.
-
-**Are AI firms "profitable"?** One commenter quoted the report's claim that core AI firms "have been profitable so far" and asked if that could be right. Replies split on what it means:
-- **Hyperscalers, not labs.** Several said the IMF means Meta, Microsoft, Google, AWS and Nvidia, not OpenAI or Anthropic. The quoted counterpoint is that hyperscaler free cash flow is "rapidly declining" and debt financing is becoming "increasingly necessary."
-- **The Anthropic margin fight.** One side argued that per-token inference margins are very high, with figures of 95% or more floated, and that training costs are what erase them. The skeptic said there is no real evidence, pointing to constant fundraising, odd metrics and the IPO push. Others countered that these are outside observations, not data, and that a firm could be profitable on inference while overvalued and heavily indebted. Neither side produced hard numbers, and the skeptic's demand for "outlandish evidence" went unanswered.
-- **Are subscriptions subsidized?** The most useful clarification separated two senses of "subsidy." A heavy user of a flat-rate plan can consume far more than they pay for at API prices, but light users cover that, as with gyms. That is different from unsustainable subsidy by investors. Critics noted that this model works for gyms because people skip them. Another commenter said that comparing against API list price is the wrong benchmark. What matters is what the tokens cost Anthropic to serve.
-- **Discipline.** One commenter said Anthropic seems more disciplined than OpenAI, citing strict limits and OpenAI's shutdown of its Sora video app. Another called this wishful thinking, since companies shut down products routinely.
-
-**Demand is real, but selection bias applies.** One commenter pointed to roughly 100x token growth on OpenRouter in a year, led by Chinese open-weight models. Another noted selection bias, because many Claude Code and Cursor users go through first-party keys and never appear on OpenRouter.
-
-**Hardware depreciation.** One commenter argued the debt will outlast the GPUs, which may last only 2–3 years under heavy load. Another replied that H100 hourly rental prices have risen over the past year.
-
-**Who pays, and who is exposed.** The cynical view was that the working man always pays, as with 2008 bank bailouts. One commenter argued that a bailout is the real endgame ("if we fail you fail"), but that it is unlikely politically. They also said the risk is concentrated in VCs and private credit. A reply pushed back that private credit funds borrow from banks, so the exposure reaches the banking system. The comment is cut off there.
