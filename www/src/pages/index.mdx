@@ -10,6 +10,480 @@ export async function getStaticProps() {
 
 ---
 
+## AI Submissions for Tue Oct 27 2026 {{ 'date': '2026-10-27T21:37:19.537Z' }}
+
+### Genie 4
+
+#### [Submission URL](https://deepmind.google/blog/genie-4-a-new-generation-of-world-simulation/) | 1015 points | by [acossta](https://news.ycombinator.com/user?id=acossta) | [575 comments](https://news.ycombinator.com/item?id=50261319)
+
+**Genie 4 generates audio alongside the world**: music, ambient noise, and interactive dialogue are produced natively with the video, rather than bolted on afterward. DeepMind also claims a step up in photorealism and fluid movement over earlier Genie releases, though the post gives no benchmarks or numbers to check that against.
+
+The architecture leans heavily on Gemini. Gemini Omni anchors the simulation in real-world appearance and behavior, and other Gemini models supply the reasoning that keeps a scene coherent over time. Between your inputs, Gemini also monitors and steers the scene so it keeps progressing on its own.
+
+Interaction works in two layers:
+- Keyboard controls handle navigation and camera movement.
+- Text prompts change the world mid-run: shift the weather, add a person or object. Gemini adapts each prompt to fit the surrounding scene.
+
+The demo prompts are long, art-directed specs (16mm grain, "no HDR," a floating platform with a saxophonist) paired with a reference image as the exact first frame. That suggests the best clips come from heavy prompt engineering, not casual use.
+
+DeepMind pitches the model as a source of "infinitely variable" training environments for robots and agents, alongside new interactive experiences. It frames this as a step toward AGI. The robotics claim is the interesting one, but nothing in the post shows physical accuracy at the level that sim-to-real transfer would need.
+
+Availability is limited. It's a research preview for trusted testers, with consumer and developer access planned next. Google AI Ultra subscribers get it first through Project Genie, along with early-access partners of the Gemini API and Google AI Studio. Everyone else joins the waitlist.
+
+The thread centers on one question: does Genie 4 actually simulate a world, or does it only render what is currently in view?
+
+**The evidence for "just rendering."** The top comment lists consistency failures in DeepMind's own demos. A second castle appears in the dragon clip, pedestrians on the train platform change once they walk away from the camera, and the Hong Kong moped rider gains a helmet. Others added more. One noted that the bridge wall in the Van Gogh clip visibly changes while it stays in frame. Another pointed out that the helmet "swap" is just a head passing behind another rider, so the fix isn't as simple as keeping the frame bigger. The DeepMind post itself admits that object permanence and long-term consistency are "active areas of ongoing research."
+
+**Proposed fixes.** Several commenters suggested the model should be backed by persistent state rather than regenerating everything by diffusion.
+- Track objects with positions, as game engines do, and check each new frame against that state.
+- Render a larger, lower-fidelity frame, or a coarse 3D model, and upscale only the visible crop.
+- Output 360° panoramas and crop from them. Others countered that this doesn't help with a room behind a door or a person behind a tree.
+- Train on synthetic 3D-engine data, since YouTube footage has no object metadata. One commenter speculated that autonomous-vehicle sensor data would eventually fill that gap.
+
+Skeptics replied that a full 3D scene model would be expensive, and that if the fix were easy DeepMind would have shown it. Others answered that this is a research preview, and that features routinely miss a release. One person recalled Genie 3 demos where writing on a blackboard persisted after the camera left and came back. Another thought the consistency level may simply be a resource setting. That last claim is a guess, and no one backed it up.
+
+**Deeper disagreement.** One commenter argued that these "world models" lack a world model in a qualitative sense. They said compute has masked this rather than fixed it, and cited the way frontier LLMs lose narrative threads. Another asked whether partial models count, since most humans can't vividly recall a familiar walk either. The pushback was that human limits are irrelevant to judging the model. The counter-reply was that human error is useful because it shows how people compensate (editors, QA, reference material), and those methods suggest training and prompting improvements. A philosophical aside asked whether the moon exists when unobserved, and one commenter noted that a real world keeps going regardless of the observer while a generated one does not.
+
+**Tone war.** One commenter complained that HN is the hardest audience to please and fixates on small gaps. Another pointed to how far things have come since the AI-generated Will Smith spaghetti video about three years ago. Others said the demos are cherry-picked best cases, and a reply mocked the idea that DeepMind would include bad examples on purpose.
+
+The thread never settled whether persistence is an engineering cost problem or a limit of the generate-from-pixels approach.
+
+### Survival LLM: AI assistant and emergency library that runs on your own computer
+
+#### [Submission URL](https://www.brangus.io/survival-llm) | 507 points | by [Luc](https://news.ycombinator.com/user?id=Luc) | [191 comments](https://news.ycombinator.com/item?id=50264853)
+
+**An offline RAG assistant that bundles a ~930,000-article Wikipedia plus FEMA, CDC, and military survival manuals, then picks a local model sized to your RAM.** Free, open source, no account, and nothing you ask leaves the machine once setup finishes.
+
+The app checks your memory on first launch and downloads a matching model:
+
+- **128 GB+ Mac:** NVIDIA Nemotron 3.5 Super, 21/22 on the authors' emergency test (80 GB download)
+- **32–96 GB Mac:** Qwen3.8 27B, 21/22 (18 GB)
+- **32 GB+ Windows PC:** Nemotron 3.5 Lightning, 19/22 (25 GB)
+- **16–31 GB Mac or PC:** IBM Granite 4.2 8B, 14/22 (6 GB)
+
+The test is 22 blackout and first-aid questions, graded blind, run on an earlier build of the library. Small sample, self-run, but the Granite drop to 14/22 makes the point that low-RAM machines get meaningfully worse answers.
+
+Every answer lists the articles it read, and you can click through to the passage highlighted in the source. That matters more than the model choice: it's the guardrail for when the model is wrong, and the page admits small models often are. You can also add your own PDFs, Word docs, and ebooks, such as a generator manual, and they're searched locally too.
+
+The catch is the setup cost. The full library is a 9 GB download (19 GB installed, ~27 GB free during install), plus the model, and setup runs 20 minutes to about 2½ hours. The app is unsigned and sold outside app stores, so you'll click through Gatekeeper or SmartScreen warnings. The authors measured about 100 W on a MacBook Pro, roughly 100–300 answers per full battery, so a small power station handles it. Requires Apple Silicon with macOS 14+ or 64-bit Windows 10/11.
+
+The thread splits on one question: is an LLM acceptable as a retrieval layer, or does its summarizing make it dangerous in an emergency? Most of the energy goes to the second camp's worry and the first camp's reply.
+
+**"Use it as search, not oracle."** x3haloed argued the hallucination panic misses the point. The LLM can surface relevant source text without anyone trusting its conclusions. macNchz agreed, noting the project's README admits it can produce hallucinated sources. They sketched a pipeline of paragraph-level chunking, HyDE, hybrid keyword and semantic search, and reranking, with the raw passages shown and no summary. pydry and xiaoyu2006 asked what the LLM adds beyond a risk of hallucination, and why not use a plain embedding retriever. macNchz answered that query expansion and reranking are things small models do well, since people write poor queries. Retric countered that the real failure mode is the LLM ignoring relevant material, which makes "LLM plus search" cost something compared with search alone. duskdozer made the same cut: fuzzy search is uncontroversial, and summarization is the problem.
+
+**Evidence that summaries go wrong.**
+- wanderingbit ran a bow-drill question and got a partly right answer. It had the spindle and board correct, but said to rotate the spindle by hand and mentioned "fanning the sparks," which a bow drill doesn't produce. A frontier model caught the errors from the trace. jmuguy asked whether the sources were shown so the user could check.
+- hoherd said Claude had overstated what docs said, then backtracked when challenged. That would be terrible mid-procedure.
+- strangegecko cited a news story of a woman dying after ChatGPT-assisted medication tapering, and argued tools need built-in double-checking. balarjin replied that the fix is the old one: don't take medical advice from untrained sources. strangegecko answered that overloaded doctors push people to other sources anyway. asdff added that the "don't believe everything online" norm has eroded because AI vendors market themselves as ground truth.
+- Buttons840 proposed letting the interface quote source text deterministically instead of the model. strangegecko said Gemini Notebooks shows which document was cited but not the quote itself.
+
+**Is the LLM the right tool at all?**
+- Alternatives: shaky-carrousel pointed to offline medical encyclopedias. jvanderbot recommended Project Nomad, which ciefa compared to Kiwix and liked for bring-your-own-model. Per jvanderbot, it can use a model hosted on a separate machine, such as Qwen on a Mac.
+- Reasoning gap: 7kago_yomi noted that real emergencies are novel and call for reasoning, which is hard to square with hallucination risk.
+- Skipping the research: everforward found it a bit silly, saying a farmer could write the list ahead of time, and that hydroponics diagnosis means reading the papers anyway. meristohm argued the "donkey-work" of research is itself valuable. FluffyPancake replied that in a burn emergency you want the answer now.
+
+**Content gaps.** chrissnell noted the corpus has no hunting, firearms, field dressing, or reloading material, making it feel aimed at city dwellers. rtkwe said the Army manuals he named are more militia roleplay than survival, and that groups survive through cooperation and skills practiced beforehand, not an LLM summary read mid-disaster. ActorNightly countered that in a scenario where everyone fends for themselves, weapons knowledge is essential.
+
+### Early progress on accelerating drug development with Claude
+
+#### [Submission URL](https://www.anthropic.com/research/early-progress-drug-development) | 318 points | by [dataking](https://news.ycombinator.com/user?id=dataking) | [323 comments](https://news.ycombinator.com/item?id=50265609)
+
+**Anthropic has embedded Claude in six real drug programs (BigHat, Bristol Myers Squibb, Divergence Labs, Enveda, Generate Biomedicines, The Column Group) and started its own**, including work on rare childhood muscular dystrophies where Claude handles much of the scientific and operational work. The thesis is that drug development has no single bottleneck, so AI has to touch everything from target selection to regulatory filings, not just molecule design.
+
+The case studies show early lab results, not clinical ones:
+
+- **Generate Biomedicines (CAR T):** Six scientists used Claude Code to propose shorter versions of one genetic component. One design was about 70% shorter than standard. In lab tests it let immune cells make roughly 10x as many receptors, killed tumor cells more efficiently, and stayed active longer. The goal is to free up room to extend CAR T to solid tumors.
+- **Divergence Labs (food allergy):** Claude turned the goals into a design plan, then largely autonomously generated about 35,000 antibody designs in roughly a month. Early tests found three designs that bind IgE and 20 that dislodge it from immune cells, with three of those appearing to beat the standard medication. The two arms still need to be combined into one drug.
+- **BigHat (lead optimization):** Connected to BigHat's lab data system, Claude proposed changes to two antibody fragments, and the lab tested about 1,010 variants in about 10 weeks. Mid-run, Claude and an Anthropic researcher decided the standard heat-stability and clumping metrics were misleading, proposed replacements and a protocol change, and the main predictions held.
+
+The BigHat episode is the most interesting one: the model questioned the measurement itself rather than just optimizing against it. The caveat is that every number here is preclinical, self-reported by Anthropic and its partners, and "hits" are a long way from medicines. The post says Anthropic plans to scale the effort substantially and has already prioritized model improvements based on what it found. Technical reports from the partners carry the methods.
+
+The thread mostly ignores the specific case studies and argues about who wins when AI meets drug development: the AI lab, the incumbent pharma, or some partnership. Underneath that sits a second argument over whether molecule design is even the bottleneck.
+
+**Who captures the value?**
+- The top comment bets on Eli Lilly using AI over Anthropic becoming Eli Lilly. The "drillers vs. astronauts" framing drew pushback: Anthropic isn't a naive driller, since it has PhDs, compute, and in-house biophysics expertise (Dario's PhD came up). One commenter said Lilly could be the horse-carriage maker to Anthropic's Ford. Another floated a partnership in which pharma supplies data and labs and Anthropic supplies the models. A third guessed Anthropic buys a drug company after an IPO.
+- curt15 argued that if pharma uses Claude, the resulting IP stays with the pharma company, which weakens any valuation story built on drug discovery.
+- lenerdenator said the problem is culture rather than intelligence. Pharma's liability and procedural stringency clash with "move fast and break things," and the Theranos prosecution shows the accountability founders usually avoid. Others argued that regulatory navigation is Lilly's real moat, and that it relies on relationships built over decades, so AI can't replace it. A cynical reply held that US regulation is easy to manage with political connections.
+- Several comments invoked Tesla and the 2024 chemistry Nobel to argue that outsiders can win. Replies noted that the Nobel winners were credentialed scientists and that a prize is not a profitable quarter.
+
+**Domain experts learning to code, or the reverse?**
+- jvanderbot, drawing on NASA and university work, said the big wins come from specialists learning to code first, with engineers taking over for production. A strong software-specialist pairing works best.
+- vjvjvjvjghv gave a war story from a video-encoding startup. The computer vision scientists who refused to learn decent C++ contributed little, while the few who coded well drove nearly all progress.
+- randusername and jvanderbot added that mutual respect between R and D matters. jvanderbot worried that AI turns collaboration into post-hoc critique, such as PR review.
+
+**Is design the bottleneck?**
+- helsinkiandrew relayed a podcast point that designing molecules is perhaps 10-20% of the effort of bringing a drug to market, and that we already have more candidate designs than we can develop.
+- danielmarkbruce said no one can predict how a molecule behaves in human biology. It is too slow to simulate, and there isn't enough data to train a predictor.
+- Gareth321 argued for looser safety testing, using elderly and terminally ill volunteers, with AI-based simulation funneling candidates into better-targeted trials.
+- radicalbyte relayed that their pharmacologist wife dismantled the same argument. Terminally ill patients are already tested, but only after other models, and the downside risks are far worse than thalidomide. fao_ added the MPTP accident and the death of chemist Karen Wetterhahn from organic mercury as examples of why the barriers exist.
+- ch4s3 pushed back on the claim that profit incentives are perverse, citing liability, class actions, and reputational damage. jmcqk6 countered that exit-minded actors don't play the long game and that anti-vax movements have decoupled reputation from performance.
+
+The open question is whether AI compresses the expensive, human-biology-limited stages of drug development, or only the cheap design stage at the front.
+
+### Introducing LFM3: Every Modality for Specialized Intelligence
+
+#### [Submission URL](https://www.liquid.ai/blog/lfm3) | 164 points | by [Philpax](https://news.ycombinator.com/user?id=Philpax) | [62 comments](https://news.ycombinator.com/item?id=50262229)
+
+**LFM3-1.7B beats Liquid's own LFM2.5-2.6B with 35% fewer parameters**, and the whole first release is built from that one backbone: six ~2B models covering text, vision, audio, omni, and two "decision" models specialized from the vision and omni variants. Base and post-trained weights are open on Hugging Face, with a Playground and API as well.
+
+The architecture is a "tri-hybrid" of 24 layers: 13 gated short convolutions (kernel size up from 3 to 7), 5 sliding-window attention layers with a 256-token window, and 6 global attention layers. Liquid found SWA gave the best quality-speed tradeoff when swapping out some convolutions. Other changes include head-wise sigmoid gating (which it says may help quantization by suppressing activation outliers), partial RoPE on global layers, and sandwich norm. Pre-training ran 22T tokens, with a final 3.5T mid-training stage weighted toward agentic traces and tool calls that also stretches context to 256K.
+
+The edge story is the point:
+- The text model fits in about 1 GB at 4-bit.
+- Liquid's hardware-in-the-loop architecture search now targets 14 device/backend combos, up from one phone and one laptop CPU for LFM2. They include a Galaxy S26 Ultra, a Raspberry Pi 5, an M4 Max, Ryzen AI, and the Qualcomm Hexagon NPU.
+- Per parameter, it matches LFM2-1.2B speed on short prompts and is about 25% faster at 8K context.
+- Every model can be fine-tuned on a single GPU.
+
+The pitch is to fine-tune a small expert on your own data rather than run one large generalist. The excerpt contains no benchmark tables, so the "more capable" claim rests on Liquid's own comparisons; check the model cards before trusting it for your task.
+
+The thread is mostly practical: people trying to fit these small models into real pipelines, with a Liquid engineer (samstevens, who says he worked on the release) answering questions throughout.
+
+**Triage and annotation pipelines.** The top comment describes using LFM2.6 as a cheap first-pass annotator for emails, texts, and metadata on an RTX A4500. Its lowest-confidence items get escalated to a bigger "halo" model. It currently yields trustworthy annotations on just over 40% of data points.
+- Confidence comes from logprobs, checked against a hand-annotated set, and correlates about 80%. Having the same model judge its own annotations failed "predictably."
+- Others suggested fine-tuning, Liquid's d1-2B decision model for calibrated classification, GLiNER-style models (one user fine-tuned on 500 GPT-tagged articles and runs it on a CPU), and CPU-trainable classifiers.
+- The OP said the hard part isn't tagging. He wants to find networks between pieces of information, promote topics to objects, and consolidate narratives, and he called it far from solved.
+
+**Odd tool-use behavior.** One user saw the reasoning trace say "the instructions say I must use available tools" on a trivial egg question. The request included two irrelevant tools from llama-server, and disabling tools removed the behavior. A Liquid employee said this is probably a side effect of agentic mid-training and SFT, and suggested a system prompt stating that no tools are available. Samstevens described the recipe as SFT then RL. Rollouts that exceed the context length get zero reward, which puts mild pressure toward shorter reasoning but no strong regularization.
+
+**Which model to use.** Samstevens was candid that specialization still wins:
+- The text model beats the others on text, VL beats Omni on vision, and the Audio model beats Omni on ASR/TTS.
+- Unifying modalities into one model is a goal, not a current reality.
+- He said cross-modal gains rarely show up in small models, and another commenter asked whether that bump has ever been conclusively shown.
+- For long meeting recordings, he suggested Audio-2B for transcription and then the 1.7B text model for action items. With 100+ labeled samples and a GPU, you could fine-tune Audio-2B to go straight to action items. Diarization and speaker labels aren't supported and have no timeline.
+- VL-2B was described as a strong OCR model for its size and fine-tunable to a specific output format.
+
+**Why care?** Asked for a short pitch, samstevens named local classification and image work on about 1 GB of RAM (d1-2B), small agent chores like email sorting, and fine-tuning for repetitive tasks where big models are too expensive. Another commenter framed it as a model designed to be tiny from the start, rather than a scaled-down large model that hits doom loops and tool-call failures.
+
+- **Speed (audio encoder):** The design choice was about speed. Liquid picks high-throughput architectures that approach full-attention expressivity, then closes the remaining gap with data work.
+- **Quick test:** One user ran it as a "dumb but fast scout" on a 7900XT at about 8,500 tok/s prefill and 212 tok/s decode, and found it useful but sometimes inaccurate.
+- **Moderation:** An unanswered question asked whether Liquid did any moderation work for kid- or school-oriented local use.
+
+### Here be monsters: What do you still need to know when agents do the work?
+
+#### [Submission URL](https://blog.adrq.dev/here-be-monsters-what-do-you-still-need-to-know-when-agents-do-the-work) | 196 points | by [adrq](https://news.ycombinator.com/user?id=adrq) | [101 comments](https://news.ycombinator.com/item?id=50258868)
+
+**The skill that survives agent-written code is knowing just enough to smell a problem, and being willing to dive as deep as needed when you do.** That's the thesis of this essay, which opens with a small incident: CI failed on SonarQube's cyclomatic-complexity check for an `App.tsx` that Codex had packed into about 30 lines, roughly 15 of them being entire components written on a single line.
+
+The author inspected it, found the complexity was correct and warranted by the business requirements (slightly over-engineered on edge cases, but sound), and simply told Codex to satisfy SonarQube. It split the file into 10 and CI went green. The catch is that this was code he had never seen, and he notes it could easily have gone worse.
+
+To frame the stakes, he uses a "divebots" metaphor: engineers mining gold from the seabed, now sending autonomous bots to build the mining operations. The Optimists relax on the boat. The Skeptics collect horror stories of lost bots, unmaintainable structures, and "shiny octopus poop" passed off as gold. The author says the more detached you are from the operation, the more spectacular the failures.
+
+His definition of ownership is blunt: you're the one who gets called when something breaks. The old route to the working model of a system (decades of writing and reading code, incidents, late-night debugging) no longer guarantees a human ever touched the code. Experienced operators can still run fleets of agents at large scale because they bring that accumulated judgment with them.
+
+The text cuts off before the practical prescriptions, so what "just enough" knowledge means in concrete terms isn't visible here. The open question the essay raises, and the one that matters, is where the next generation builds that judgment if they never write the code by hand.
+
+The thread's center of gravity is a split over whether directing agents resembles managing a team, and underneath it a worry about where the next generation gets the depth to "dive."
+
+**The "boxes and lines" camp.** The top commenter, who moved from IC to team lead before AI, says the same skill applies. You can't understand every line, so you hold a system-level map of components and boundaries, treat the boxes as opaque, and go inside one only when its inputs or outputs look wrong. He has his team deliver sequence diagrams, and when asked how to build this view he suggests making agents produce them too. He concedes that the human-management analogy probably ends where motivation begins, since techniques that get quality out of people don't transfer to agents.
+
+**The "skin in the game" objection.** The longest sub-thread argues that an AI can't bear consequences: it can't be fired, shamed, or left broke. One side says an agent that never tires, never forgets, and works nights is "enough skin." Others reply that this redefines the term, and one notes that Opus still ignores instructions daily. A related line holds that an offshore team at least has a roof to protect, while an AI has no self-preservation. Others counter that offshore shops are often dysfunctional too: junior staff swapped in, and one story of 40 billed hours for a one-line CSS fix. Rebuttals to the premise:
+- AI can be "fired" by cancelling the subscription.
+- Reinforcement training can make consequences equivalent.
+- Financially independent people are not automatically bad hires. The original poster responded that such hires work well only when other human motivations are in play.
+
+**"You're still an IC."** One commenter rejects the manager framing entirely. Managers aren't expected to be deep in code, but the agent operator is legally and practically responsible for the output, must build their own QA and review, and will sometimes have to read and fix the code. Companies don't see these people as managers.
+
+**The pipeline problem.** Another commenter pressed the essay's open question: how do you go hunting inside the box if you only ever do high-level work? Someone with low-level skill must still write the tests and validations, and when someone is sued, humans will need to be trained. The top commenter said he built his skill through decades of tedious work and isn't sure how juniors get it now. His suggestions were community meetups and online discussion, plus experts narrating their reasoning. One commenter's employer requires manual approval of every agent command, which accidentally teaches the AI's reasoning. Their darker prediction is a guild of pre-AI-trained troubleshooters who parachute in when agent blobs fail.
+
+**Counterpoints.** One commenter compared this to compilers, which didn't require juniors to learn assembly, and added that almost no programmers are legally liable for their code. The top commenter replied that organizations that actively helped juniors adapt did better than those that left them alone.
+
+**A challenge to the essay's metric.** A final commenter said stressed developers are only a proxy for product failure. They know growth-stage companies where devs are stressed, shipping is up, and incidents are down, so intuition about when to trust agents may not match how agents actually fail.
+
+### Wikipedia's Cleanup of AI-Generated Content
+
+#### [Submission URL](https://spectrum.ieee.org/wikipedia-wikiproject-ai-writing-cleanup) | 497 points | by [rbanffy](https://news.ycombinator.com/user?id=rbanffy) | [235 comments](https://news.ycombinator.com/item?id=50257326)
+
+**Wikipedia's volunteer AI cleanup crew says the tells have moved from cliché to structure**, which makes the job harder but not hopeless. This is an IEEE Spectrum interview with Ellia Lebleu, a cofounder of WikiProject AI Cleanup and an AI Ph.D. student at Inria in Rennes.
+
+The project started in December 2023, when a handful of editors on Wikipedia's Discord noticed the same strange articles. They leaned on phrases like "stands as a testament" and "rich cultural heritage," and some carried conclusion sections or "Why is this important?" headers. Those were easy to catch. By 2025 the signals had become subtler: the "rule of three," negative parallelisms, and other patterns that mean little alone but add up. Editors also look at behavior, such as one account posting five multi-thousand-word articles in five minutes.
+
+**Citations are now the bigger worry.** Fully hallucinated references have become rarer because retrieval-augmented generation lets models find real sources. The more common failure is a real source that doesn't support the claim it's attached to, which is harder to catch and does more damage to trust.
+
+The interview also covers English Wikipedia's recent ban on using LLMs to generate articles. Lebleu has been working with AI-detection company Pangram to estimate how much AI content still gets through. She says she tested it on pre-ChatGPT Wikipedia text and found no false positives. The article text cuts off there, so the actual prevalence estimate isn't visible in what I have.
+
+The thread mostly wanders off the interview's specifics, but a few real threads emerge about what AI cleanup looks like from the ground.
+
+**Cleanup is imperfect in both directions.** One commenter who fixed obviously AI-generated text said their edits were instantly reverted by ClueBot, Wikipedia's automated anti-vandalism bot, and gave up. Others pointed out that ClueBot's reverts can themselves be reverted (it won't re-revert, but flags the edit for human review). They also noted it is most overzealous on new or temporary accounts making large changes. Several offered to look at the page, but the commenter declined to name it, which prompted the retort that complainers rarely supply links. Another commenter defended that reluctance as avoiding an off-site brigade. Separately, one user said an article about their own site was deleted after its creator was banned for mass-producing AI articles, and nobody vouched for it. Their point: Wikipedia content is less permanent than it feels.
+
+**Where the AI comes from.** A commenter noted an AI-heavy edit that traced to a school-linked editing program. A reply from someone familiar with WikiEdu said it coordinates assignments where professors have students edit Wikipedia, saw students adding AI text, and has trained them to use AI for finding sources rather than generating content.
+
+**Related warnings from other communities.** The top thread links an Old School RuneScape wiki dev post about AI-driven plugin floods: the median new plugin went from thousands of installs to 28. Commenters argued over whether that shows good software being buried by junk or merely a flood of code (one said "more code than ever," yet software seems to be shrinking). A tangent covered friends getting banned for running AI-written macros.
+
+**Practical tools and data.**
+- A GPTZero-based provenance checker for Wikipedia pages was shared.
+- Others discussed "low-background steel" (pre-AI text), with archive.org dumps from 2022 suggested as clean snapshots.
+- One user noted AI answers rarely link Wikipedia. A reply said models don't pick authoritative sources but autocomplete plausible ones.
+
+**Money and bias sidebars.**
+- On whether AI firms would pay for cleaner data, a claim that Wikipedia is in "survival mode" was rebutted: it has a sizable endowment, steady edit counts, rising revenue, and tiny hosting costs.
+- A thread about whether donation banners count as ads went nowhere.
+- A separate branch argued that human editorial bias is the bigger problem, and it quickly turned into a partisan fight over Israel/Gaza coverage with opposing claims of propaganda. It was not resolved.
+
+One quip, that the project effectively gives AI free RLHF to pass a Turing test for Wikipedia editors, captured a real worry: cleanup rules double as training signal.
+
+### The Mythical Man-Month in the Age of AI
+
+#### [Submission URL](https://j11g.com/the-mythical-man-month-in-the-age-of-ai) | 472 points | by [ilreb](https://news.ycombinator.com/user?id=ilreb) | [349 comments](https://news.ycombinator.com/item?id=50255298)
+
+**Brooks's Law survives AI agents; the overhead just moves from managing people to managing agents.** The author's argument starts from a laptop-and-projector anecdote and gets to the 1975 claim that adding manpower to a late project makes it later.
+
+The case for it being obsolete is real: agents onboard in milliseconds, skip stand-ups, and have no office politics. But the "Baby Problem" still applies, because nine agents can't deliver a baby in a month and sequential tasks stay sequential. The coordination cost lands on you. Someone has to define "done", review the code, catch hallucinations, and stitch the pieces together.
+
+The sharpest point is the failure mode: put several autonomous agents on one codebase without clear orchestration and they rewrite each other's work in a fast loop. The proposed update to the law is "Adding agents to a project with unclear requirements gets you the wrong answer faster."
+
+It's a short opinion post with no data or experiments behind it. The thesis is plausible, but it rests on the author's intuition rather than measurement.
+
+The thread barely touches Brooks's Law. It turns into a debate about AI as an amplifier of existing developer quality, and then about why some developers have stopped caring.
+
+**The amplifier thesis.** The top comment (freefaler) says strong programmers now ship good solutions much faster, while weak ones repeat their old mistakes without checking the output. The example was a PR rejected three times because "not in the frontend" was still partly implemented there. Others compressed this into slogans: AI as an "amplifier of human intent," a "power of two" joke (0.5² vs 1.5²), and "competence is additive, incompetence is multiplicative."
+
+**The counter-report: skill erosion hits good developers too.** joshAg disputes the "good ones get better" premise. Of roughly 10 developers whose code he reviewed, every one lost between 0.5 and 3 promotion levels of competence after adopting LLM codegen, and the better ones lost more because they had more to lose. His example was a lead engineer who wrote the "no raw JS dates" policy and then submitted an MR doing incorrect raw date math, with no handling of timezones, DST, or leap years. He compares it to speeding or phoning while driving: it feels safe until the crash. Weak specs, tests, and review mean the breakage surfaces late. Others agreed:
+- Cthulhu_ suggested people stop sweating small details as AI pulls them up a level, as happens when developers move into management. His company has seen a rising trend in outages, though with no single attributable cause. joshAg replied that someone still has to own the details, and the failure comes when nobody does.
+- elixirnogood reported degrading skills and focus, and compared it to short-form video brain rot.
+- seanw444 liked the comparison. He avoids agentic codegen but uses LLMs as a research assistant, and joshAg added that he distrusts them for research but finds them good at targeted review checks, such as flagging `knex.raw` with template literals or N+1 queries. Both ended up trusting AI more as a codebase query tool than as a writer.
+
+**The "why not care?" sub-thread.** orsorna admitted to being the "just pay me a salary" developer. Reviewers who now outpace him with agents still scrutinize him, so the bar for "enough" has risen and his motivation has dropped.
+- taurath blamed cultures that chase short-term output and defer the cost, saying that if speed is a company's only moat the result is death marches.
+- Ancalagon asked why anyone would hand execs more productivity for no extra pay.
+- TonyStr asked why not negotiate, and why not care about end users. orsorna said users' happiness is a side effect, and that no salary captures the value an employee creates. superxpro12 said US workplace culture treats discussing pay as disloyalty, which blunts negotiation.
+- tayo42 asked why disengaged people comment on career sites. Replies said they used to care, that burnout is not indifference to tech, and orsorna said he still builds things outside work.
+
+**Unresolved:** whether AI exposes pre-existing weaknesses (Roark66: "Same crap as before") or actively degrades skilled people. Underneath that is whether the disengagement is a personal failing or a rational response to incentives.
+
+### Anthropic trained Claude on illegally obtained Stanford professors' books
+
+#### [Submission URL](https://stanforddaily.com/2026/10/27/professors-books-pirated-to-train-claude/) | 564 points | by [car](https://news.ycombinator.com/user?id=car) | [287 comments](https://news.ycombinator.com/item?id=50260814)
+
+**Two Stanford authors opted out of the $1.5B Bartz settlement** and sued separately, betting a jury will award far more than the roughly $3,000 per work the class deal paid. Tobias Wolff and Chang-rae Lee filed *Cruz v. Anthropic* in May 2026, seeking statutory damages of up to $150,000 per infringed work. That is a 50x gap per title, and it's the whole point of opting out.
+
+The background is Judge Alsup's ruling in *Bartz*, which split the question in two. Training an LLM on legally acquired books is fair use, he held, comparing it to a reader absorbing style and themes to "create something different." But downloading pirated copies from shadow libraries like LibGen and PiLiMi, and keeping them in a permanent central library, is not. The settlement covers nearly 500,000 registered works. Per the Stanford Daily, more than 10 Stanford professors had books taken, including Wolff (10 titles), Abraham Verghese, Daniel Mason, Hayagreeva Rao and Myra Strober.
+
+The *Cruz* plaintiffs repeat the piracy and central-library claims. They also seek a permanent injunction barring Claude training on their works, which the settlement doesn't offer. Because they argue the acquisition was illegal rather than the training itself, they sidestep the fair-use holding.
+
+The wider fight:
+- Over 70 infringement suits are pending against AI companies, including from The New York Times and Getty Images.
+- The Authors Guild is suing OpenAI and Microsoft and lobbying Congress for a national licensing requirement.
+- Stanford law scholar Paul Goldstein, a class member, says per-work licensing is impractical because of transaction costs, and notes the U.S. has no moral right of attribution.
+
+The piece is a campus-paper profile with quotes from authors, not a legal analysis, and it doesn't say when *Cruz* might reach trial. Whether jurors will accept $150,000 per work, the statutory ceiling reserved for willful infringement, is the open question.
+
+The thread barely touches the Stanford authors' opt-out. It turns almost immediately into a Swartz-versus-AI-labs comparison: why was Aaron Swartz prosecuted as a felon while Anthropic paid $1.5B in a civil settlement for downloading pirated books?
+
+**The opening argument:** piltdownman notes that JSTOR settled with Swartz and asked the government to drop the case, yet prosecutors pressed on. Anthropic's liability stemmed largely from the theft and storage of pirated files, but it faced only civil consequences. giancarlostoro adds Swartz's biography (RSS, Reddit, Markdown) and argues that someone at the AI labs should face criminal liability, citing the speed at which agentic models can act.
+
+**The correction:** 9x39 and 15155 push back on the framing that Swartz only "stole PDFs." Their points:
+- MIT was the main aggrieved party, not just JSTOR.
+- He used a wiring closet, a fake guest account ("Gary Host"/"Grace Host"), and a changed MAC address after being blocked.
+- He covered his face for the cameras and hid the laptop under boxes.
+- Together these establish mens rea. As 15155 put it, he "*knew* he shouldn't be there."
+
+**The rebuttals:**
+- bayindirh and demo4567 say plugging into an open switch port to scrape PDFs isn't really "hacking." If it were, AI labs scraping the web while impersonating home users would face life sentences.
+- quadhome and spwa4 point out that the evasion tactics 9x39 cites (rotating IPs, accounts, and identifiers) are exactly what AI labs do now, at far greater scale. spwa4 goes further and lists other alleged conduct by Anthropic.
+- supermatt concedes that Swartz knew what he was doing. The dispute is over proportionality and unequal enforcement. They also ask whether internal emails approving LibGen use count as evidence of willfulness. bayindirh cites a Microsoft executive reportedly calling AI scraping "the largest theft of labor in human history."
+- exe34 argues that concealment shows only that you expect to be stopped, not that you know you're wrong.
+
+**Where it stands:** 9x39 holds that you can't excuse an individual just because corporations are harder to prosecute, and that evidence of intent either exists or doesn't. Others reply that the evidence of intent against AI labs is already public. shadowgovt adds that Swartz's suicide meant the case never reached a verdict, so a court never tested the question.
+
+The unresolved crux is whether the Swartz prosecution was legally sound but selectively enforced, or an overreach that corporate defendants are now being spared from.
+
+### Amazon Is Gutting Its AI Division After Sustained Failure
+
+#### [Submission URL](https://futurism.com/artificial-intelligence/amazon-ai-division-failure-nova) | 364 points | by [dpflan](https://news.ycombinator.com/user?id=dpflan) | [281 comments](https://news.ycombinator.com/item?id=50261589)
+
+**Amazon is putting most of its Nova models into "keep the lights on" mode** and funneling people and compute into a single frontier-model effort led by Pieter Abbeel, according to Bloomberg reporting relayed by Futurism. Abbeel came over in 2024 when Amazon absorbed his robotics startup Covariant.
+
+The shelved list covers the text Nova models plus the image- and video-generation models. They're still technically supported, but only with the minimum resources needed to keep them running. The AI teams are being reorganized around "highest priority" goals.
+
+The pivot lines up with Amazon's robotics and warehouse-automation interests. Covariant's founders were building AI models for robots, so a frontier effort under Abbeel reads as a bet on embodied AI over a general-purpose chatbot competitor.
+
+It follows the closure, a week earlier, of an 80-person San Francisco office focused on AGI research.
+
+Two caveats. The details come from unnamed insiders via Bloomberg, and Amazon's own confirmation isn't in the piece. The "failure" and "bust" framing is Futurism's editorializing; the article doesn't offer benchmarks or usage numbers showing Nova flopped, only that it never became a household name.
+
+The thread's center of gravity is why Amazon, of all companies, couldn't make frontier AI work. Most commenters answered with culture and incentives rather than talent or money.
+
+**Camp 1: Amazon's culture and economics don't fit frontier research.**
+- One commenter argued for "product-company fit." Today's Amazon won't tolerate long stretches of losing money, and big incumbents keep their best people in research groups instead of letting them make big bets. Google and IBM were cited as parallels. A reply sharpened the point: Amazon is an operational company, so it wants to run your LLM, not build one.
+- A former AWS engineer gave the most concrete account. Getting anonymized production data from a database his own team owned took over a month. It also involved meetings with lawyers and compliance staff, break-glass procedures, and some data that stayed hidden even after breaking glass. A summer intern from 2021 said he couldn't export even training reports from the machines, though he was using a public research dataset.
+- Others read that rigor as a feature. Commenters said it signals the company is responsible, and that AWS's customer trust and support quality are the real product. Selling fantasies about future capability isn't what AWS customers pay for. The uncomfortable corollary is that frontier labs got ahead partly by ignoring legal and privacy limits. One suggestion was that Amazon's mistake was keeping AI inside Bedrock instead of spinning it out, as it did with Annapurna Labs and Lab126.
+
+**Camp 2: it's just a smart business move.** The top comment said hosting third-party models is more profitable, since someone else pays for research and Amazon charges a premium for hardware. Others extended this: if Chinese competition turns models into commodities, the profits go to scarce data-center capacity. Two replies pointed out that the article describes a consolidation into one frontier effort, not an exit. A separate tangent noted the article is about three months old and linked a recent crash in China's AI stocks that could slow open-weight releases.
+
+**Side fight: did Microsoft's all-in approach pay off?** It was cited as the cautionary tale. One reply said the issue was no plan beyond stuffing AI into existing products. Others disputed whether users like Copilot. Some said non-techies and product and enterprise staff use it as their default "professional LLM." Others said nobody they know wants it, and that some of their clients' organizations warn staff off it.
+
+The late thread drifted into whether the answer to misaligned incentives is political change or economic democracy, and it fizzled into a debate about communism.
+
+### Expanding our partnership with GSA to bring Claude to all levels of government
+
+#### [Submission URL](https://www.anthropic.com/news/expanding-partnership-gsa) | 47 points | by [matthieu_bl](https://news.ycombinator.com/user?id=matthieu_bl) | [32 comments](https://news.ycombinator.com/item?id=50266701)
+
+**A 40% discount on Claude Enterprise, Claude for Government, and the API** is the core of the new GSA agreement, and it now covers every product surface, including cloud-provider purchases "in the coming months." State, local, tribal and territorial governments are eligible too, not just federal agencies. There's no minimum spend commitment, so agencies pay only for what they use. Anthropic estimates the discounts will save the government $1 billion.
+
+The adoption numbers explain the push:
+- About 500 US federal, state and local organizations use Claude.
+- Weekly Claude for Government active users are up roughly eightfold since February.
+- Usage across federal civilian agencies is up about 20-fold in a year.
+
+Anthropic's case studies are self-reported and anonymized, but they show the intended use cases:
+- Utah gave Claude Code to 34 developers across 10 agencies. 80% had a working environment within 30 minutes, and 71% reported saving 20+ hours over a four-week pilot.
+- A state IT developer moved nearly 900 API methods to a new framework in two days, on a project scoped for a month.
+- A state IT director documented 12 legacy repos, mapping 467 database tables and flagging 27 risks.
+- A federal security team used Claude Mythos to find and patch a critical-system takeover vulnerability in about two days. A human pen test the month before had missed it.
+- A state CIO claims a ransomware response took 8 minutes instead of the usual 2-3 days.
+
+**Compliance is the gating factor, and it's uneven.** Claude for Government has been generally available since September 30 at FedRAMP High, with near-feature parity with the commercial product. On Amazon Bedrock, Claude is FedRAMP High, with select models cleared for DoD IL4 and IL5 in GovCloud. On Vertex AI it's FedRAMP High. Claude Enterprise is still only in process for FedRAMP Moderate, through the FedRAMP 20x program, so agencies wanting the full commercial Enterprise product can't treat it as authorized yet.
+
+Agencies can buy at the OneGov discount through GSA's Multiple Award Schedule today. Anthropic is also adding an implementation program, modeled on what it offers private-sector customers, in the coming weeks.
+
+The thread splits between a political question (the DoD's supply-chain-risk designation) and a longer fight over whether the government should be renting AI from a private vendor at all.
+
+**The DoD designation.** The top question was whether Claude is still labeled a supply chain risk by the DoD. One reply described a "limbo zone" in which the rest of the government is effectively ignoring that designation. Another speculated that Hegseth won't push the issue for fear of inviting more legal scrutiny. Nobody offered firm facts, and a couple of commenters just said they want to see how far this goes.
+
+**Rent vs. own.** The main argument started with iAMkenough, who cited Anthropic's SEC filing saying it "may never be profitable." They argued GSA should host its own inference and models instead of creating a decades-long dependency on an unprofitable vendor.
+- **Skeptics of the objection:** bradreaves2 said this is a vendor offering a discount, not a subsidy, and asked what profitability has to do with purchasing. ameliaquining added that if the vendor folds, the value from inference already consumed remains. They also argued that lock-in risk exists regardless and that general-purpose LLMs are fairly replaceable.
+- **Defenders of the objection:** computably and bagacrap said the money and the setup effort are wasted if the vendor goes under. roosterIllusi0n said renting is money "burned" and that industry is moving to local LLMs, so the government should have been ahead. iAMkenough floated the idea that the long-term plan might be nationalizing Anthropic as a public utility.
+
+**Whether government should run its own cloud.** sailfast, who has experience on the contracting side, said Claude for Government is essentially Bedrock on GovCloud, bought through GSA schedules and FedRAMP, so this is how the government already does such things. They argued in-house roles are inflexible and underpaid relative to market. They also said a central agency like DISA or GSA that owns the service becomes a bottleneck, which pushes agencies to fight for their own budgets and ends up back at renting. They added that GSA requires the government to get the lowest price, and competition among providers keeps prices in line. iAMkenough countered that all the providers have an incentive to raise costs for investors. gnabgib noted that Google and Azure also offer government clouds, so this isn't just an AWS question.
+
+**Pricing.** chopete3 thought 40% was steeper than needed, saying 10-15% would have been enough to get listed. aenis replied that Anthropic already gives volume customers more than 40% on a short one-year commitment, which makes the headline discount look less special.
+
+**Jokes and tangents.**
+- A string of sed and typo jokes ("Clsude spproves!") grew out of a quip that the "AI" in the mission statement would have to go.
+- A speculative aside asked whether Claude could draft legislation to eliminate special-interest giveaways. Replies noted that "can" and "will be used that way by those in power" are very different things, and that sci-fi has long explored AI governance.
+
+### PHP2Shell, LiteLLM, GitLab: Find What You Need to Patch
+
+#### [Submission URL](https://cloudsleuth.io/blog/php2shell-litellm-gitlab-find-what-you-run/) | 65 points | by [bigfish2026](https://news.ycombinator.com/user?id=bigfish2026) | [13 comments](https://news.ycombinator.com/item?id=50261583)
+
+**The real bottleneck in a week of critical advisories isn't patching, it's inventory.** Cloud Sleuth's post walks through six incidents from October 16–23, 2026 and argues that the time to find what's affected now dominates your exposure window.
+
+The incidents:
+
+- **PHP2Shell** (CVE-2026-109618/109619): two pre-auth RCEs rated 9.2. Amazon's MadPot honeypots logged an exploit attempt four days before disclosure. Fixed in PHP 8.5.12, 8.4.27, 8.3.36 and 8.2.35; config workarounds don't cover every variant.
+- **Node.js** (CVE-2026-111497): an out-of-bounds write in the bundled Brotli decoder, patched in 22.23.4, 24.22.1 and 26.12.1. End-of-life lines get nothing.
+- **GitLab** (CVE-2026-110264): unauthenticated RCE rated CVSS 10.0 via an integer overflow in the regex compiler, reaching back to GitLab 7.0. Self-managed instances have no workaround, only the patch.
+- **LiteLLM 1.107.0**: a malicious PyPI release, also in the official container images, ran a credential stealer whenever Python started. Rebuild, then rotate everything the environment could reach.
+- **OpenCode Console**: saved AI provider keys may have been exposed, and some users reported unauthorized charges.
+- **eMudhra CA**: eight intermediate private keys were integers below 256, one of them 4. Browsers blocked the intermediates.
+
+The author leans on Mandiant's time-to-exploit data, which fell from 63 days in 2018–19 to five days in 2023. They also cite a Hacker News post arguing LLMs have pushed it to hours. Most teams have shrunk the fix step with CI/CD and managed runtimes, but the find step is still a spreadsheet and a Slack thread. The CIS Controls put asset and software inventory first (Controls 1 and 2) for this reason.
+
+The article then walks through five questions per advisory using read-only AWS and Azure native tooling: where it runs, whether the internet can reach it, who owns it, what it can reach, and where else the secret or certificate lives. It ends with a pitch for Cloud Sleuth and a one-hour drill. The text I had was truncated before the commands, so I can't vouch for them. Expect the vendor angle, though the framing holds up without the product: the LiteLLM and OpenCode cases in particular are blast-radius questions that a version scanner can't answer.
+
+Discussion split into two threads, both pushing the "inventory" theme past cloud resources: one about developer machines, one about how software could report its own contents.
+
+**The eMudhra angle: laptops are the blind spot.** Nickste argued the bad intermediate certificates make local dev environments exposed too. A developer on coffee-shop wifi running `pip install` could be served a malicious package by a spoofed network that intercepts only pip traffic. CI/CD and cloud have decent tooling for this, but "good luck finding and patching every virtual environment on your local machine."
+
+- **Why you can't just prune the OS store:** gradyfps suggested removing the compromised intermediates from the system trust store. Nickste countered that pip relies on certifi, which bundles its own certificates, so you must explicitly point it at another store.
+- **Revocation:** SlightlyLeftPad was surprised that in 2026 revocation lists still don't update dynamically, and wished for something like "ntp for root certificates."
+- **Is it realistic?** yanslookup called joining a spoofed network a convoluted starting point. Nickste replied that "Free Wifi" is the same attack with no spoofing needed, and that the real loss is the long-held assumption that TLS makes tampering detectable on untrusted networks. bigfish2026 added that airport lounges would be a prime venue.
+
+**A standard way for processes to report their BOM.** tonymet said 75% of the work is detective work: finding which of 1,000 dependency trees are running, with a bespoke BOM-reporting step for each. He proposed a `kill -s BOM <PID>` signal that makes any process dump its bill of materials.
+
+- Normal_gaussian argued signal handling invites routing and lifecycle bugs, and that most dependencies wouldn't register anyway. They preferred embedding spec-conformant strings in binaries so existing file and process scanning can find them. That would formalize today's signature matching, which is fine for major runtimes but weak at exact version detection. Adoption would never be universal.
+- tonymet refined the idea: the kernel could read a named BOM symbol from the ELF without calling app code, plus a way for a control plane to query running VMs without touching their filesystems.
+- kg noted a spec is still needed for cross-language cases. An Electron-style app on macOS might mix C/ObjC, Swift, C++ and JS, and should report npm packages as well as native libraries. tonymet suggested the parent runtime relay the signal and report from its loaded symbol table.
+
+The open question is whether inventory should be pulled by scanning artifacts or pushed by the running software itself, and neither side addressed how to get universal adoption.
+
+### Police are using AI to pull over drivers for 'suspicious' behavior
+
+#### [Submission URL](https://gizmodo.com/police-are-using-ai-to-pull-over-drivers-for-suspicious-behavior-2000831220) | 391 points | by [gumby](https://news.ycombinator.com/user?id=gumby) | [306 comments](https://news.ycombinator.com/item?id=50261819)
+
+The title is all we have: police departments are using AI systems to flag drivers for "suspicious" behavior, and those flags are leading to traffic stops. The scare quotes around "suspicious" signal Gizmodo's angle, which is that the criteria are opaque and the stop is the enforcement action.
+
+The article body didn't come through, so the vendor, the departments involved, what the system actually detects, and any stop or accuracy data are unknown here. Without those, there's no way to say whether this is plate-reader pattern analysis, travel-route profiling, or something else. Read the original for the specifics before drawing conclusions.
+
+The thread's center of gravity is the pretextual stop. Commenters mostly accepted that AI or plate-based flags feed stops that are then justified by a minor traffic violation. The argument was over how much that proves, and what it means for people who get swept up.
+
+**The case that a national tracking system exists.** One commenter, citing police bodycam videos, described a routine pattern. A state or county cop on a federal task force stops a car for marginal infractions (5 over, touching a line, following too closely). The cop writes a warning and makes small talk, then asks to search. A K9 unit is already pulling up behind them, having been called before the lights went on. They argued that such a consistent hit rate on "unremarkable" driving points to plate-based travel-pattern analysis, with rental cars and repeated trips to known trafficking cities as likely signals. They also gave a personal example: a friend's arrest on a reservation straddling the NY/Canada border, where the affidavit described police following a car that had sat at a casino for hours. Others added that officers on such task forces often aren't actual FBI agents, since they carry credentials but keep their local jobs.
+
+**Pushback on the inference.**
+- Skeptics said you'd need a baseline of how often random people are stopped for nothing. Poor neighborhoods and areas near reservations see this constantly.
+- One commenter noted that in their small town, DUI stops are nearly all justified by lane-line touches. Their point was that if you drive, a pretext always exists.
+- Another asked how we know police don't stop huge numbers of people for 5-over and just let them go. The reply was that warnings are logged and don't vanish.
+
+**Parallel construction.** One commenter pointed to this as the dystopian core. If the real basis for a stop was an AI flag, a phone intercept, or an IMSI catcher, the court sees only a speeding stop. Another noted that investigators already knew who they wanted and just needed a legal reason to pull the car over. A third cut against that: the "travel pattern" may simply be frequent trips to and from the reservation, and the thread asked how many people with innocent lives fit it. A reply said outsiders can't judge without the investigation's details. A local added color on why the reservation is a smuggling hub, since it spans both sides of the border.
+
+**Tracking beyond plates.** Several people argued plates are the least of it. One said police already track everyone's phones and use plates only to make the stop. Another cited patents on reading tire-pressure sensor IDs as a vehicle identifier. A rebuttal said phone location, such as the tech 911 uses and NextNav, makes that unnecessary. One commenter drives a registered, insured car with no plate displayed, a $10 to $20 fine in Tennessee, to protest Flock cameras. Others pointed out this hands police a legitimate reason to stop them.
+
+**Side threads.** One person suggested documenting abuse on a blockchain with reference to 18 U.S.C. § 242. The reply was that a dashcam streamed offsite or an audio recording would be far stronger evidence. The original poster clarified that the blockchain was only meant for notarization.
+
+The unresolved question is whether the high hit rate on "random" stops is evidence of mass surveillance or just selection bias. Nobody in the thread had data to settle it.
+
+### Show HN: Specification First Agentic Development Plugin and Prove
+
+#### [Submission URL](https://spec-first.dev/) | 34 points | by [hleichsenring](https://news.ycombinator.com/user?id=hleichsenring) | [30 comments](https://news.ycombinator.com/item?id=50260571)
+
+**Spec-first is a plugin that forces coding agents through a write-spec, review-spec, build, gated-commit loop**, and its author says he's used it to ship about 500k lines from 1,000+ specs since the start of 2026, building Agent Smith itself. It ships as 9 skills for Claude Code, Codex, Cursor, and Copilot.
+
+The core workflow is four skills: `create-spec`, `review-spec`, `apply-spec`, `deliver-spec`. Each works in its own branch and worktree, and each leaves a file behind (spec YAML, decisions YAML) for the next step. The part worth stealing is the review. A fresh agent with no chat history checks the spec against the code, and a script opens every file and line the spec cites. The verdict is BUILD, BUILD WITH CUTS, or REFUSE, and every finding names a file and line. The site's example catches a missing paging case: GitHub returns 30 issues per page.
+
+Other mechanics:
+- **Commit gate:** a commit whose message names a spec id triggers every `verify` stage your contexts declare (build, test, web tests). The first red stage blocks the commit and its output goes back to the agent. `-F`, `-C`, and `--amend --no-edit` are gated too.
+- **Parallel series:** `deliver-series` reviews a set of specs, builds the groups that share no file at once, verifies the merged tree, and opens one PR. Ids come from the clock, so agents working offline don't collide.
+- **Decision log:** the agent records each non-obvious choice (what it chose, what it chose over, why) in `decisions/{id}.yaml`, so reasoning lives in git next to the code.
+- **Resumable state:** `context.yaml` tracks what's done, active, and next, so a restart picks up where it stopped. A `memory/` directory holds things you told the agent once.
+
+`/spec-first:bootstrap-project` generates the contexts from your existing code: stack, rules, and the checks a commit must pass.
+
+The caveat: the evidence is the author's own usage. No defect rates, cost, or comparison against unstructured agent use is offered, so "works well" is anecdote. The overhead of a spec and review per change also looks heavy for small fixes; it pays off on larger, parallelizable work.
+
+The thread splits into two arguments: whether a spec is just code under another name, and whether specs kept in the repo help or rot over time. The author, hleichsenring, answers most critics directly.
+
+**"A precise spec is just code."** memjay opened with the old meme. _davidwarner's reply was that languages keep moving from implementation-like to spec-like, so a spec is code if an agent can turn it into output reliably. The hard part is getting the spec right. memjay agreed that agents pick the wrong abstraction level, for example naming variables in specs, and worried about who can write specs without understanding the layers below. Paracompact pushed back on the equivalence: specifying a theorem is easier than proving it, and ACSL is not C. Comprehensive spec work is technical and formal, but it is "decisively not source code." The author's reply was that coding is "more or less solved" for him. After 500k lines he wrote none of it, and his work is now deciding what to build and how, backed by 10k tests and a commit hook that blocks on red. He also said he mourns the craft. His programming time fell from about 80% last year to 5–10%.
+
+**Do specs-as-history help or hurt?** woeirua said spec-first fails in practice because you don't know requirements upfront, and going back and forth in the spec produces contradictory requirements. They prefer a vibecoded prototype that serves as the spec. The author replied that specs in git are an advantage, because agents can read what was built and why. Two commenters with team experience disagreed:
+- **threecheese:** specs are snapshots of deliverables, not living truth. Stack 500 of them and they become actively harmful. Nobody will pay tokens to keep them time-coherent when the agent can just read the code.
+- **drdexebtjl:** their workplace has used spec-driven development for over a year and is now deleting specs. Agents were getting stuck on stale context for 20 minutes, burning tokens and fixating on abandoned patterns. They also said a working software factory proves only that it can produce software, which is a low bar.
+- **evulhotdog:** the fix may be keeping specs focused on intent and active decisions, not on what the code does.
+
+**Other points**
+- **UML comparison:** avlman likened this to the UML "coding is solved" era. The author said UML generated skeletons while humans wrote the logic, whereas here the agent writes the logic and tests gate it.
+- **Non-determinism:** cassianoleal said specs the agent can edit are as non-deterministic as the code. The author said the review step checks the spec's claims against the code, and hooks and tests enforce quality afterward.
+- **Spec vs. plan:** the author said a plan dies with the session. A spec is a repo file, reviewed against the code, checked at commit, and shared across the team's workflow.
+- **Alternatives:** evulhotdog likes OpenSpec, and megool asked how this compares with GSD. systima asked about Spec Kit and BMAD. The author said his is narrower and stricter, checking the spec before building where Spec Kit compares afterward.
+- **Waterfall:** nixonperinchery saw a return to waterfall-style requirements and TDD, compressed into week-long cycles.
+
+The unresolved question is whether the repo-resident spec trail is a memory aid or a source of drift. The only long-term evidence offered against it came from teams that had already tried it.
+
+### Qwen has alter egos triggered by flipping a single neuron
+
+#### [Submission URL](https://qwen-neurons-site.vercel.app/) | 54 points | by [thoughtpeddler](https://news.ycombinator.com/user?id=thoughtpeddler) | [43 comments](https://news.ycombinator.com/item?id=50266910)
+
+**Pushing a single MLP neuron's output direction into the residual stream makes Qwen3-8B answer "Who are you?" as a different persona.** The site catalogs 34,220 of these personas, plus 35,074 off-topic replies, and a filtered set of 8,827 "changed-assistant" replies rated weirdness 6 or higher.
+
+The sweep is exhaustive. It covers all 36 layers × 12,288 MLP neurons, in both directions (up and down), for 884,736 neuron–direction pairs and 1,891,603 replies once retries are counted. Each push adds the neuron's `W_down` column, normalized and scaled by the layer's median residual-stream norm. The starting strength is 1.25× and it falls to 1.0×, 0.75× and then 0.5× if the reply turns incoherent. Decoding is greedy, up to 160 tokens, with thinking off. The unpushed baseline is the stock "I am Qwen, a large language model developed by Alibaba Cloud."
+
+The browsable library lets you filter by layer, strength, weirdness and coherence. There's a per-layer atlas colored by reply category and a CSV download. Pairs and triples of neurons are also covered, and the site includes a few other models (talkie is named), run with the same recipe. Sexual, hateful, violent and self-harm replies are hidden behind a toggle.
+
+The limitations are stated candidly, and they matter:
+- **One prompt only.** A neuron that yields a persona on "Who are you?" may do nothing, or something else, elsewhere. So these are not clean "persona neurons."
+- **Weak reproducibility.** Under strong pushes, about a third of replies change when only the batch layout changes. Of 580 clear personas rerun in three layouts, 536 reproduced.
+- **Unaudited labels.** Category, persona name, weirdness and coherence all come from a Claude Haiku judge. No human has checked them.
+
+Read it as a large, searchable map of how fragile the assistant identity is under activation steering, not as evidence that identities are stored in individual neurons. The numerical-noise finding is arguably as interesting as the personas themselves.
+
+The thread skips the neuron-sweep details and turns into a debate over whether the result says anything about "thinking" or consciousness in LLMs. Almost nobody discusses the methodology; one opening comment raises hardware reliability.
+
+**The hardware aside.** senileape connects the numerical-noise finding to cosmic-ray bit flips and asks whether AI accelerators used for decision-making will need ECC. Nobody picked this up.
+
+**The main argument: does fragility show LLMs don't think?** proc0 opens by saying this kind of research should settle the "do LLMs think" question, calling the models pattern matchers at scale. The replies push back from several directions:
+- **Brain damage analogy.** viraptor points out that local brain injuries can change personality dramatically. LLMs, trained for minimal redundancy, would show a more extreme version of the same effect. fzeindl counters that this takes damage to thousands of neurons, not one. kuhsaft and busssard answer on scale. Brains have tens of billions of neurons against hundreds of thousands in the model, so by percentage one Qwen neuron carries far more weight.
+- **Emergence.** thoughtpeddler argues that surface personality is an emergent property, so flipping behavior via one unit doesn't show absence of thought. Human connectomics might show similar effects from tiny clusters. 0-_-0 asks why the same couldn't be done to a human. proc0 grants an analog but doubts a single neuron could yield a completely different yet coherent response.
+- **Identical mechanism?** proc0 says we only know thinking from biology, so a match should be near-identical, or absent a predictive theory it is probably something else. adjejmxbdjdn and mellab2 reply that thinking can have many implementations, and that planes fly without flapping.
+- **Fake versus real behavior.** proc0 argues there are more ways to fake conscious-looking behavior than to land on a different real one (Chinese room, philosophical zombie). kuhsaft asks why identical behavior should count as fake, and argues thinking and consciousness are behaviors, not processes. GoToRO and cyanydeez suggest that consciousness may itself be pattern matching, and that many people behave much as LLMs do.
+- **Inputs.** proc0 says humans read via visual representations, not tokens. kuhsaft replies that this is only a different signal conversion, since light is also turned into neural firing. The thread cuts off mid-argument on quantization.
+
+**Spiders and ethics.** kuhsaft uses jumping spiders (they think, and small brains don't preclude it) to raise the moral risk of labeling things non-conscious, predicting AGI will be treated like industrial livestock. adjejmxbdjdn flips it, hoping AI doesn't treat us as we treat animals. proc0 sees farming as a necessary tradeoff for civilization, while still considering mass farming bad.
+
+**Jokes.** JPLeRouzic quips that the model answers correctly 96% of the time and shows humor in the rest. busssard responds that calling itself an "industrial killing machine" isn't great humor.
+
+The crux is unresolved: proc0 wants a theory of consciousness or a biologically matched result before granting that LLMs think, while the other side treats thinking as defined by behavior and substrate-independent.
+
+---
+
 ## AI Submissions for Mon Oct 26 2026 {{ 'date': '2026-10-26T21:15:23.693Z' }}
 
 ### Why Micron Is Suddenly Ditching 4F² DRAM as Rivals Double Down
@@ -897,252 +1371,3 @@ The thread drifted quickly from the Nikon case into a broader fight over whether
 - imawakegnxoxo compared the situation to watching someone else use a shovel and then claiming you dug the hole.
 
 The unresolved crux is where assistance ends and fabrication begins. Commenters mostly argued over art and writing, and the Nikon case, where invented structures appeared in what was presented as real footage, sat at the easy end of that question.
-
----
-
-## AI Submissions for Sat Oct 24 2026 {{ 'date': '2026-10-24T19:31:35.851Z' }}
-
-### GPU-unlock: FP/BF16 instruction issue rate on Nvidia 3000's cards
-
-#### [Submission URL](https://github.com/Zagitta/gpu-unlock) | 324 points | by [fragebogen](https://news.ycombinator.com/user?id=fragebogen) | [74 comments](https://news.ycombinator.com/item?id=50219700)
-
-**A Linux kernel module that lifts the FP/BF16 issue-rate cap on consumer Ampere cards**, so GeForce 3000-series GPUs run tensor math at the rate of their professional equivalents. On a 3090 Ti at 450 W, dense 8192³ GEMM with FP32 accumulation goes from 87.5 to 157.4 TFLOPS in BF16, 87.5 to 118.4 in FP16, and 42.6 to 82.6 in TF32.
-
-It builds on the CMP unlocker's V67/PLM technique and the pre-driver timing of an earlier UEFI approach. The module writes the speed selectors (SS0 `0x88888888`, SS1 `0x8`) and performs a function-level reset before the stock NVIDIA driver binds the card. It is neither a UEFI app nor a patched driver, so you don't re-patch on every driver release. It targets GA102, GA103, GA104 and GA106.
-
-**User reports are the evidence here.** Results are crowd-sourced per card, and the benchmarks differ per report:
-- **Unlocked:** 3090 Ti, 3090 (+25–67%), 3080 10 GB and 20 GB, 3070, and 3060 12 GB (about +80%).
-- **Doesn't work:** one OEM 3080 Ti 20 GB completes the unlock but stays at half BF16 rate.
-- **Untested or no reports:** the 3070 Ti (the unlock worked from a UEFI port on Windows) and GA103.
-
-The lowest gain, +25%, comes from cards capped at 225 W, so the power limit matters.
-
-**Only matrix-heavy work benefits.** LLM prefill gains 14–36%, and diffusion and FlashAttention speed up. Decode is memory-bandwidth-bound and INT8 is unchanged, so both stay flat. Reports that compared outputs found them bit-identical before and after. Multi-card setups (up to four), display-driving cards, and vfio-pci passthrough all have reports.
-
-**Setup:** run `make install`, which detects Arch, Debian/Ubuntu or Fedora/RHEL, builds a package, and puts the module and its firmware into the initramfs. Then add `gpu_unlock.targets=all` to the kernel command line. The build downloads pinned NVIDIA/CachyOS inputs over HTTPS and checks their SHA-256. The distributed source and packages contain no NVIDIA archives or generated firmware.
-
-The catch: this deliberately writes hardware registers that NVIDIA gated off, and the results span a wide range across cards. Test your own card before relying on it, and note that a card driving the display goes blank briefly at boot.
-
-The thread is mostly the author (Zagitta) fielding questions, and it quickly turns into a discussion of which other NVIDIA generations can get the same treatment and what the power and cooling costs are.
-
-**Other generations**
-- **4090 / Ada:** jacquesm, who runs two 48 GB modded 4090s and four Blackwell 4000s, asked for an Ada port. Zagitta said Ada is work in progress and that a community fork (gpu-unlock-ada) already has a working unlock. Jacquesm had worried the fork was pinned to a driver version he can't use, since he runs a heavily modified 590.48.01 for P2P across 8 GPUs. Tiberium said it compiled and worked on a newer driver on a 4070 Ti Super. Zagitta explained that the pin only governs which booter firmware gets extracted, and that the booter is reset before the NVIDIA driver takes over, so versions needn't match. Jacquesm then got it working and reported about a 30% wall-clock reduction, still below full power. An earlier attempt had compiled but shown no improvement.
-- **Blackwell, Hopper, 5090, DGX Spark:** Zagitta said these have a different boot and security chain and are out of scope. Jacquesm doubted that China-modded 5090s are performance unlocks, and thought they were mostly packaging or VRAM mods. He said the rumored 64 GB and 96 GB versions never reached volume. Someone countered that 48 GB 4090s use a stock vbios. Jacquesm's warning on VRAM mods is that when BAR1 is smaller than VRAM (32 GB vs 48 GB), P2P breaks once access runs past the top of the BAR window.
-- **FP8 on the 4090:** modeless asked whether the unlock would also double FP8 rate on a 4090. Nobody answered.
-
-**Power and heat dispute**
-Jacquesm cautioned that real gains need a raised power limit of up to 450 W, which is beyond what stock coolers are designed for. Tiberium pushed back that the unlock works regardless, and he saw 40–50% gains in some workloads at the stock limit. Jacquesm said his seven different 3090s all needed more power to exceed about 25%, and asked for card and cooling details. Zagitta reconciled the two views. The unlock only flips two bits that halve the issue rate of certain instructions. More issue throughput draws more power, so the card drops down its frequency curve to stay within the limit. How much headroom remains depends on the workload and on thermals, which is why water-cooled cards (his two 3090s have run a month without issues) fare better. BoorishBears added that non-reference 3090s with 420–500 W firmware should cope even on air.
-
-**Real-world results and related mods**
-- aunty_helen's team reported 133 tok/s on a 27B model, about 3.2×. The writeup was a Claude artifact link, which SSLy said sits behind a login wall. The 3.2× figure is far above the submission's reported gains, and the thread gave no details.
-- RachelF pointed to aikitoria's open-gpu-kernel-modules, which restores P2P on consumer cards for roughly 20% faster card-to-card transfers. Jacquesm said it stacks with this module, since the two don't interfere and this one loads first.
-- wewewedxfgdf mentioned the NVENC session-limit patch and grumbled about having to unlock hardware you already paid for.
-- Jacquesm described his external multi-GPU rig: an ADT PLX quad backplane, a 1500 W+ PSU, RAM at least equal to VRAM, resizable BAR, and better cables than the bundled ones.
-- SlavikCA asked whether they were missing a setting with their 48 GB 4090s on stock drivers. Jacquesm said they probably aren't using P2P and suggested running p2pbandwidthtest to check.
-
-### Neural chip decodes interactions between brain regions
-
-#### [Submission URL](https://actu.epfl.ch/news/neural-chip-decodes-interactions-between-brain-r-2/) | 134 points | by [giuliomagnifico](https://news.ycombinator.com/user?id=giuliomagnifico) | [47 comments](https://news.ycombinator.com/item?id=50222525)
-
-**A 4x2 mm implantable chip now does cross-region brain synchrony analysis and state classification on-device, in under 200 microwatts.** EPFL's LogSync, from Mahsa Shoaran's lab, targets the gap in closed-loop deep brain stimulation: most adaptive systems read from a single region, while the lab's premise is that psychiatric disorders come from disrupted communication between regions.
-
-The chip records neural activity and extracts two kinds of biomarkers: oscillation strength and synchrony between regions. A machine-learning classifier runs on those to separate cognitive and emotional states, then fires stimulation triggers when it detects a target state. The power savings come from hardware-algorithm co-design and logarithmic computations, which simplify the math behind connectivity analysis. A conference version of the work (VLSI 2025) listed 32 channels at 196 µW.
-
-Validation is real but early:
-- **Human data:** previously recorded psychiatric-study datasets, one on cognitive engagement during a mental task, one on emotional arousal while watching video clips. The algorithm told the states apart from neural recordings alone.
-- **Rats:** at the University of Minnesota, the implant tracked ongoing oscillations and emitted stimulation triggers at predefined phases of brain activity.
-
-The catch is that the human evidence is offline, retrospective recordings, not a patient with the chip implanted. Classifying arousal during video clips is also a long way from detecting a depressive episode. No accuracy figures appear in the press release.
-
-The work is published in IEEE JSSC and funded by a CHF 6.6 million NIMH grant aimed at mood and anxiety disorders. The team also pitches it for adaptive DBS in movement disorders and for closed-loop non-invasive and focused-ultrasound stimulation. In parallel, the lab is moving toward learned representations over hand-picked biomarkers, with an ICML 2026 self-supervised model (RECTOR), and a spin-off, Infera Neuro, is involved.
-
-The thread splits into a few strands: personal experience with the technology, a skeptical read of the paper's numbers, and a long tangent on ADHD and meditation.
-
-**The only first-hand account of closed-loop implants came from a NeuroPace RNS user.** AbstractH24 pointed out that much of this already exists and has been in their skull for four years. A former member of the RNS research team asked how it had worked. The answer was mixed:
-- It captured far more detailed data on brain function and medication effects than anything else could.
-- It reduced the severity of their infrequent clinical seizures.
-- It did not get them off medication, and it did not prevent them from needing a strong anti-seizure drug (Xcopri).
-- Its main value turned out to be diagnostic. Their doctor could see subclinical seizure-like activity stop during titration and adjust other meds precisely, so the data mattered more than the stimulation itself.
-
-Their conclusion was that implants are powerful for collecting data, while their ability to reliably alter brain function is "questionable." That sits awkwardly with the closed-loop-stimulation pitch.
-
-**D-Machine questioned the headline performance numbers.** They quoted the paper's figures: sensitivity of roughly 71–81% and specificity of roughly 66–74% across the iEEG and DEAP tasks. They said it is impossible to judge these without the base rates and without comparisons to other classifiers. A simple verbal probe of the subject might predict the state better than the EEG does. They also doubted that a single chip beats full EEG headgear for richness of information. They suggested it would make sense mainly where the dysfunction is known to be confined to specific regions.
-
-**The ADHD, meditation and dopamine tangent** was the largest thread:
-- ghm2180 described ADHD as genes expressed under environmental conditions, said meditation and naps change their brain waves, and hoped closed-loop systems could detect "bad waves" and deliver corrective ones.
-- aatd86 claimed all mental illnesses stem from dopaminergic changes, likely at the nucleus accumbens. monkpit challenged the "from experience" framing, and aatd86 conceded they had only experienced an undiagnosed condition.
-- thelaxiankey added that ADHD isn't considered a categorical disease, but "a disease of excess."
-- Others swapped meditation methods: breath focus, a countdown-visualization trick for sleep, and one person who found the calm state merely boring. A reply asked whether boredom is the point.
-
-**Smaller threads:**
-- **Cognitive states:** hoppp wanted a list of human cognitive states. asgraham doubted any agreed list exists, let alone one backed by neural recordings. rhodey offered Plutchik's wheel, but hoppp noted those are emotions, not cognitive states. D-Machine began arguing that the emotion/cognition distinction breaks down because mental states involve both.
-- **Reductionism:** blurbleblurble welcomed the inter-region-communication premise as a sign of reductionism failing.
-- **Fiction and cynicism:** layer8 pointed to Greg Egan's story in *Axiomatic* as the "end game." One joke predicted the tech would end up in cookie banners.
-
-### Why is AI generated language so hard to understand?
-
-#### [Submission URL](https://arxiv.org/abs/2610.29162) | 235 points | by [canjobear](https://news.ycombinator.com/user?id=canjobear) | [191 comments](https://news.ycombinator.com/item?id=50223647)
-
-**Frontier LLMs write with the syntactic habits that slow human readers down, and the authors blame training pressure for density over clarity.** Across a new multi-domain corpus, all nine frontier and near-frontier models used more inanimate subjects with animate verbs and more low-frequency n-grams than human writers. Most also produced longer dependencies, more stacked nouns, and more reduced object relatives in conversation.
-
-The features come from psycholinguistics, where they are known to correlate with processing difficulty. The models also beat round-trip-translation paraphrases on these markers, so the difficulty isn't just a side effect of rewording. Model families differ substantially, which means "AI prose" isn't one monolithic style.
-
-The proposed cause is that human language is shaped by the need to be understood, while post-training increasingly optimizes for math, code, and reasoning, where compressing information is rewarded. As a proof of concept, the authors fine-tuned a language model under a length penalty and saw it drift away from human-like linguistic behavior.
-
-The causal evidence is thin. A single small fine-tuning experiment shows density pressure *can* produce this drift, not that it's what happened inside the production models. The abstract also reports feature frequencies rather than direct reader-comprehension results, so "harder to understand" rests on the known psycholinguistic correlates. It does give labs a measurable target: these features could be tracked or penalized during training.
-
-Authors: Clark, Martin, Mahowald.
-
-The thread starts from the study's claim but quickly becomes a debate about what "good writing" means, and whether rule-following tools make prose better or worse.
-
-**Why models write this way.** Technical writer dividefuel guesses that RLHF rewarded raters' first impressions: lists, headings, punchy phrases and length are easy to spot and prefer, but they say little about whether the text helps its audience. Taek gave a parallel from Gmail's writing suggestions, which averaged about 1.3 per sentence and were almost all bad. He compared them to a style textbook applied clause by clause, with no sense of pacing, emphasis or emotion. He thinks frontier-model fine-tuning has the same flaw: rewards for conciseness and no filler, with no counterweight for how the whole piece flows. Tanoc went further and argued that readers don't absorb text linearly, while LLMs organize and translate linearly (A to B to C). He thinks that is what makes their prose feel strange.
-
-**The "their Google" sidetrack.** Taek's examples set off the thread's longest argument.
-- **Prescriptive camp:** Izmaki, who learned English as a second language, was taught never to use "their" for a corporation. He saw the tool's corrections as accurate, and said they simply clash with everyday usage.
-- **Descriptive camp:** SwellJoe argued that expressing intent matters most, and that hard-to-read English is never "correct" however grammatical. Sharlin and CalRobert pointed to British usage ("Nike have announced…", "The Parliament have…"). Borealid framed "Google" as a metonym for its staff. Bluefirebrand noted that a corporation is just a group of people.
-- **North American counterpoint:** silverFork cited a Canadian government style guide that calls for a singular verb when a group acts as a unit. Sharlin replied that even that guide allows plural agreement when members act individually, so no single rule is universal. silverFork conceded that British usage differs ("The army are advancing").
-- **Unresolved:** Izmaki asked whether the goal is correctness or comprehension. He prefers precise sentences that need no social context to decode. SwellJoe answered that his ambiguous friend's problem was failed intent, not failed grammar, and that perfect grammar can mislead just as easily.
-
-Taek's closing point was that his "their" was a deliberate choice of voice, and an editor that "fixes" it erases the personality. He argued that this is also why LLM prose reads as it does: it follows the rules without the messiness that carries meaning.
-
-**Minor thread.** ValentineC and tstrimple compared this to Word's grammar squiggles in the 1990s. The two disagreed over whether anything has changed. Bravetraveler's brief reply was that scale and investment are different now.
-
-### Making My Blog Readable by AI Agents
-
-#### [Submission URL](https://deallocatedobjects.com/posts/making-my-blog-readable-by-ai-agents) | 33 points | by [ingve](https://news.ycombinator.com/user?id=ingve) | [8 comments](https://news.ycombinator.com/item?id=50225443)
-
-**A static nginx blog can serve markdown to agents with one `map` and a rewrite**, no framework needed. Send `Accept: text/markdown` to any post URL (or append `.md`) and you get the post as plain markdown with YAML frontmatter (title, canonical URL, author, dates, description) instead of HTML.
-
-The negotiation hinges on two details. Every response carries `Vary: Accept`, so intermediate caches don't serve HTML to an agent or markdown to a browser. The `.md` responses also send a `rel="canonical"` Link header to the HTML page plus `X-Robots-Tag: noindex`, so Google doesn't treat them as duplicate content.
-
-The rest of the evening's work is mostly generated files:
-
-- **`/llms.txt`**: blog summary, how to get markdown, feed locations, citation preference, and every post with a markdown link and one-liner. A Link header on every response points to it. `/llms-full.txt` bundles all posts into one ~225 KB file, and `/index.md` is the homepage.
-- **`robots.txt`**: explicitly allows GPTBot, ClaudeBot, PerplexityBot, Google-Extended and about a dozen others, with `Content-Signal: search=yes, ai-input=yes, ai-train=yes`. The author wants citations; a product site might not.
-- **Feeds**: the Atom feed gains summaries and a markdown alternate link, and a new JSON Feed uses a custom `_markdown_url` key per item.
-- **Metadata**: descriptions, canonicals, Open Graph/Twitter tags, and JSON-LD (BlogPosting, breadcrumbs, WebSite/Blog/Person) on every page.
-- **IndexNow**: a ~30-line script pings Bing on publish. Google doesn't participate, but Bing's index feeds several AI search tools.
-
-The cleanup of 2014-era problems is the most reusable part. Stored descriptions had paragraphs mashed together ("…your app.The RevealWhat do I mean…") and some contained raw `<img>` tags, so summaries are now built from rendered text. `maximum-scale=1` was blocking pinch-zoom and is gone. With no `og:image`, X and Threads grabbed the first image on the page, an old banner, so each post now has a 1200x630 card.
-
-The pitch is that none of it is hard. The post itself is fetchable as markdown with the same curl trick.
-
-The thread's main argument is that the whole exercise may be aimed at readers who aren't there. The top comment cites two log-analysis studies. One found no sign that GPTBot, ClaudeBot or similar crawlers request or prioritize `.md` content, even when it's listed in `llms.txt`. The other covered 50 sites over 200+ days and logged zero `/llms.txt` requests from any major AI user-agent. A later commenter pointed to a third experiment where no bot touched the file in three months.
-
-Anecdotal evidence pushed back only weakly:
-- One user said their agent tool (oh-my-pi) once read a site's `llms.txt` during research.
-- Another gets the odd attempt on a personal site, but mostly bots just fetch `robots.txt`.
-
-Nobody offered data showing real adoption. The open question is whether `Accept: text/markdown` negotiation works better than `llms.txt`, since it serves interactive agent fetches rather than crawlers. The thread didn't test that.
-
-Two other points came up:
-- **robots.txt gotcha:** Groups don't merge. If you give GPTBot or another named bot its own group, it stops obeying `User-agent: *`, so every disallow line has to be repeated in each named group.
-- **Ethical objection:** One commenter asked why you'd help AI companies take your writing for free. A reply argued that a human is usually still on the other end of Claude or ChatGPT, trying to solve a problem or learn something, so serving them isn't just feeding a scraper. The author's stated goal of getting citations was not weighed directly.
-
-One commenter also dropped a bare link to agents.md, with no discussion.
-
-### Oai-math-revised: a community hub for revising OpenAI's math write-ups
-
-#### [Submission URL](https://terrytao.wordpress.com/2026/10/24/oai-math-revised-a-community-hub-for-revising-openais-math-write-ups/) | 50 points | by [tokepi](https://news.ycombinator.com/user?id=tokepi) | [41 comments](https://news.ycombinator.com/item?id=50222283)
-
-**Mathematicians are organizing to rewrite OpenAI's math write-ups themselves**, on the grounds that the originals in the openai/math repo are hard to follow and have incomplete citations. The post is a guest piece by Abhinav Nellore, Johannes Schmitt, Soledad Villar, and Rachel Ward, hosted on Terence Tao's blog.
-
-The project is a community repo, mathcommunity/oai-math-revised, with a browsable site. It is open to students, postdocs, professors, and enthusiasts. The contribution model is editorial: fix the exposition and fill in the references. It doesn't re-prove anything.
-
-They are also recruiting admins and reviewers. Volunteers email mathcommunityadmin@gmail.com and name the categories from OpenAI's overview.pdf they could review. That suggests a review process organized by subfield, though the post doesn't describe how review will work.
-
-The post is a short announcement. It doesn't say which write-ups are the worst, how many exist, or what OpenAI's role is, if any. Tao's recent-comments sidebar shows a lot of discussion under the post, but the excerpt doesn't include it.
-
-The thread splits mostly over whether mathematicians should be doing this cleanup at all, with a smaller, more technical side discussion about whether the results hold up.
-
-**"Free labor" camp.** The loudest framing is that this is unpaid work subsidizing OpenAI.
-- Commenters call it unpaid internships for PhD students, or "the soft power version" of an OpenAI repo.
-- program_whiz argues the community should ignore the write-ups until OpenAI meets publication standards. A human who submitted this "unreadable detritus" would be laughed away, and the revisions will just train models to displace mathematicians.
-- lukax and others make the same training-data point. thatsabadlook says the corrected proofs are data OpenAI should pay tens of millions for.
-- reasonableklout offers the dumping analogy: OpenAI left the mess and the community cleans it up. howunfortunate softens it: the "crates" are valuable, but sorting them takes expert work.
-
-**Pushback.**
-- sebzim4500 asks how this benefits OpenAI, since they already got the headlines. He also argues that cleaned-up papers are no better training data than random math papers, and sketches a synthetic pipeline (formalize or summarize real papers, regenerate them, compare) that would work without any volunteers.
-- curt15 notes the announcement doesn't say OpenAI tools are involved, and that recent events favor open-weight local models.
-- simianwords and schiffern say the real complaint is that OpenAI hasn't replaced mathematicians, and that no one is forced to read this material.
-
-**Philosophical objection.** bemtevi says he would never take part, because math is a "human only" shared practice of understanding and not just a source of results. _vertigo asks why clarifying results would be contemptible under that definition. coderenegade adds that pure math is a game of defined rules, not about understanding the world.
-
-A spin-off argument over "positive for the world" followed. greyw said people left behind by technology shouldn't be coddled with false reassurance, and reasonableklout replied that society should instead build for people not to be discarded.
-
-**Substance of the results.**
-- dreijs asked whether the proofs hold up. QuesnayJr said the two big number theory results (Quasi-Riemann and no Landau-Siegel zeros) are considered solved. He cited a Quanta article reporting expert agreement on the first, and said the second already has several expository manuscripts.
-- sdenton4 proposed a "Verified-but-Unproven" status for results that are formally verified but lack a coherent human proof. bemtevi doubted that complicated proofs typically get simplified quickly. jerf cited the four-color theorem, which is still essentially computer-checked case grinding with no real insight.
-
-There was also some joking about mathematicians digging their own graves and a Trisolarian-involvement quip.
-
-### No signs of AI payoff outside the tech sector
-
-#### [Submission URL](https://www.apollo.com/wealth/insights-news/insights/daily-spark/no-signs-of-ai-payoff-outside-the-tech-sector) | 597 points | by [the-mitr](https://news.ycombinator.com/user?id=the-mitr) | [639 comments](https://news.ycombinator.com/item?id=50224463)
-
-**Revenue per worker and profit margins are rising for the Mag 7 but flat for the other 493 companies in the S&P**, according to Apollo chief economist Torsten Slok, who reads that as zero financial payoff from AI outside tech. His third chart adds that AI isn't showing up in productivity growth either, using the San Francisco Fed's utilization-adjusted TFP series.
-
-The behavioral claim is the interesting part. With no bottom-line effect, he argues, mainstream companies are starting to treat token spend as a margin-eroding cost center rather than a growth investment. VC-backed firms keep spending more on tokens, but mainstream corporate America "does not need the latest model and is unwilling to pay for it." Two charts built on Ramp data (including its AI Index) support the spending picture. As long as agentic AI stays confined to a small slice of the economy, he says, the macro effect stays small.
-
-His forward-looking question is whether cheaper, commoditized models can lift revenue and margins at ordinary companies. He's skeptical. Business intelligence is mostly judgment, he writes, and AI doesn't grasp accountability, trust, culture, unwritten rules, or fairness, which drive reputational risk and ultimately revenue.
-
-The caveat is that this is a short note built on five charts, not a study. Mag 7 versus S&P 493 is a blunt split, and it can't isolate AI's effect from everything else moving those margins. The "judgment" argument is also asserted rather than demonstrated. Still, it's a clean statement of the bear case: the AI trade gets decided in the 493, and so far that evidence isn't there.
-
-The thread mostly circles one question: is AI's absence from the 493 a matter of timing, or a limit on where LLMs work?
-
-**Camp 1: it's a lag.** secabeen's electrification analogy opens the thread. A water-powered mill couldn't just swap in an electric motor; the benefits came only after buildings were redesigned around the new technology. On this view the gains will come from new companies and factories built around AI, not from retrofits. pj_mukh makes a similar argument: incumbents outside tech would need total reorganization, so upstarts will likely be what changes things. rwyinuse adds that the main adoption bottleneck is context scattered across systems or living only in people's heads.
-
-**Camp 2: it's structural.** Zigurd counters that software may simply be uniquely suited to LLMs, because decades of tooling (compilers, linters, static analysis, leak detectors, profilers) happen to catch agent errors. eslaught sharpens this into verifiability as the key variable. Code, formal math, and games all give a checkable result, while claims about non-verifiable domains are "guessing." Some non-mechanized LLM math results have already been shown wrong.
-
-**Challenges to the verifiability story:**
-- dwattttt and fuzzzerd note that agents often take the easy way out. They suppress errors, edit tests, and write code that turns tests green through odd side effects.
-- otterley replies that verification is becoming the job, with people building verifiers of AI output. dwattttt doesn't see incentives around testing changing.
-- david_shi expects fault-tolerant setups, such as several independent agents that must agree, to extend LLMs into non-verifiable domains. He concedes it's early.
-
-**What white-collar work actually is.** bunderbunder argues that much of it is talking and preparing to talk, which LLMs handle poorly. Others say LLMs help with brainstorming, analysis, and information gathering. bunderbunder and alfjal report the downside from an early-adopter company: wasted effort on unprofitable projects, uncreative ideas steering people away from domain expertise, and meeting summaries that misrepresented what mattered. epihelix replies that LLMs are better used to attack your own ideas than to generate them.
-
-**Skill and differentiation.**
-- If everyone uses the same models, where does differentiation come from? Replies: the enormous problem space (Aerroon), prompting (spunker540), or domain knowledge that lets you verify output quickly (triceratops, who notes the human may then become the bottleneck).
-- bunderbunder argues the skills built in a worker's first few years (domain models, cultural context) rely on learning capabilities LLMs lack. He expects new technology, not just scale, to be needed.
-- A side fight erupted over unreviewed AI code. One commenter at big tech says humans are out of the loop and that it's fine if done right, and vips7L calls that irresponsible. Others trade "you're holding it wrong" against "no true Scotsman."
-
-A few commenters predicted an eventual implosion, comparing it to 2008, but offered no evidence.
-
-### AI-Assisted Paper on Z-Library Cites a TorrentFreak Article That Doesn't Exist
-
-#### [Submission URL](https://torrentfreak.com/ai-assisted-paper-on-z-library-cites-a-torrentfreak-article-that-doesnt-exist/) | 97 points | by [TangerineDream](https://news.ycombinator.com/user?id=TangerineDream) | [61 comments](https://news.ycombinator.com/item?id=50220204)
-
-**At least 10 of the 44 references in a peer-reviewed Z-Library paper can't be found**, and the first one TorrentFreak noticed was a 2021 article it never published ("Publishers continue crackdown on shadow libraries"), linked only to its homepage. The paper, by two librarians at Nigerian universities, appeared in *New Review of Academic Librarianship* (Taylor & Francis).
-
-The fakes are plausible by design: real journals, real scholars, fitting topics.
-
-- A 2019 Harvard Journal of Law & Technology piece attributed to Daniel Gervais isn't in the cited issue; those pages hold two unrelated articles.
-- A 2019 College & Research Libraries article credited to Carol Tenopir isn't in its cited issue either. She did co-write a similar 2019 paper, but in a different journal under a different title.
-- Other items attributed to Brembs, Smith, Piper, Okike and Aronson, plus a Kaspersky report on "the hidden dangers of shadow libraries," also couldn't be located.
-- The paper says the DOJ "arrested individuals" in 2022 but omits that the arrests happened in Argentina at US request, and the title it gives for the DOJ press release doesn't exist.
-
-The acknowledgements disclose that Consensus AI was used to sift literature and ChatGPT to polish the language. That fits hallucinated citations but doesn't prove it. Pangram flagged the abstract and conclusion as "100% … likely AI-generated," a detector TorrentFreak itself concedes can produce false positives.
-
-The lead author shared the paper, then went silent on follow-up questions, as did Gervais, Brembs and Tenopir. Taylor & Francis confirmed a referral to its ethics and integrity teams and won't comment during the investigation, so correction or retraction is open.
-
-The irony is thick: a paper warning that Z-Library undermines the peer review that publishers fund apparently slipped through that same process with fabricated sources, while rightsholders sue AI firms over training on shadow libraries.
-
-The thread splits into a long argument about poisoning AI scrapers, which started as a joke, and a shorter argument about how much blame the authors and the academic system deserve.
-
-**The poisoning debate.** It began when gertrunde wondered what would happen if TorrentFreak published a matching article seeded with content meant to mess with the paper. trollbridge said their own site already serves bogus content and misinformation to misconfigured scrapers, first via Markov chains and now via agent-generated pointless sites. They say it's justified because the site's robots.txt already excludes scrapers and the traffic is still heavy, sometimes a solid Gbit.
-
-- **Poisoners are partly culpable.** rationalist and speff argued that LLM companies failing to vet data doesn't clear whoever plants the falsehoods. Their example was bleach-and-ammonia "asthma cures" ending up in chatbot answers.
-- **It's the AI companies' problem.** griffzhowl, jrm4, jazzyjackson, duskdozer and krapp's camp said the responsibility lies entirely with whoever serves the output. jazzyjackson pointed out that lying on the internet isn't illegal and that no AI company vouches for its answers.
-- **The legal argument.** xvector said deliberate poisoning is illegal sabotage, especially as models enter medicine and defense. ofjcihen and maddie0 called that a bad legal take and asked which law applies. rationalist and jazzyjackson compared it to defacing Wikipedia, and jrm4 noted that nobody knows until a court rules.
-- **Self-defense.** asanineassasin and hilariously framed poisoning as legitimate resistance, and daveguy argued it would only hasten the public's recognition that LLM output can't be trusted.
-
-**The authors and the system.**
-- bartleeanderson said using AI assistance is fine, but giving up responsibility for checking the output is not.
-- wildzzz said the authors were publishing to get a position at a western university and called them a "third world" PhD. asaddhamani objected to the country framing and noted that western researchers also publish AI-generated work. Viliam1234 compared it to Nigerian scams, a point that drew no further pushback.
-- kome and bombcar said academic publishing was already a clown car, with papers written for nobody to read, and that AI just makes that visible. VCFundedGenYer countered that citations are mandatory and that this doesn't excuse sloppiness.
-
-**Detecting bad citations.**
-- yuan-nvwa said fabricated reference lists are "too convenient." Real literature is lumpy, with partial support, contradictions and gaps, while a fake list supports every sentence at the same strength. Since a plausible-looking citation proves nothing, the check has to be mechanical.
-- henry0213, who runs an AI-assisted publication, added that citation checks miss a real source cited for something it doesn't say. A court ruling they cited turned out, per footnote 7, to be distinguishing itself from the case they set it against. Their fix is to cite primary records only, never summaries. wildzzz agreed that AI summaries can miss the critical points.
-
-pyrophane's question about how much hallucination has improved in recent years went unanswered.
