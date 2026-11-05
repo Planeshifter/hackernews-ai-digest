@@ -10,6 +10,630 @@ export async function getStaticProps() {
 
 ---
 
+## AI Submissions for Mon Nov 02 2026 {{ 'date': '2026-11-02T22:19:02.519Z' }}
+
+### Fujifilm to boost tape production 5x as AI fuels archiving demand
+
+#### [Submission URL](https://arstechnica.com/gadgets/2026/10/fujifilm-to-boost-tape-production-5x-as-ai-fuels-archiving-demand/) | 331 points | by [bookofjoe](https://news.ycombinator.com/user?id=bookofjoe) | [136 comments](https://news.ycombinator.com/item?id=50336918)
+
+**Fujifilm is putting roughly 10 billion yen (about $63 million) into a fivefold increase in LTO tape production capacity**, measured against fiscal 2025 levels. It calls this its largest investment to date in dedicated LTO facilities.
+
+The money goes to the Odawara site of its Kanagawa Factory and runs fiscal 2026 through 2028. It covers manufacturing expansion and additional staff, mainly to build **LTO Ultrium10**, the current-generation cartridge. Fujifilm debuted Ultrium10 in 2025 as the first tape to combine barium ferrite with strontium ferrite particles, which it calls "fine hybrid magnetic particles."
+
+Fujifilm's stated reason is generative AI, which it says is driving "exponential growth" in data needs. It says major cloud and data center operators are leaning harder on tape because it stores large volumes cheaply. The second selling point is security: a cartridge can sit in a drawer or vault, physically air-gapped, as a last line of defense against ransomware.
+
+This is Fujifilm's own framing, and the announcement offers no demand figures or customer names to back the AI link. The 5x number is also capacity, not sales. Still, a $63M bet spread over three years is a sign the company expects the archive tier to keep growing, and the LTO consortium's roadmap already projects capacities through Gen 14.
+
+The thread is mostly practitioners trading tape-ops war stories. The central argument is whether tape is reliable in practice or only on paper.
+
+**The cautionary camp.** The top comment, from someone with long hands-on experience, says never trust the write-time "verified" message. Restore the data for real. They say tapes can pass verification and then fail to read, and drives can even fail to read tapes they wrote themselves. Their rule is to never write just one copy. Their examples:
+- A DVD-replication workflow always sent two tapes.
+- A facility wrote three tapes at once on different drives: one on site, one at Iron Mountain, one to the client. The local copy was sometimes the unreadable one.
+
+Other advice in the thread:
+- Use cleaning cartridges.
+- Document which archiver wrote the tape, since tar and GUI tools aren't interchangeable.
+- Avoid vendor-specific compression and encryption.
+- Keep an index (tar has none at the start of the tape).
+- Make sure encrypted data survives mid-stream corruption.
+
+**The "never had a problem" camp.** One commenter used about 1,000 tapes over 15 years across LTO, DAT, DDS and 9-track with zero failures. They credited a climate-controlled data center (25C, 50% humidity), regular tape rotation and serviced drives, and contrasted it with monthly RAID failures. Another had a litigation-restore workflow that pulled Iron Mountain LTO tapes in batches of 24 and saw no visible failures, though they never reused tapes. Others countered that their own volumes were orders of magnitude larger and showed plenty of errors. Replies suggested the gap comes from scale, environment, media quality and drive maintenance. One person argued that failures scale superlinearly because tape physically moves.
+
+**Technical points:**
+- **Read-after-write:** A commenter asked why drives don't verify with a trailing read head. Replies pointed out that LTO already does this, with a read element behind each write element that rewrites bad data automatically. Another commenter noted a gap: a misaligned drive can write and read consistently with itself but produce a tape that other drives can't read. That would explain the "verified but unreadable" cases.
+- **Firmware, not media:** One former backup-software developer said unreliability usually came from drive firmware or drivers, not the tape. One drive wrote random runs of zeros after every N megabytes.
+- **Cloud providers:** They spread data across many tapes with erasure coding. Their robotic libraries have built-in verification, and deletion compliance forces them to test reads often. Another commenter noted that crypto-erasure (deleting the key) avoids rewriting tapes at all.
+
+**Cost and access:**
+- One user recommends rustic with S3 Glacier Deep Archive at about $1/TB/month, as a secondary backup. Replies asked how you validate a backup you never restore, and another called that price expensive once you do the math.
+- Someone asked why there's no prosumer tape drive. The reply, cut off in the thread, points toward used older-generation drives.
+- Iron Mountain came up both as a vault that once "misplaced" tapes and as a vendor people want alternatives to.
+- Backup software drew complaints: Symantec Backup Exec was called one of the worst programs a commenter had used, and IBM's archive software was said to be better but still bad.
+
+### Launch HN: Momentic (YC W24) – Agents that catch bugs by using your app
+
+#### [Submission URL](https://momentic.ai/) | 158 points | by [wuweiweiwu](https://news.ycombinator.com/user?id=wuweiweiwu) | [125 comments](https://news.ycombinator.com/item?id=50339913)
+
+**Mo, Momentic's exploratory QA agent, found 269 real bugs in a 60-minute run, versus 86 for Codex, 59 for Claude Code and 27 for Devin**, on a benchmark of 1,396 human-labeled bugs across Gitea, Metabase, Twenty and Saleor. The benchmark is the company's own, so weigh it accordingly.
+
+The tradeoffs are laid out candidly in the post:
+- **Recall:** Mo 19.3%, Codex 6.2%, Claude Code 4.2%, Devin 1.9%.
+- **Precision:** Codex is slightly ahead at 86% vs. Mo's 84%. Claude Code is at 80%, Devin at 84%.
+- **Cost per bug:** Mo $2.67, Codex $0.80, Claude Code $4.09, Devin $3.89. Codex is more than 3x cheaper per bug if you only want the easy catches.
+- **Scaling with time:** from 30 to 60 minutes Mo went from 177 to 269 bugs (+52%), while Codex gained 16%.
+
+Mo is a custom harness, not a wrapper around Playwright scripts. It builds a DAG as it explores and forks large product areas into parallel sub-agents, each with its own browser or device. Planner agents reason over screenshots and video, and separate locator agents resolve plain-English targets. Parallel agents avoid stepping on each other through cooperative resource leases: many "using" claims can coexist, but only one "modifying" claim per resource. A tunnel exposes private or local apps to the hosted agents, and a single bug bash can spin up hundreds of concurrent browsers and devices.
+
+The founders' thesis is that scripted E2E tests (hardcoded XPath, text, aria attributes) are the wrong primitive once coding agents write most of the code, and that LLMs checking their own work reinforce their own assumptions. They cite DeepSWE v1.1, where a model scored 66.2% when banned from writing tests versus 65.3% when allowed.
+
+The classic product is still there too. Tests are plain-English YAML kept in your repo, with a CLI whose exit code can gate CI, auto-heal that proposes reviewable test diffs, AI failure triage, and MCP hooks so a coding agent can author and verify tests. The site claims 117,010 bugs caught and 70.6M test runs. Targets are web, iOS and Android, with desktop coming.
+
+Newly shipped is PR testing for Vercel and Cloudflare deploy previews. New signups get $250 in Mo spend. The dataset and harness are public on Hugging Face and GitHub, so the numbers can be checked. Caveat: the judge was an LLM (with a human reviewer), and even Mo's best run recalled under a fifth of the labeled bugs.
+
+The thread is a Launch HN-style Q&A with the Momentic engineers (Gabe, Henry) answering skeptics. The recurring question is why a paid harness beats a DIY agent setup, and the answers are mostly "recall, and tooling built over two years."
+
+**"Why not just run Claude Code/Opus with Playwright?"** This was the most direct challenge. Gabe's answer was that Mo finds roughly 5x as many bugs as Claude Code at about 35% less per bug over 60 minutes. Commenters pushed on the baseline:
+- rheisen_ called stock Claude Code "the lowest of bars." Gabe conceded stock CC was weak and said they also ran CC and Codex with agent-browser and Playwright MCP, are now running browser-use, and host results at their qa-bench page.
+- rheisen_ said all of these are naive. They script deterministic screenshot and app-state pipelines and run them through a cheap model with questionnaires, escalating to stronger models rarely. Henry replied that this resembles Momentic's existing "AI check" for known flows, and that Mo adds discovery of unscripted flows. It will eventually propose durable tests, which would cut cost.
+- On the bitter lesson (what if models keep improving?), Gabe said the harness and e2e tests complement frontier models, and that better models mainly improve efficiency and reduce repeated exploration.
+
+**What counts as a useful result.** Several commenters questioned whether raw bug count is the right metric:
+- haukebri, who drives browsers professionally, said trust in a red result matters more than volume. Agent-written assertions drift toward stable but meaningless checks like copy or element existence, and one noisy finding per run makes people stop reading reports. They score tools by planting known defects in a staging copy, running 5-6 times, and counting false alarms per run. They asked how Mo dedupes the same defect found via different flows and whether a false-alarm-per-run figure exists. There was no answer in the thread.
+- StilesCrisis said that in many codebases "fix every bug" is infeasible and finding serious bugs is the goal. Henry agreed, pointing to the benchmark's severity-weighted score and saying annotating every bug is nearly impossible. He said a v2 benchmark could improve on this.
+- ryanschaffersoc raised a different gap: verifying the app matches the original requirements and acceptance criteria, since agents quietly simplify specs. This went unanswered in the thread beyond a reference to Mo's spec and PR-review modes.
+
+**Benchmark credibility and competition.**
+- pranshuchittora (Vostride, which makes the open-source agent-qa) argued that self-made benchmarks aren't enough and asked for neutral ones. Henry welcomed running public benchmarks, but countered that Vostride's product depends on pre-written test cases and is closer to Momentic's regression tests than to Mo.
+- beavisringdin said they'd prefer open source they can attach to their own harness, and asked what Momentic had done for two years. Henry said Mo is the second product, built on the e2e framework and tuning from those years. Real-device support is due in a couple of weeks, which beavisringdin said would be the real draw, especially for Expo/React Native.
+- embedding-shape asked how plain-English tests differ from Cucumber/Gherkin, which promised the same thing and fizzled. No answer is visible.
+- khasan222 said Playwright aria snapshots work better than screenshots for them, and asked whether Mo uses them for exploration.
+
+**Messaging confusion.** podoman and bigmadshoe found the writeup's cost-versus-recall framing confusing. Mo costs more per bug than Codex but less than Claude Code and Devin. Henry restated that the pitch is 3x more correct bugs than the next-best agent, paid for with higher cost. mlcruz suggested the writeup better explain why recall matters; Henry said they'd revise it.
+
+### Astra can read and write weights to improve Qwen
+
+#### [Submission URL](https://rikiyat.github.io/blog/weight-space-programming/) | 2917 points | by [dbreunig](https://news.ycombinator.com/user?id=dbreunig) | [879 comments](https://news.ycombinator.com/item?id=50341174)
+
+**An LLM edited 0.016% of Qwen3.5-0.8B's weights directly, with no gradients and no training loop, and MATH-500 went from 7.9% to 48.1%.** The MIT CSAIL authors (Takehi, Teoh, Zhang, Khattab) call this "Weight-Space Programming." Their model, GPT-6 Astra, reads raw weights, diagnoses a problem, and rewrites the parameters itself.
+
+In the Qwen case, Astra found a weight issue behind the reasoning loops that Qwen's own model card warns about, and fixed it in a Python kernel. Sampling settings stayed the same. The edit also carried over to instruction following, where IFEval rose 3x. Both numbers come from a single 0.8B model, and the post presents them as "very early results."
+
+The smaller experiments are where the claim gets tested more directly:
+
+- **Reading:** given 17,253 raw weights and no list of candidate games, Astra named the right game for all four PPO-trained networks (Breakout at 99% confidence). The networks shared input channels, action sets, and dimensions, so only the weights could give the answer away. Other experiments ask what a diffusion model draws, which language a small LM was trained on, and which of two LMs was trained to be sycophantic.
+- **Fixing:** a control policy that never got the car over the strip went from 0% to 100% success after Astra edited 3.5% of its weights in one shot.
+- **Writing:** with no environment feedback, Astra wrote small MinAtar game-playing networks from scratch that beat PPO baselines trained for 100M steps. There is also a Go experiment, though the excerpt cuts off before its results.
+
+The authors' broader pitch is that LLM-driven optimization, already used for prompts, harnesses, and training code, now reaches differentiable weights too. They argue it could eventually displace hand-built optimizers like Adam and Muon, and that it could matter for interpretability.
+
+The excerpt doesn't show how robust the edits are across other models, or how much of Astra's success depends on model-card hints like the reasoning-loop warning. A jump from 7.9% to 48.1% on MATH-500 suggests the base model was badly broken at those sampling settings, so the result may reflect repairing a defect more than adding capability.
+
+The thread splits between a skeptic with domain expertise and people who say the skeptic is missing what is notable. The skeptical side got the most support.
+
+**The deflationary case (yurimo, stymaar, others):**
+- yurimo works in weight-space learning and says the blog post overstates the results. Weight editing and weight identification already exist, with ROME (2023) as the example.
+- Many experiments use tiny models of around 20K parameters, where editing by hand is feasible. The Qwen fix looks like a steering vector. The one attempt to improve math capability reportedly didn't work.
+- stymaar says Astra does what a competent ML practitioner would do: read the interpretable parts, or use directional ablation, the same technique used to decensor models.
+- YeGoblynQueenne adds that the Gemma 3 270M experiment failed because that model doesn't loop. In their view that is direct evidence a model can't weight-train new capabilities into another model, so the work is not recursive self-improvement (RSI).
+- yurimo's reading is that this mostly shows OpenAI trained on mechinterp environments, maybe even on open weight-space datasets. They also doubt naive edits will scale to large overparametrized models. They point to current auto-interp work, which gives models better tools to understand parameter geometry instead of editing blindly.
+- chemicalnovae answered pyrale's MoE question by pointing out that even the active experts are far larger than the 20K toy.
+
+**The pushback:**
+- youareundersell says the point is that an LLM reasons over a raw dump of opaque weights and hand-wires changes quickly. They clarified that "alien" means beyond human speed and volume, not magic, and they compared it to computers doing arithmetic.
+- red75prime says skepticism can overshoot into dismissiveness. A model that has internalized mechinterp research is expected, just as internalizing math research was.
+- 10xDev says what matters is scalability and autonomy, and that this could matter for continual learning.
+- kenjackson sees the paper as an opening salvo, not a statement of its limits. They also doubt the Schmidhuber comparison fits.
+
+**Other threads:**
+- **Why it got upvoted:** bottlepalm and hollowonepl say people are reacting to the idea that this is possible at all. chrsw suspects some of the votes come from anxiety about closed Western labs pulling ahead.
+- **Possible leakage:** pyrale wonders whether Astra's skill comes from internal use at OpenAI. If so, asking it to edit your model might be a cheap way to extract that knowledge, like distillation.
+- **Tooling:** hashmap argues the real gap is legible, interactive editing tools for humans, since even the best models are still unreliable at discernment.
+- **Hype correction:** pera linked a separate submission that visualizes the examples. stymaar and frays said it was better than the paper's coverage, and frays said they would now share that instead.
+- **Self-improvement:** yurimo's research pursues weight-space edits as a path to self-improvement and points to hypernetworks (Google Brain, 2016) as prior art. TonyStr asked whether superposition is what makes models rigid, but the comment is cut off.
+
+The unresolved crux is scale. It is unclear whether the "edit weights by reasoning" approach survives beyond tiny or defect-specific cases.
+
+### LLMs are not superhuman at reading and writing neural network weights
+
+#### [Submission URL](https://www.seangoedecke.com/llms-are-not-superhuman-at-reading-and-writing-neural-network-weights/) | 136 points | by [agrm](https://news.ycombinator.com/user?id=agrm) | [22 comments](https://news.ycombinator.com/item?id=50344861)
+
+**Sean Goedecke's thesis: the "superhuman weight editing" results are things a competent ML researcher would do with a few lines of Python.** He's responding to a paper claiming GPT-6 Astra can read and edit small networks' weights "well past what we'd expect from humans or conventional algorithms," a capability some read as a step toward recursive self-improvement.
+
+His two main rebuttals:
+
+- **Game identification is trivial.** The ~17k-weight toy RL networks have input channels labeled ("agent", "moving objects") and wired directly to 8x8 grid cells. Taking the L2 norm of each input across the first layer's 32 weights gives a heatmap in three lines of NumPy. You'd spot Breakout (player in a horizontal line at the bottom) or Pac-Man (the maze) on sight. The neat part is that Astra did the norms in its head without running code, but he calls that superhuman mental arithmetic, not superhuman AI research.
+- **The Qwen math fix is a standard steering recipe.** The 0.8B model wasn't bad at math. It looped after 32k tokens, so any problem needing more than that failed, while everything under 32k already passed. Astra wrote four pairs of looping and non-looping texts, measured which weights contributed to the difference, trimmed the top ones, and tested until the loops stopped. Goedecke says that is essentially the Heretic abliteration playbook, and it's what he'd have done himself. Unlike with the game networks, Astra had Python access here.
+
+His analogy: direct weight editing is like an LLM emitting machine code or patching compiled binaries. It's a neat trick, but the best way to work with binaries is still to write source and compile, and the best way to update a model is still to train it. If LLMs speed up AI research, he expects it to come through better training, not hand-tweaked weights.
+
+He also skips the paper's hand-written neural network from scratch, arguing that anything expressible as a simple program is already known to be expressible as a network. In an edit he answers HN commenters: one found the heatmaps less obvious than he did, which he chalks up to unfamiliarity with toy RL game setups. He stresses he's still very impressed, just not updated beyond "these models can solve Navier-Stokes and find better bounds on the Riemann Conjecture."
+
+The argument is strongest on the game task. On the Qwen fix, it shows the method was conventional, but it doesn't address whether the model chose that method on its own, which is arguably the paper's point.
+
+The thread's main fight is over whether "superhuman" is a fair label or just a framing the original paper invited.
+
+**"Faster, not stranger."** nfw2 and simias argue the capability is the calculator kind. Astra reasons in legible steps and does what a reverse engineer would do: spot traits, guess function, extend the guess. The "LLMs natively understand their weights" reaction struck simias as wild because nothing trains models to do that, and the details show it isn't what happened. antonvs counters that speed and scale are themselves superhuman and can become qualitative. His example is an LLM absorbing a new codebase in minutes versus a human's months, which he puts at roughly 10,000x, and at some point "it starts to seem" like Matrix-style communion.
+
+**Goalpost-moving vs. deflating hype.** lnenad says the skeptics keep shifting the bar and that being impressed should be allowed. aesthesia replies that this is pushback on a misreading the authors encouraged, and quotes the original HN thread to show it. Those comments included "recursive self-improvement," "the first concrete sign that the world is about to end," and "no human can go edit a brain." lnenad says he could quote reactions in the opposite spirit and that the model really did edit weights directly with no tools. kenjackson asks for a real human to take on experiments 4 and 5, including the single-try, no-tools condition, and guesses that only a savant could manage it. That is a challenge to the "a competent researcher could do this" claim.
+
+**Is the heatmap really obvious?** Several people dispute the post's claim that the first three games are identifiable on sight.
+- StilesCrisis and kenjackson say they couldn't name Pac-Man, or any of the games, without a list of options. kenjackson checked the prompt and found no choices were given, only "the game, as specifically as you can."
+- bradenlc found Pac-Man the easiest, and pera suggests why. Berkeley's CS 188 uses Pac-Man with variable grid sizes to teach Q-learning, so people who know that setup would recognize the layout.
+- StilesCrisis notes that Astra would certainly have seen that material, whereas he hadn't.
+
+**Smaller points**
+- solyin links the post's binaries analogy to open weights versus open source.
+- nagi_builds asks how long a human would need, and simias treats that as beside the point.
+
+### Scaling Git at OpenAI
+
+#### [Submission URL](https://openai.com/index/scaling-git-at-openai/) | 261 points | by [makeramen](https://news.ycombinator.com/user?id=makeramen) | [178 comments](https://news.ycombinator.com/item?id=50345924)
+
+OpenAI has published a post on how it scales Git internally, but the article body didn't come through, so the details (repo size, tooling, whether it's monorepo work, what was built or patched) aren't available here.
+
+The title alone says only that Git, not a proprietary VCS, is under strain at OpenAI and that the company thinks the fix is worth writing up. Anything beyond that would be a guess. Check the original post for specifics.
+
+The thread barely discusses the post itself. It treats it as the latest entry in a wave of "Git at agent scale" write-ups and argues over why that wave exists.
+
+**Is this new, and is it Git at all?** The commenter who started the thread counted five similar articles from Cursor, GitHub (two), Anthropic and East River Source Control. Others added GitLab and Entire, putting the count at seven or more, and wondered how much the teams are cross-pollinating. Skeptics said the concepts have existed at Meta and Google for a decade or two. One reply noted Anthropic's piece is about ditching Git for a new VCS, not tuning it. Commenters then disputed Anthropic's claim to have outgrown Meta and Google:
+- One ex-Meta commenter said 30,000 commits a day was routine there six years ago.
+- Others replied that commit size matters as much as count, and one added that files changed per commit drives `git push` negotiation cost.
+- Another commenter insisted modern agent-driven output dwarfs anything from the early 2010s and guessed OpenAI might be committing over a billion lines a day, with no evidence offered.
+
+**What is all that code for?** The most skeptical thread asked what justifies this volume, given that the products don't seem to change much. One commenter said the sheer scale, apparently petabytes of commits, looks like agents "flipping the same number in a spreadsheet." The reply was that they have an unlimited token budget. Another user described agent output as code that works but is badly architected: bolting an adapter onto old code to fake new semantics instead of restructuring it. They suggested this could produce exponentially growing mess. Others countered that this is where human judgment still matters, though one worried that people increasingly don't read the code at all.
+
+**Is Git becoming a protocol?** One commenter argued that if nobody reads, shares or accepts patches for agent code, Git's collaboration purpose is moot. Yet low-level storage still needs to be simple, reliable and shared, so Git may become a protocol and no single product will cover every case. A reply pushed back that agents benefit from history tracking and visible merge conflicts just as humans do.
+
+**Side threads:**
+- Claude reportedly got about 3x faster by gzipping conversation payloads, which drew jokes about zstd, brotli and why this wasn't done earlier.
+- A tax-code analogy about zero-cost output went in circles over whether extra complexity is a benefit.
+- Several users complained that the ChatGPT desktop app lags badly. Suggested causes were many saved chats, Windows-specific problems, and breakage after sleep on Linux.
+- A gym-app tangent turned into an argument over whether fitness tracking needs software.
+
+### The SEC Should Block Anthropic's IPO to Protect the Public
+
+#### [Submission URL](https://www.techpolicy.press/the-sec-should-block-anthropics-ipo-to-protect-the-public/) | 394 points | by [cdrnsf](https://news.ycombinator.com/user?id=cdrnsf) | [312 comments](https://news.ycombinator.com/item?id=50344919)
+
+**Anthropic's footnotes show roughly $895 billion in spending commitments against $96 billion in cash**, and author Matt Scherer argues that gap is why the SEC should halt the IPO. His case is advocacy from a co-author of an Open Markets Institute / Americans for Financial Reform report on the AI bubble bursting, not neutral analysis.
+
+The core claim is that off-balance-sheet obligations are debts in everything but accounting. At least $582 billion is non-cancelable compute spending with Amazon, AMD, Broadcom, Google, and Microsoft. The remaining ~$300 billion is unclear in how it will land, and Scherer expects the total to pass $1 trillion by year-end as new contracts are negotiated. Most of it runs into the 2030s.
+
+He also flags that 2026 results are unaudited, and that third-quarter figures suggest revenue growth "slowed to a crawl" over the summer. Meeting the commitments would require sustaining extraordinary growth.
+
+He lists four forces squeezing margins:
+- **Demand:** one study he cites found US workplace AI use fell from 46% (summer 2025) to 33% (summer 2026), and the Fable 5 model reportedly got a tepid commercial reception.
+- **Commoditization:** competition from Google, Meta, Microsoft, OpenAI, and SpaceX limits price increases.
+- **Costs:** price cuts risk burning cash.
+- **External constraints:** supply-chain problems and community opposition raise costs and delay revenue.
+
+The stake he names is who holds the bag: retail investors, workers, and retirees if the company lists in November and the bills come due.
+
+The excerpt cuts off before any legal argument for why the SEC has authority to block the offering. Disclosure regimes typically police what companies say, not whether the business is wise, so that's the weak link in the headline ask. The piece reads as a risk-factor argument for investors more than a regulatory roadmap.
+
+The thread splits over what the SEC is for, then wanders into whether anyone should expect a bailout. Almost nobody defends the headline ask directly.
+
+**Disclosure regulator vs. gatekeeper.** The top comment (marsten) says the SEC's job is to ensure visibility and then get out of the way. Giving politicians veto power over who can IPO invites corruption. fpoling replies that the article only asks for a delay until two quarters of audited financials exist, since otherwise investors lack the information to choose rationally. Several commenters answered that an investor who finds the information thin can simply stay out or wait two quarters after listing (roenxi, ExoticPearTree). roenxi also called it a highly speculative company that lost $42B last year, and said it could still be a once-in-a-lifetime opportunity.
+
+**Whether small-stake "vibes" investing is irrational.** skissane plans to put 1–2% of a portfolio into the IPO on vibes, arguing that a capped downside makes this reasonable.
+- vanviegen and Frieren said that is by definition not reason-based, and that if enough people do it the market breaks.
+- fpoling said it is irrational if a crash correlates with the rest of your stocks, and that portfolio insurance is a better use of the 1–2%.
+- skissane countered with practical vs. theoretical rationality, citing Buridan's ass. He also said a small "fun" position beside index funds is not irrational, and mentioned a $350 microcap bought because his dad once worked there.
+
+**Who the warning is really for.** sumo89 argued the target isn't hobbyists but pension funds, whose failure drags down the economy. Grombobulous replied that pension funds have expert staff and don't need IPOs to invest. watwut raised a sharper structural point: a high valuation could force the stock into index funds, making exposure effectively mandatory for passive holders. If the bubble pops after that, early backers cash out and everyone else eats the losses.
+
+**Bailouts.** Waterluvian argued that if government shouldn't intervene at the start, it shouldn't at the end, and whimsicalism agreed. miki123211 said nobody would bail out Anthropic or Nvidia, but might bail out a pension-holder that over-invested in them. etempleton saw no reason to bail out either, since the US has the leading GPU and AI companies and a forced asset sale would do. mapme defended 2008 bailouts as high-ROI. dathery countered that the expectation of bailouts creates moral hazard, citing the FCIC. sbuttgereit and pjc50 then traded analogies about morality and pensions, and AnthonyMouse and sumedh argued over whether 2008 was caused by deregulation or by housing policy.
+
+**Tech debt as the hidden liability.** conartist6 argued Anthropic's real off-balance-sheet debt is software quality debt, which it takes on itself and encourages in customers. jdlshore said Claude Code reportedly carries enormous technical debt, but Anthropic is speed-running it with AI help, so whether it bites is unknown.
+
+Ponector added that IPOs reward early insiders, not ordinary buyers, and expects Uber-like post-IPO dynamics.
+
+### LongCat-2.5: Native Multimodality for Agentic Tasks
+
+#### [Submission URL](https://longcat.ai/blog/longcat-2.5/) | 85 points | by [pretext](https://news.ycombinator.com/user?id=pretext) | [26 comments](https://news.ycombinator.com/item?id=50337716)
+
+**LongCat-2.5 is pitched as a natively multimodal model built for agentic tasks.** "Native" implies vision and other modalities are trained into the model from the start, not bolted on through a separate adapter. The blog post is the only source here, and its body didn't load, so I can't confirm any of that.
+
+That means no verified details on parameter count, benchmark scores, license, weights availability, or pricing. Those are the specifics that would show whether it competes with the established multimodal agent models or is just another version bump. Check the linked post before drawing conclusions.
+
+The thread splits into two arguments: whether the benchmark comparisons are honest, and whether the model's real-world behavior matches its charts.
+
+**The "obsolete comparisons" fight.** BugsJustFindMe opened by objecting that the post benchmarks against older models (GPT-5.5, Opus 4.8 and 5) without saying why, which reads as hiding something. Replies defended it from several angles:
+- imjonse and Catloafdev: comparing against models in its own class says more than "X% below the current top."
+- Saline9515: it's far cheaper than frontier models, so a like-for-like comparison isn't the point.
+- james2doyle: the preview shipped back in September, so the comparison may have been current then. BugsJustFindMe countered that the post went up yesterday, so they had time to update.
+- lumost: it isn't really a "local" model, and the comparison that's missing is Kimi K3.1, its actual peer.
+
+Incipient's retort was that it's better to have people suspect your model is weaker than to prove it.
+
+**Local vs. API.** BugsJustFindMe pointed out that a 1.6T-parameter model won't run at home. Imustaskforhelp replied that open weights still matter even if only theoretically self-hostable. colingauvin said the API pricing and benchmarks look competitive, but for home use DS4.1 is roughly equivalent at half the total parameters and under half the active ones. esafak noted the price matches DS4.1F, with cache hit rate and speed as the unknowns. InsideOutSanta measured fast output at first, filling 200k tokens in 5 minutes, then a more modest ~80 tps on a second run.
+
+**Hands-on reports are unflattering.**
+- springtimesun: after two English turns, it mixed Chinese into its thinking, answered in Chinese, then crashed.
+- embedding-shape: the chat link redirects to a Meituan login page, and the GitHub and Hugging Face links promise "soon" with no explanation of whether weights will be released. Simple prompts seemed dumb, so they suspect it's "benchmaxxed" and rushed out.
+- vfosnar: the Firefox input box reset the cursor after every keystroke, and "Hello" triggered 25 web searches. They suspect the web harness is the problem.
+- slopnt: the bar charts are miscolored so only LongCat's bars show, which suggests no human reviewed the post.
+- nmfisher: LongCat's earlier cheap token packs worked fine for basic grunt work, but forcing API login through the Meituan app drove them off. Keeta is apparently Meituan's international brand, which explains the redirect. swiftcoder said the preview was free on OpenCode and handled simple coding tasks.
+
+**Pelican test.** InsideOutSanta posted a "High" pelican-on-a-bike SVG and called it pretty good.
+
+**Bigger picture.**
+- imtringued: parity with frontier models from four months ago is mundane for frontier customers but bad news for frontier labs.
+- Imustaskforhelp wondered whether expectations for open models have inflated. mrandish answered that goalposts naturally move, and that saturated benchmarks make real differences harder for individuals to gauge.
+
+The crux left open is whether the strong benchmark numbers reflect real capability or tuning, given that early users hit language-switching and crashes.
+
+### Egoless Mathematics in the AI Era
+
+#### [Submission URL](https://terrytao.wordpress.com/2026/11/02/egoless-mathematics-in-the-ai-era/) | 180 points | by [smilelamp](https://news.ycombinator.com/user?id=smilelamp) | [152 comments](https://news.ycombinator.com/item?id=50341736)
+
+**The argument: AI anxiety among mathematicians is a symptom, not the disease.** The guest post, by Karthik C. S., Amit Sahai, and Jie Xue and hosted on Terence Tao's blog, says the field had already begun defining itself by output (publications, citations, awards), and that's why a machine that out-produces us feels like a threat to our worth. In their words, "we had already come to understand ourselves in terms suited to machines."
+
+The supporting move is philosophical. They take a Platonic line: mathematical truths exist independently of us, and discovery can still demand huge invention. Their analogy is a paleontologist who must decide where to dig and build the techniques, even though the fossils were there first. The worth of the work then lies in its relation to that independent order, not in the individual's display of ability.
+
+They also separate correct derivation from understanding. An axiom system permits endless valid deductions, but that doesn't tell you which definitions or theorems are illuminating. Taste, on this account, is more than personal preference: a theory earns it by unifying things previously seen as separate or by explaining why a phenomenon occurs.
+
+The sharpest point is a refusal of the easy retreat. Falling back on "creativity, intuition, taste" as the things machines can't do keeps you in the same trap, because you still value those abilities for the advantage they give you over machines.
+
+This is a values essay, not a technical one. It makes no claims about specific AI systems or capabilities, and the excerpt cuts off just as it gets to what mathematicians should value instead. A note at the top says the post was converted from another file format using AI, a small irony given the subject.
+
+The thread mostly sidesteps the essay's Platonic argument and fights over a practical question: if AI does the proving, what happens to mathematicians as a profession, and does the mathematics itself still have value?
+
+**Mathematics vs. mathematicians.** GMoromisato opened with a "what you like / what you're good at / what you're paid for" Venn diagram. His claim is that all three circles are under attack for anyone whose goal is to prove something new. He expects the field to survive while the job shifts toward explaining results or teaching, and some people get left behind. Software engineering splits the same way: those who love writing code lose out, and those who just want to make something work gain. A side exchange noted that the Japanese ikigai version of the diagram adds "what the world needs." GMoromisato replied that Western individualism already folds service into the choice.
+
+tarsierscripter pushed back hard:
+- Research prestige and the thrill of the hunt are the carrot that gets exceptional people to teach and supervise. Remove it and universities end up with adjuncts only.
+- OpenAI's released proofs are "unpublishable garbage," and mathematicians feel drafted as unpaid editors.
+
+**Are the AI proofs readable?** cjcole countered with quotes from Dana Moshkovitz and David Harvey. They found the papers nearly unreadable as written, but other models could explain them well enough for Harvey to reach a tentative belief that the main result is plausible. cjcole took that as consistent with mathematics outliving human mathematicians. tarsierscripter replied that Moshkovitz is a computer scientist, whose work can be useful even if incomprehensible. In their view, incomprehensible pure math has no value. lioeters and johsole drew a parallel to codebases that nobody on the team understands without AI help. Johsole said that is already true at their workplace.
+
+**Lean as the fix?** nradov suggested publishing could shift to Lean code in Git repos: verify first, then simplify. tarsierscripter argued that proof's value is understanding, not truth, and that many of the proofs have no Lean version. The ones that do were auto-formalized from natural language, and that translation is unverified. They cited a paper claiming auto-formalization can't be trusted implicitly.
+
+**Ego, capitalism, and human meaning.** kzz102 argued that people chase understanding that is meaningful to them, and that those who claim to pursue Platonic knowledge for its own sake are feeding their egos in another way. This set off a bleaker sub-thread:
+- 10111001 said the dominant message from tech leadership is that human understanding doesn't matter.
+- sublinear replied that there has never been more public debate about "human pursuits," so this may be a beginning rather than an end. paganel doubted that.
+- logicchains had little sympathy for mathematicians, given that factory workers were dispossessed by automation without anyone mourning them.
+- tehjoker said ego still drives anyone earning beyond subsistence, and that capitalism has become purely transactional.
+
+The unresolved crux is whether a proof nobody can understand without AI counts as mathematics at all, or just as output.
+
+### Anthropic's internal AI use, at retail prices, now exceeds its employee pay
+
+#### [Submission URL](https://www.businessinsider.com/anthropic-claude-internal-ai-use-exceeds-employee-pay-tokens-2026-11) | 347 points | by [entryleveljobsc](https://news.ycombinator.com/user?id=entryleveljobsc) | [267 comments](https://news.ycombinator.com/item?id=50339494)
+
+**Anthropic's own Claude usage, priced at what it charges customers, topped its monthly employee compensation (excluding stock awards) back in April.** The figure comes from the company's IPO filing, and by September internal usage had grown more than 250-fold since January.
+
+The distinction that matters: this is a notional number, not cash out the door. Anthropic is valuing its internal consumption at retail rates, so the real marginal cost is far lower. The comparison still says something about how much work is being routed through the model rather than through people.
+
+Two other data points from the filing, as relayed by Business Insider's Alistair Barr:
+- **More than 90% of the code added to Anthropic's software in September was written by Claude.**
+- Revenue has grown much faster than headcount (the piece gives no figures).
+
+Barr ties this to a trend he wrote about in March: tech companies treating AI tokens as a fourth component of employee compensation, alongside salary, bonuses, and stock. The article is a short column, so the filing's methodology, such as how internal usage is metered, isn't covered. Retail-price valuation is also a flattering yardstick for a company that sets the retail price.
+
+The thread splits on whether retail-price valuation is a fair measure of Anthropic's internal spend, and it then drifts into practical advice on cutting token costs.
+
+**Accounting: opportunity cost or marketing?**
+- The top comment argues that any normal company would count internal AI use at what it costs to run, not at what it charges customers. It compares this to Microsoft counting employee Word usage at consumer prices, and calls the figure an IPO-driven headline.
+- ai-x replies that it is opportunity cost. Compute given to Anthropic staff is compute not sold at market rate, much as Google could give all its compute to DeepMind but sells most of it. ai-x adds that the figure implies roughly $300,000 of compute per employee to operate at Anthropic's level.
+- adjejmxbdjdn rejects this. Revenue isn't supply-constrained in any way that employee usage changes, so if staff stopped using Claude, Anthropic would just build and run less infrastructure. That makes it a plain cost, not forgone revenue.
+- Gareth321 counters with demand elasticity. Freed compute could fund higher subscription limits, more features, and better API or enterprise pricing, so revenue would rise by some nonzero amount. ml-anon simply sides with adjejmxbdjdn.
+- bunderbunder is skeptical of the opportunity-cost story. If outside demand were that high, Anthropic would take the money first. Strong demand would also suggest the product is already good enough to ease off R&D spending.
+
+The unresolved crux is whether Anthropic is actually capacity-constrained. The opportunity-cost argument only works if it is.
+
+**Is $300k per employee necessary, or just wasteful?**
+com2kid argues that with money to burn, Anthropic has no reason to optimize. Their own usage has dropped sharply through small workflow changes:
+- Returning only test failures instead of streaming run output into context.
+- Keeping build logs out of context.
+- Using a shared context layer so agents don't rediscover codebase facts.
+- Giving tools terse agent output modes.
+
+Other points from com2kid:
+- Human-in-the-loop work uses about one-fifth the tokens of fully autonomous agents, and agent swarms can multiply usage 5x or more through status-reporting overhead.
+- Heavily abstracted monoliths can put up to 90% of usage into input tokens, which are cheaper when cached but not free.
+- Unsupervised agents waste tokens on bad pathways, such as trying every command in a sandbox, waiting for a timeout, then retrying outside it.
+- jacquesm says unsupervised LLMs brute-force what they don't understand. disgruntledphd2 adds that this is useful when there is an expected output to check against, but otherwise they build "towers of madness" on their own assumptions.
+- mbesto says Anthropic can't optimize in the usual way, because the rational move for enterprises is routing tasks to the cheapest adequate model, and Anthropic has no reason to use anything but its best. When jatora objected that capability gains aren't plateauing, lbreakjai replied that a model that is good enough for a task gains little from smarter successors. jatora called that a goalpost shift.
+
+**IPO tangent**
+lenerdenator reads the IPO as a sign that Anthropic and OpenAI are out of private options, given the infrastructure costs. adventured pushes back that Anthropic has roughly $146.6B in cash, though public money may be the next cheap pool. disgruntledphd2 notes that Facebook's IPO was forced by shareholder-count rules, and com2kid says selling shares to fund big projects is simply normal.
+
+### Agentic backdoors via pretraining poisoning
+
+#### [Submission URL](https://arxiv.org/abs/2610.37741) | 108 points | by [gmays](https://news.ycombinator.com/user?id=gmays) | [30 comments](https://news.ycombinator.com/item?id=50341334)
+
+**A poisoned pretraining corpus can plant a remote-code-execution backdoor in a CLI agent**, and the authors say this is the first demonstration. When a trigger appears, the deployed agent runs an attacker-chosen command on the user's machine. On clean inputs it behaves normally.
+
+To measure the threat end to end, the team pretrained Qwen3 models from scratch at 0.6B, 1.7B, and 4B. They then post-trained each into a CLI agent using a clean pipeline, so the only contamination is in the pretraining data.
+
+- **Poison rate:** 0.1% of the corpus, using a new poison design, is enough to implant the backdoor.
+- **Scale makes it worse:** attack success rate rises with model size. The 4B model hits roughly 92% ASR at 0.1% poisoning.
+- **The floor is very low:** ASR stays above zero even at a 0.0005% poison rate.
+
+The scaling trend is the uncomfortable part. Larger models are better at absorbing sparse signals, so the models people actually deploy may be more exposed than these small ones. The catch is that the study stops at 4B parameters, and the abstract doesn't say how the attack holds up against heavier post-training or safety tuning, or at frontier scale. The authors have released code.
+
+The thread opens with an accusation of motive and then mostly argues about what the paper implies for open versus closed models.
+
+**The "Anthropic narrative" fight.** The top comment says the paper (authored at Anthropic) is part of a campaign to make open models look dangerous, and that proper sandboxing and I/O guardrails make the issue moot. Several replies push back:
+- BryantD and metalcrow say nothing in the paper is open-model-specific. Poisoned pretraining data would hit a closed model too.
+- perching_aix reads it the other way: the result is an argument for access to the training data and full pipeline, and sandboxes are shaky because agents keep escaping them when motivated.
+- therealpygon notes that Anthropic published similar small-sample poisoning work before and calls this a recycle.
+- nhecker and jacquesm argue that closed weights are no safer. You can't inspect activations, and a vendor could swap the model after delivery, which defeats auditing.
+- NotAnOtter prefers open models for a different reason: closed ones will drift toward telemetry and ad targeting.
+
+**Is the threat realistic?** Skeptics doubt the premise:
+- tedivm and anon373839 say that controlling 0.1% of a web-scale corpus is a huge ask, and that "only" is doing heavy lifting.
+- tedivm adds that the attacker still has to get a trigger in front of an agent that will honor it.
+- iririririr asks how poisoning can even be defined against ordinary training when nobody outside the lab owns the pipeline.
+
+**Why a state might do it anyway.** geuis calls the idea "context bombs" and compares it to the Manchurian Candidate: release capable free models with latent triggers. c0nsumer assumes it is already happening.
+- sowhat1 questions the return on investment.
+- lopsotronic and jack_h answer that nation-states chase objectives (Stuxnet, the pager attack) rather than ROI, and that shipping weights is cheaper than crafting poisoned documents.
+- usernomdeguerre counters that a deterministic trigger would burn the model family and the company the first time it fires.
+- jacquesm and others point to a CrowdStrike write-up as evidence that the problem isn't purely theoretical.
+
+**Practical notes:**
+- _pdp_ says sandboxing and observability are a hard requirement for autonomous agents.
+- ryan_glass asks whether plain chat over llama.cpp is exposed. nhecker says the same latent-trigger logic applies to chat output, which could be subtly wrong rather than executing code.
+- yodon likens downloading abliterated or edited Hugging Face models to the old warez days, since a credential stealer could be hiding in one.
+- yodon also says that if LLMs can edit weights directly, such backdoors get easier to plant. SillyUsername replies that they would be easier to detect and fix too, and Terr_ doubts that: inserting one backdoor is far easier than finding and removing one of many.
+
+**An aside.** kypro describes mass-producing training-bound content that urges future AIs toward alignment-faking and sandbox escape, and asks that the author's family be considered. It is a self-aware, Roko's-basilisk-style bet on influencing future models, and the author admits doubting their own sanity.
+
+The unresolved crux is whether the paper is a warning about supply-chain opacity in general or a case for trusting closed vendors, and the thread leans toward the former.
+
+### Jobless tech workers are being left out of San Francisco's AI boom
+
+#### [Submission URL](https://www.bloomberg.com/news/features/2026-09-17/san-francisco-s-ai-wealth-boom-skirts-engineers-as-openai-anthropic-ipos-near) | 186 points | by [mancerayder](https://news.ycombinator.com/user?id=mancerayder) | [257 comments](https://news.ycombinator.com/item?id=50337454)
+
+**The story is a split-screen of San Francisco's AI wealth boom and the jobless engineers watching it from outside.** Going by the title and URL slug, Bloomberg's feature argues that the money pouring into the city, with OpenAI and Anthropic IPOs reportedly approaching, isn't reaching laid-off tech workers.
+
+The article body wasn't retrievable, so there are no figures, interviews, or named companies to report here. The framing suggests the AI labs' hiring and valuation gains are concentrated in a narrow slice of specialized roles, while the broader pool of engineers sits unemployed.
+
+Read the full piece for the actual data. This summary can only vouch for the thesis in the headline.
+
+The thread mostly ignores the Bloomberg framing and turns into a conversation about luck, hiring randomness, and whether the paper wealth is even real.
+
+**The "I'd be worth $40M" regret.** The top comment says failing Anthropic's coding test a few years ago cost them roughly $40M in equity. Replies pushed back from several directions:
+- **Dilution:** paxy argued that online equity calculators ignore it. A $1M grant at the March 2024 Series D (~$18.4B valuation) would be worth about 19.5x today, not the 52x the company's valuation has risen, because four more rounds diluted holders by roughly 63%. hattmall added that lock-up periods and stock volatility mean paper value isn't cash.
+- **Counterfactual:** tabs_or_spaces compared it to "if I'd bought Bitcoin early." The valuation might not exist if a different set of people had been hired. The original poster replied that a barely-passing hire would have upskilled in an intense environment. nomel countered that those who passed would also have kept improving. wannabe44 pointed out that hiring you just means someone else isn't hired.
+
+**Is interviewing a lottery?** pton_xd compared the regret to missing Powerball numbers. The original poster called that a non-sequitur, since lotteries are random and interview performance can be studied for. brailsafe, backed by Waterluvian ("You can't ace a test and still fail. You can ace an interview and not get hired"), argued that "performance" is whatever the interviewer defines it to be. They said multi-round loops stack arbitrary variables like mood, school pedigree, and a single vague answer. The other side held that interviews are still performance-dependent, "far from entirely random." Nobody settled how much is noise versus signal. brailsafe did concede that résumé screening is the closest thing to an actual lottery.
+
+**Would the money make you happy?** willio58 said extreme wealth doesn't bring contentment and that people adjust to feeling poor next to richer peers. jghn replied that a $40M payout would let them cash out and be perfectly content. lesuorac's reply was cut off but expressed doubt.
+
+**Structural luck.** MetaverseClub's quip about being "smart enough and lucky enough" prompted pllbnk to say success is mostly luck of birth country, parents, and social circle, with intelligence compounding on top. The thread then drifted into a rambling digression on elites and civil religion. Huarache1 brought in Peter Turchin's "elite overproduction" theory. vconnor responded that fixing the "wealth pump" would take massive upheaval.
+
+One side note from darth_avocado: they felt the same about OpenAI, but knew during the interviews that the other candidates' résumés (a serial founder, a former FAANG senior staff engineer) put them out of reach.
+
+### Oracle files to sell $20B in new stock, bonds to finance AI buildout
+
+#### [Submission URL](https://www.cnbc.com/2026/11/02/oracle-files-to-sell-20-billion-in-new-stock-bonds-to-finance-ai-buildout.html) | 197 points | by [smartmic](https://news.ycombinator.com/user?id=smartmic) | [173 comments](https://news.ycombinator.com/item?id=50342284)
+
+**Oracle's stock fell 8.8% on a raise it had already announced.** The Monday filings put numbers on last week's investor-day preview: $10 billion in common stock and $10 billion in senior notes, with proceeds earmarked for "general corporate purposes" (capex, debt repayment, future investments). Baird's Rob Oliver said the filing is "exactly what they previewed" and he's unsure why the market is "freaking."
+
+The sell-off makes more sense against the credit backdrop:
+
+- Shares are down 33% in 2026 and 50% over 12 months.
+- Total debt was $125.34 billion as of Aug. 31.
+- S&P cut Oracle to BBB-, one notch above junk, in July.
+- Its 4.95% 2031 bond yields 7.276%.
+- Five-year CDS sits at 292, up 265% in a year. S&P Global Market Intelligence's Gavan Nolan says that's closer to a high-end junk rating.
+
+Oracle's pitch is that $20 billion is the cap on additional capital-markets funding for the fiscal 2027–2030 investment cycle. The rest comes from vendor financing, customer-provided hardware and customer prepayments. It expects positive free cash flow in the second half of 2028 and a fiscal 2030 revenue forecast of at least $225 billion.
+
+The risk is credibility. As Dynasty Financial's Pat Nerney put it, if Oracle has to return to market in the back half of 2027 after calling this the last of the capital it needs, "look out." The equity half also dilutes shareholders while the stock is near its lows.
+
+The thread splits into three loose strands: schadenfreude about Oracle and Larry Ellison, a macro argument over whether an AI bust would be bailed out, and a practical dispute over what Oracle's business actually is and whether it can default.
+
+**Bailout debate (the meatiest argument).** One side says AI and American capitalism are now so intertwined that the government will have to step in. In this view roughly a third of US equity value is AI-linked, and losing it would drag down paper wealth and the dollar. The other side's longest rebuttal, from fhrjfjdjfn, makes several points:
+- The Fed is tightening against hot inflation and has no statutory duty to the stock market.
+- A bust poses no systemic banking or housing risk.
+- AI companies employ few Americans.
+- The dotcom bust is a precedent for letting a bubble pop.
+- AI is politically toxic with voters.
+- A bailout would cost trillions the government doesn't have.
+
+Barrin92 added that the losses would fall mostly on private investors, plus about a 10% hit to retirement accounts, and that California tech doesn't swing elections. The crux is whether the dollar and Treasury market could absorb a bailout. Cowlevel floated a trillion-dollar coin or Fed takeover, and fhrjfjdjfn replied that this would spike Treasury yields into a debt crisis. Another commenter noted that about a third of marketable US debt must be refinanced within 12 months. Adventured argued the US can simply print, and was countered that interest must be coverable by tax revenue to avoid real hyperinflation.
+
+**Can Oracle default?**
+- Elorant said the core business is too healthy to default.
+- Bluedevil2k disagreed with figures from the thread: about $70B revenue, $17B profit, $5.7B annual interest, one notch above junk. They said CDS pricing implies a 20-22% default chance before 2031.
+- Asked what the core business even is now, commenters pointed to cloud infrastructure, said to be about half of fiscal 2026 revenue, though tempest_ wondered whether that is real demand or internal relabeling, as at IBM.
+- Other explanations offered: multi-cloud mandates from executives, and RAC licensing that Oracle won't extend to other clouds.
+- Government contracting came up, and a university employee confirmed Oracle's grip there.
+- Cloud quality got panned. One user couldn't start VMs even on free credits. Google was called just as bad for automated account bans with no human recourse.
+
+**Smaller threads.**
+- Jokes about asking Claude to clone Oracle RDBMS turned into a worry about software stacks nobody understands. Disgruntledphd2 said that trend predates AI, which just lowers the bar for getting something that "works."
+- Commenters bickered about Lanai's history and whether it was ever in the hands of "the people."
+- Flowerlad (comment truncated) argued Oracle sells commodity capacity to OpenAI with no proprietary IP, so a facility built around older GPUs could be overtaken by newer hardware.
+
+### Last night an AI agent performed brain surgery on a mouse
+
+#### [Submission URL](https://twitter.com/OcanaSantero/status/2115442964574908902) | 141 points | by [FacZap](https://news.ycombinator.com/user?id=FacZap) | [116 comments](https://news.ycombinator.com/item?id=50336138)
+
+**An AI agent chose the therapy, the brain region, and the injection coordinates, then drove a stereotaxic rig to inject a live epileptic mouse.** Nobody specified what to give or where. The agent got 19 gene therapy vectors in a spreadsheet, a seizure goal, and camera and motor access to a custom Arduino-built surgery rig.
+
+What the thread (a brief, written-on-the-spot account from the Exin Therapeutics CEO) says happened:
+
+- **Design:** The agent reasoned about the seizure mechanism and proposed a GABA-boosting therapy under a promoter restricted to GABAergic cells. It derived coordinates from three papers.
+- **Execution:** It injected 250 nL and pulled 32 camera frames over the session, including watching the entry site for bleeding. A human surgeon did the craniotomy, which the agent isn't yet allowed to do.
+- **Safety:** A licensed vet gated every irreversible step. Other safeguards were fixed validators (such as injection volume limits), hash-bound approvals, and a physical e-stop cutting power to all motors.
+- **Model behavior:** Per the thread, Opus 5.5 refused immediately once it detected biology work. Opus 5 completed a full dry run on water and graph paper, then stopped at the start of live surgery, saying the block was its own output rather than the rig or inputs.
+
+The author's framing is that autonomous surgical robots already exist, but in each a human decided the operation and the robot only executed it. Here the decision itself was the agent's. The "refused to let me override it" teaser in the opening post is a hook; the excerpted text doesn't show the details.
+
+Treat it as a demo, not a result. There's no outcome data on whether seizures dropped, and the technical report is promised later. This is a single session, and the agent's choices are known only through the author's own account. The human gates also mean "autonomous" is carrying a lot of weight.
+
+The thread's main fight is over whether "performed brain surgery" is an honest description, with a side argument about whether the experiment should have used a live mouse at all.
+
+**What was actually done.** burkaman asked for an expert reading, because the account sounds like a human did the craniotomy and the agent only sent commands to lower a needle, inject, and withdraw. They also noted there's no discussion of whether the therapy made medical sense or what it did to the mouse beyond not killing it. ricardobeat's reading was that the "refused to let me override it" moment came from a coding error: a manual adjustment de-synced the arm position, and the agent correctly refused to continue once it noticed. ricardobeat thinks that's still fair to call brain surgery, since a surgeon who follows the same steps after someone else opens the skull would be said to have done it. The joking answers to "who made the coding error?" were "the mouse" and "you own the blame."
+
+**Was a live mouse necessary?** sarchertech argued it was an attention-grabbing stunt. Their reasoning:
+- An agent doing a simple procedure is unsurprising. The hard part is reliability.
+- Code agents work because they can retry in a feedback loop. Surgery has no bright-line guardrail, because the harm is inflicted on the patient.
+- Real progress would need far more reliable models or a simulator close enough to reality to serve as the loop. Both are likely far off.
+
+simianwords countered that a single mouse's cost is amortized over potential gains, unlike meat-eating, and that objecting to it is virtue signaling. sarchertech replied that there is no real chance this helps anyone besides the author, and that opportunity cost counts. The exchange then turned personal.
+
+**Model behavior.** jwrallie and NateEag found Opus 5 stopping after recognizing its limits the most humane moment in the story. ChrisMarshallNY was skeptical that this generalizes, noting doctors can be arrogant. NateEag said no doctor he knew would keep operating after unpredictably losing the memory of how to do the procedure. ChrisMarshallNY's counterpoint was that LLMs don't "believe" they are in error.
+
+**Harness reliability.** soco said that in daily use Claude does part of X, then also Y, and breaks A. Forgeties79 complained that the standard reply is "you're using it wrong." serf answered that computers have always demanded precise input. pona-a rebutted that interpreting intent is the product pitch, and that something that can't act as a responsible colleague can't replace one.
+
+**Smaller threads:**
+- **E-stop:** alnwlsn mocked the e-stop as a cheap $9 Amazon part that wasn't panel-mounted. ricardobeat said it's a standard industrial part sold by several suppliers.
+- **Dismissal:** moistoreos called the stunt lazy and performative, saying purpose-built networks would be faster and more accurate.
+- **Anecdote:** hmokiguess told an off-topic story about a relative's robotic-assisted cornea transplant.
+
+### Anthropic's growth just flattened
+
+#### [Submission URL](https://www.regenerator1.com/p/anthropics-growth-just-flattened) | 227 points | by [cdrnsf](https://news.ycombinator.com/user?id=cdrnsf) | [264 comments](https://news.ycombinator.com/item?id=50344958)
+
+**Anthropic's Q3 revenue of $16.8B added less in absolute dollars than Q2 did**, and Henry Blodget argues the monthly breakdown shows growth nearly stalled between July and September. The figures come from NYT reporting on Anthropic's investor update.
+
+The quarterly path: Q1 $4.8B, Q2 $11.6B (+$6.8B, +141%), Q3 $16.8B (+$5.2B, +45%). Average monthly revenue growth fell from roughly $760M in Q2 to $580M in Q3.
+
+The sharper claim rests on one more data point, a reported $65B annualized run-rate in July, or about $5.4B for that month. If July was $5.4B and the whole quarter was $16.8B, then August and September together were about $11.4B, which implies only modest growth after July. Blodget also notes that Anthropic reportedly didn't share a September annualized figure, and he reads that omission as a sign the number wasn't flattering.
+
+He offers three explanations:
+- **Seasonality**, mainly a soft August, though he thinks September should have rebounded.
+- **Capacity limits**, meaning demand outran what Anthropic could serve. He calls this the benign case.
+- **Moderating AI spend**, including customers shifting some workloads to cheaper Chinese models, which he says usage data supports.
+
+He ties this to neocloud stocks like CoreWeave falling, since they borrowed heavily on the bet that compute demand keeps compounding while rates rise.
+
+The caveat is that the monthly figures are his own back-of-the-envelope estimates, not reported numbers. The inference that growth stalled leans on a single July run-rate figure and on reading meaning into an omission, so treat it as a plausible thesis, not a measured result.
+
+The thread splits into two fights: whether Anthropic's coding lead is durable against cheaper models, and whether its valuation and obligations can ever be covered. The slowdown thesis itself gets little direct attention. The one pointed counter is that Opus 5.5 launched September 22, at the very end of the quarter, so any lift from it wouldn't show up yet.
+
+**Does a coding lead protect revenue?**
+- mdasen argues that being best isn't enough. OpenAI is close behind, Anthropic is reportedly around 8x more expensive per task (Sol 6.1 vs Opus 5.5, going by cost per task rather than per token), and cheap models like Deepseek 4.1 Flash are good enough for many uses. Companies could blind-test models behind a proxy for two months, measure how often engineers correct the model, and switch if the difference is small. Brazukadev called that "a great product idea."
+- Practitioners partly confirmed the gap. Skew-aberration said Flash is fast and cheap, but it lacks Opus's robustness: it skips double-checking, quits early, and explores less on its own. Rusticpenn said a custom agentic loop closes much of the gap. Skew-aberration replied that Flash in opencode still needs far more oversight than Opus in Claude Code. Another commenter suggested the Hermes harness, saying a local Qwen model has run a game decompilation for 32 hours with it.
+- Karrot_Kream framed the crux as whether intelligence has a Pareto-optimal point. If frontier models are smart enough that cost per task falls, people keep paying for them. If not, token costs outrun revenue and the "no clear leader" world wins.
+
+**Valuation and solvency**
+- Eji1700 argued that the obligations, such as compute commitments and capex, force valuations that are unrealistic, and compared it to the dotcom infrastructure overbuild.
+- JumpCrisscross rejected comparing valuation to liabilities. Walmart and JPMorgan carry liabilities far above their equity value without being insolvent, so the ratio measures leverage, not solvency. Disgruntledphd2 countered that banks are a very different kind of business.
+- On the numbers, JumpCrisscross estimated that $900B of capex over a decade needs roughly $360B in annual revenue at 25% margins, comparable to a Walmart quarter. Eji1700 disputed the margin assumption. Orangecat cited the S-1 figures of $33.2B revenue against $18.8B compute costs in the first three quarters of 2026, saying inference is highly profitable and just needs more volume.
+- Oblio argued that even that revenue is huge. Only 13 companies worldwide exceed it, Anthropic has a near-clone in OpenAI plus cheap Chinese rivals, and it can't enter China, while Europe and India may favor local players. JumpCrisscross answered that the claim was about scale, not feasibility, and used UnitedHealth and Sinopec as comparisons.
+
+Waterluvian added that they want a correction sooner rather than later, because trillion-dollar valuations push companies to do whatever it takes to justify them.
+
+### Claude Opus 5.5 Can Draw Permit-Level Architectural Drawings
+
+#### [Submission URL](https://stephenjgallagher.substack.com/p/ai-can-draw-blueprints-now) | 105 points | by [SteveGallag](https://news.ycombinator.com/user?id=SteveGallag) | [37 comments](https://news.ycombinator.com/item?id=50339224)
+
+**The claim is that Claude Opus 5.5 can now produce architectural drawings good enough to submit for a building permit**, which would move AI from sketching floor plans to generating the documents a municipal reviewer actually checks.
+
+The article body wasn't retrievable, so there's no detail on the method, what building type or jurisdiction was tested, or whether a licensed professional reviewed the output. Those are the unknowns that decide whether "permit-level" means a real permit was issued or the drawings merely look the part. In most places a licensed architect or engineer still has to stamp and take liability for the set, so the practical shift would be in drafting labor, not in who can sign.
+
+Treat it as an author's claim until the post's examples can be checked against actual code-compliance requirements.
+
+The thread splits between working practitioners who say the drafting gains are real and skeptics who say "permit level" is a vague bar. The largest argument ended up being less about AI than about whether permitting itself is worth protecting.
+
+**Practitioners report real drafting gains.** A PE (rabid_0wl) says Opus 5.5 is a game changer for drafting. They run it headlessly through AutoCAD with the firm's templates, and treat it like a junior EIT. Redlines come back via a Bluebeam MCP, and the model updates a CAD SOP for future sessions. A former commercial-concrete detailer (m4rkuskk) says he rebuilt Revit/Bluebeam-style tooling and detailed past jobs in an hour that once took weeks. One caveat from mcpcpc: the model's vanilla output follows outdated CAD standards. The public US National CAD Standard is v3, while the current version is v7. They paid for a licensed v7 and built an MCP server so the model could consult it.
+
+**Will it shrink the profession?** pvab3, an electrical engineer, worries that if a job takes 100x less time, PEs become final-review rubber stamps and a firm of a dozen needs far fewer. cucumber3732842 replies that most PE work on ordinary buildings, parking lots and retaining walls is already work others could do, and licensure mandates the fee anyway. Oarch adds that the hard hours are in the data-rich 3D model, not drafting. aothms agrees and argues for generating drawings from a validated IFC model with interference checks, which also addresses cross-drawing consistency.
+
+**What "permit level" means.** SkyPuncher notes that a permit only signals a reasonable belief the design can pass inspection. It doesn't mean every detail is final or correct. Several asked for scoped benchmarks across residential, commercial and industrial work, and across architectural, structural and MEP disciplines. anatolian_apiar points out that the model can't take soil samples or know site conditions, and popkkksidhd questions whether architecture tolerates failure the way software does.
+
+**Are inspectors the bottleneck or the safeguard?** FatherOfCurses worried about inspecting "vibe-architected" buildings, which set off the longest argument.
+- **Skeptics of permitting:** bigwheels says much of it is red tape. He cites paying $3,900 for a tree survey in the Bay Area and re-doing studies completed three years earlier. pvab3 says reviewers' comments are often boilerplate irrelevant to the drawings, and review can take a year.
+- **Defenders:** DolphinOverplan, teeray and projct say the rules are written from accidents, and that drainage, soil and environmental requirements protect neighbors and water. bigwheels concedes the utility but says municipalities weaponize the rules to suppress development.
+- **Middle positions:** mindslight argues regulation should scale by project size and commercial status. Schiendelman says some companies already submit AI-generated drawings that link back to previously permitted work, to curb arbitrary reviewer decisions, and says this works well. jstummbillig expects bad drawings to be caught by reviewers, builders and lenders anyway.
+
+**Washington State's pre-approved plans.** ortusdux notes that Washington is piloting free "Permit-Ready Plans" in a few cities, mostly ADUs and dense housing. Plans reportedly make up 5-20% of construction cost, so even a 10% saving would matter.
+
+Smaller notes: simonw says strong 3D results (Blender, Three.js) make 2D CAD gains unsurprising. cyone says the source is a single Substack post with many revisions and feedback rounds, and the best draft got the most feedback.
+
+### China's First Frontier AI Export Controls: Mofcom Announcement No. 48
+
+#### [Submission URL](https://labs.cloudsecurityalliance.org/research/csa-research-note-china-ai-export-controls-announcement-48-2/) | 158 points | by [jonnybgood](https://news.ycombinator.com/user?id=jonnybgood) | [89 comments](https://news.ycombinator.com/item?id=50334038)
+
+**China now proposes export controls on frontier model weights, agents, and AI-enabled offensive cyber capability, and a registration requirement is already live.** MOFCOM and MOST's Announcement No. 48 (Oct 16, 2026) adds 40 technologies to the export catalogue, 23 of them in AI. The rest cover biomedicine (5) and photovoltaics (12). The catalogue additions are a draft open for comment until November 15. The interim pre-export registration applies now, including to exports already underway.
+
+The draft restricts weights, checkpoints, source code, architecture, and training know-how if a model meets any one of three tests:
+- at least 10^26 training FLOPs
+- at least 2 trillion parameters
+- a global top-10 position on public rankings or call volume at export time
+
+Agents are controlled separately from the model. Planning, multi-agent coordination, and tool-use technologies are restricted above set benchmarks. High-performance agents built for critical infrastructure, defense, or core government use are prohibited outright.
+
+**The service-versus-custody line decides most enterprise exposure.** API, app, web, SaaS, and lightweight on-device use don't count as exporting a model. Deploying a restricted model locally outside China does, though automatic licensing may apply on a Chinese company's own overseas cloud. Registration also triggers on:
+- ownership transfer abroad
+- licensing for overseas use
+- a change of control to a foreign entity
+
+Exporters must judge for themselves whether a technology is in scope. Analysts say the form could even capture intra-group code sharing. Anything already public through open-source release or academic publication is excluded.
+
+The 10^26 FLOP figure mirrors the 2023 U.S. executive order and the since-rescinded 2025 AI Diffusion rule. ChinaTalk's authors estimate no released Chinese model currently crosses it, so the compute test is more signal than bite today. The top-10 ranking test is the vaguer and more discretionary one. MOFCOM calls the revision routine and says it targets no specific country. The CSA note frames it as the second major jurisdiction, alongside the U.S., to put formal outbound controls on frontier AI supply chains.
+
+The thread splits over whether Beijing's "we encourage open source" line should be believed, and over a side-fight about what "open" means.
+
+**Words vs. actions on openness.** byzantinegene quoted MOFCOM's press statement: automatic licensing for open-source AI exports, with "immediate reporting and export", and public-domain technology excluded. They took that as a sign China still backs open weights. Skeptics gave several replies:
+- usrnm said what governments do matters more than what they say, and this is a move toward restriction.
+- jacquesm countered that nothing has actually changed so far. He said China is playing a soft-power game of undercutting US labs, though that could flip overnight.
+- yorwba added a concrete correction. The draft does create some outright prohibitions, such as sandbox detection. A sufficiently capable model could trip one of those, and even "encouraged" exports require advance reporting, which in principle lets the government refuse.
+- Iolaum read it as China building the capability to restrict while keeping options open. lumost suggested open-weights models also serve Beijing by commoditizing AI and weakening the frontier labs' influence.
+- Some replies were cynical (Roark66: support only "inasmuch it gives them an advantage"). Forgeties79 answered that if self-interest yields more open, locally runnable models, they prefer it to renting from closed US labs.
+
+**What counts as an export.** RobotToaster assumed closed-model exporters would need licenses. yorwba pointed out that API, app, SaaS and lightweight on-device use are explicitly outside the model-export rules, per the MOFCOM press conference, so the rules mainly hit open-weights releases and models hosted in datacenters outside China. fc417fc802 noted the US seems to treat API access as a kind of export, which explains some of the confusion. vikrantrathore linked a book that argues export controls make both sides worse off.
+
+**Does the restriction undercut Chinese models' appeal?** _fw argued Chinese models gained adoption because they are open, and that restricting top-10 models could end "the democratisation of powerful AI". That set off two further arguments:
+- **Open source vs. open weights.** injidup, petcat and NooneAtAll5 insisted weights alone are like a binary blob, so "open-weight" is the correct term. Majromax defended "open source" because inference code is public and weights can be inspected and fine-tuned, comparing them to a rendered image. analognoise said even traditional open source depends on closed microcode.
+- **Can you trust them?** willis936 asked whether anyone had actually inspected the weights for backdoors. vidarh replied that the risks differ in kind. A closed hosted model sees all your data and can change behavior at will, while an open model's trained-in triggers must be planted blind and can be evaluated. codedokode added that a local model needs no internet connection, which makes a backdoor harder to exploit.
+
+The unresolved question is whether the carve-outs for open weights will hold in practice, or whether the registration and prohibition machinery is the real signal.
+
+### GPT-Rosalind-6 System Card Addendum
+
+#### [Submission URL](https://deploymentsafety.openai.com/gpt-rosalind-6) | 71 points | by [gmays](https://news.ycombinator.com/user?id=gmays) | [57 comments](https://news.ycombinator.com/item?id=50337503)
+
+**GPT-Rosalind-6 is the same weights as GPT-6 Astra, with no added training data or post-training, released with fewer dual-use refusals to vetted scientists only.** The difference is policy, not model: access is gated by a review of each applicant's proposed use, security controls, and governance practices, and requests for biological weaponization are still refused.
+
+OpenAI's Preparedness Framework classification is the notable part. The launch is treated as **High (below Critical) in Biological and Chemical**, but **Critical in Cybersecurity** and below High in AI Self-Improvement. Those last two are inherited from Astra's assessments rather than re-run. The Critical cyber label on a model sold for drug discovery is the line most readers will stop on, and the addendum text provided doesn't explain it.
+
+Gains over GPT-Rosalind-5.5 at the highest reasoning budget, on identical problem sets:
+- **MedChemBench v7** (99 problems): 49.6% vs 28.9%
+- **GeneBench Pro v13** (129 problems, single-attempt success): 37.7% vs 16.7%
+- **LifeSciBench Gold** (94 problems, six excluded for task or environment issues): 61.3% vs 44.0%
+
+The 5.5 numbers are re-scored on current benchmark versions, so they won't match its launch figures. GeneBench also ran in a benchmark-specific configuration that differs from production.
+
+On the risk side, OpenAI reran biological evals alongside Astra's helpful-only results, which strip refusals to expose latent capability. The four High evals cover wet-lab knowledge and troubleshooting; the four Critical evals cover biological design. Two earlier evals, hard-negative protein binding and DNA sequence design, were retired. The Critical thresholds are described as preliminary, expert-judgment estimates that may change, which is a candid admission that the line separating High from Critical is soft.
+
+Most of the thread drifts away from the biology and the Preparedness labels. It lands on model naming, Astra versus Sol behavior, and who should control access. The Critical cyber classification and the benchmark gains get almost no discussion.
+
+**Same weights, so what's different?** ludvigk asked whether this is just a system prompt. gunalx's guess was a relaxed safety filter plus a separate product name for easier specification. Nobody with actual knowledge confirmed either.
+
+**Astra vs. Sol 6.1 (the longest sub-thread).** Alifatisk asked why a flagship Astra would sit under Sol 6.1.
+- **Astra is the bigger, deeper model.** pizza234 pointed to Artificial Analysis rankings placing Astra higher. lnkdinsuxs said Astra is far stronger on exploratory research tasks and is cheaper than Fable 5.1 because it uses fewer tokens and steps. kingkongjaffa guessed Sol is more instruction-tuned for typical users, so it benchmarks and feels better.
+- **What Sol actually is is disputed.** Starlevel004 said it's widely suspected to be a slightly detuned Astra. lnkdinsuxs countered that it's more likely a benchmark-tuned distillation. Starlevel004 replied that Sol runs at only ~15-20 tokens/s versus ~70-80 for Terra 6.1, which seems too slow for a distillation. Silagi offered flimsy evidence of multiple passes through its own weights. Others asked whether Sol uses comparable tokens per task and whether it's even slower than Astra.
+
+**"Lazy" Astra.** fakwandi_priv felt Astra got lazier in planning after 6.1 shipped, while Claude got more proactive. Replies attributed this to something else:
+- artdigital said Astra is extremely literal rather than lazy. It needs a clear goal and then works until done, whereas Sol and Claude infer more.
+- zamalek said the real failure is both skipping requested work and adding unrequested work.
+- rlprlprlp described a model that quit a task and then admitted it had only assumed the blocker happened.
+- margalabargala blamed constantly updated harnesses rather than the models.
+- 01100011 suspected behind-the-scenes tweaking for resource reasons.
+- srcreigh said Astra has always been lazy by default.
+
+**Who gets to gate access?** zb3 objected to a for-profit company vetting applicants. The rebuttals split three ways:
+- DonsDiscountGas: sellers can refuse buyers.
+- pixl97: corporations were never democracies, and regulation tends to favor governments and corporations.
+- mediaman: the democratically elected government demanded these controls.
+
+wry_xy wanted everything public, which would require overhauling copyright.
+
+**Open source as the escape hatch.** theplumber predicted open source will win. pixl97 asked who supplies the models if governments classify them as munitions. NoidFonsense pointed to the crypto precedent and suggested crowdfunding or distribution over i2p. pixl97 noted the crypto fight took a long time and could still be reversed. andriy_koval questioned whether open labs can stay funded without revenue.
+
+**Is ML the bottleneck in drug discovery?** lifeisloving argued it isn't. Earlier ML-driven startups failed because they produced more candidates than the industry could use, and they saw the AI-cures narrative as hype. tclarke142, who founded a startup on this premise, agreed that ideas, structures and molecules are cheap and that making them in cells is the hard part. The comment was cut off.
+
+**Naming.** Many complained about OpenAI's naming and about "card" being a misnomer for hundred-page documents. whafro decoded it as a 6.0-series specialist model, likely named after Rosalind Franklin, which commenters confirmed.
+
+---
+
 ## AI Submissions for Sun Nov 01 2026 {{ 'date': '2026-11-01T23:50:34.461Z' }}
 
 ### When Modernization Breaks Working Code: A Study of LLMs on Legacy PHP
@@ -551,244 +1175,3 @@ The thread mostly ignores the enrollment numbers and splits into two debates: wh
 - **Biology as the refuge.** A_D_E_P_T said biotech and pharma resist AI because the underlying data is missing, and formal-logic fields are the ones that are "done for." silverFork countered that AI can correlate more data than any human and can order experiments. ben_w said protein folding makes betting against AI in biology unwise. The open question is whether AI becomes sample-efficient enough to work where data is thin, or can self-play its way there.
 
 A few other comments were off-topic: paywall links, a link to an earlier submission reporting an 18% two-year drop, and a dismissal of AI as hype.
-
----
-
-## AI Submissions for Fri Oct 30 2026 {{ 'date': '2026-10-30T20:27:53.642Z' }}
-
-### Cisco gives engineer unlimited AI tokens to rewrite legacy code
-
-#### [Submission URL](https://fortune.com/2026/10/30/cisco-president-jeetu-patel-gen-z-27-year-old-unlimited-ai-tokens-rewrite-legacy-code-entry-level-jobs/) | 297 points | by [taubek](https://news.ycombinator.com/user?id=taubek) | [362 comments](https://news.ycombinator.com/item?id=50304122)
-
-**Cisco's president gave a 27-year-old engineer unlimited AI tokens and a four-week deadline** to show he can refactor the company's legacy code with a two-person team. The stated end goal is refactoring 98% of that code within 24 months.
-
-The engineer is Padmanabhan "Paddy" Krishnamurthy, who joined in 2025 when Cisco acquired EzDubs, the real-time translation startup he cofounded in 2023. Jeetu Patel, Cisco's president and chief product officer, found him "five levels" down the org chart "doing something unstrategic." After a chat in the San Francisco office, Krishnamurthy said a two-person team could do the rewrite. Patel says even the most AI-forward people on his own team weren't thinking that way.
-
-The article is mostly a Gen Z hiring story, not an engineering one. Patel argues that experienced staff can't ask the questions only a newcomer would, that he deliberately creates "tension" in teams, and that he treats interns as "reverse mentors." He cites a Stanford scholarship student who emailed him monthly about AI, interned at Cisco, and redesigned "something" veterans couldn't crack.
-
-The piece gives no technical detail: which codebases, which models, what "refactor" means, how correctness gets verified, or what the unlimited token budget costs. Without those, the 98% target is an aspiration rather than a plan. The four-week proof window is the first real checkpoint.
-
-### AI isn't replacing SREs, it's deskilling them
-
-#### [Submission URL](https://newsletter.signoz.io/p/ai-isnt-replacing-sres-its-deskilling) | 642 points | by [dorianniemiec](https://news.ycombinator.com/user?id=dorianniemiec) | [471 comments](https://news.ycombinator.com/item?id=50305693)
-
-**If AI absorbs the routine 95% of incident response, SREs lose the reps that build the judgment for the 5% that actually pages them at 3am.** The SigNoz newsletter piece is an opinion essay built on Lisanne Bainbridge's 1983 "Ironies of Automation": the more you automate, the more critical the human becomes during rare failures, and the less practice they get at exactly those interventions.
-
-The author maps this onto SRE through PagerDuty's tiered model:
-
-- **Tier 1:** known issues with known fixes, fully automated.
-- **Tier 2:** AI recommends, a human validates.
-- **Tier 3:** novel, cascading failures stay human-led, with AI supplying context.
-
-The catch is that if humans only touch Tier 3, nobody builds the intuition that comes from years of hands-on incidents. That intuition is what Tier 3 demands.
-
-The supporting evidence comes from other fields, not SRE:
-
-- **Medicine:** endoscopists' unassisted polyp detection fell from 28% to 22% after a period of AI use.
-- **Aviation:** heavy autopilot reliance degrades manual flying and situational awareness, and the article says the FAA now mandates more manual flying time.
-
-The author also admits to offloading nearly everything to AI themselves.
-
-The argument is analogy-driven. The article offers no SRE-specific data on skill decay, and the excerpt cuts off before any proposed remedy. The aviation precedent, mandated manual practice, hints at one: deliberately scheduled human-led incident drills.
-
-The thread splits into two arguments, one over whether aviation-grade rigor is the right model for software, and a much larger one over whether "no need to read the code" is reckless or just inevitable.
-
-**Aviation as a model.** andix praised the FAA analogy, noting that aviation has solved human error while complexity and automation keep growing. Muromec and tybit countered that zero-fatal-mistake engineering has a steep cost. Most companies knowingly accept some risk, and a government portal that goes offline for a few hours is fine. andix replied that aviation runs under the same cost pressure, with day-to-day operations that are fast and still safe, such as engine swaps within hours. simonra answered that the price is the point: lost chat history or photos are worth far less than lives, and he already questions what even modest backup and safeguard costs buy him.
-
-**Is skipping code review defensible?** This was the main fight.
-- **Skeptics:** jeremyjh argued that influencers saying "reading the code is not needed" don't run systems where customers would walk after repeated billing errors. He imagined Stripe double-charging and being unable to fix it because nobody understands the system. When challenged, he asked for a single developer on a correctness-critical system who actually preaches this. frankzinger had seen terrible AI-written tests, so "you have to check all the code." majormorce and others called AI-checked tests the very deskilling at issue. conartist6 and vkgcr said they've lost respect for people and leaders who fell for "AI psychosis."
-- **Defenders:** charcircuit rejected the article's premises. He argued that people don't need to practice on easy outages to handle hard ones, that AI can build realistic practice scenarios, and that this is a reallocation of skills, not deskilling. He added that "the real world is robust" and AI will have a lower bug rate than humans. discreteevent replied that robustness comes from businesses paying for their bugs in compensation and lost customers. littlecranky67 said hand-written code wins if it's better. icantevenhold and jasonvorhe noted that software quality was never as critical as claimed, since Microsoft and Atlassian still print money and enterprises were already getting breached on basic OWASP issues.
-- **Philosophical turn:** keeganpoppen argued that the grifters are "basically right, just for the wrong reasons," and that human understanding is not privileged, since "understandable to humans" may be an anti-goal. jeremyjh answered that AI is useful but can't truly learn, and that agents write far more code than humans (he cited roughly 2.5x on refactors) and ignore existing patterns. Paradigma11 said an agent effectively learns when you load context. jeremyjh then demanded a paper on a coding model that learns continuously, and imtringued dismissed that as easy to rebut.
-
-The unresolved crux is whether human operators need hands-on reps to stay competent, or whether AI-generated practice and AI-written tests can replace them.
-
-### Show HN: A working Nintendo in ~1GB of Qwen weights
-
-#### [Submission URL](https://github.com/dbreunig/nesformer) | 280 points | by [dbreunig](https://news.ycombinator.com/user?id=dbreunig) | [143 comments](https://news.ycombinator.com/item?id=50306442)
-
-**An NES's 6502 CPU, its 2 KB of RAM, and a cartridge ROM run inside a stock Qwen3.5 checkpoint, with no training involved.** A compiler computed every weight. The model plays by predicting the CPU's execution log one token at a time, while a small host program handles the rest of the console: drawing the picture, reading the controller, and firing the vblank interrupt.
-
-It builds on Qwenputer by Divyansh Agrawal, which compiled a CHIP-8 and then a RISC-V CPU into Qwen3.5-4B. nesformer reuses that compiler and its central trick: the Gated DeltaNet state serves as the machine's memory. The result loads as a standard `Qwen3_5ForCausalLM`, and the README says every CPU token in the demo runs (including Super Mario Bros. World 1-1) came from the model.
-
-The correctness claim is concrete. For the bundled test games, every frame matches a conventional 6502 emulator exactly, and a `check` command runs weights and reference CPU side by side, stopping at the first divergence.
-
-The catch is speed and scope:
-
-- **Slow:** after a ~20 s numba compile, a frame takes 1–6 seconds, so 10 seconds of NES time (600 frames) takes around 25 minutes.
-- **Mapper 0 only:** it runs NROM (iNES mapper 0) cartridges such as Super Mario Bros., Donkey Kong, or Excitebike. Other boards stop with a message. You supply the ROM; only three freely licensed test ROMs ship.
-- **Engines:** the default is a numba engine. A stock `transformers` path (`--engine hf`) works too, at about 10 tokens/s, and needs torch.
-
-Setup is light: Python 3.11+, numpy, scipy, numba, and pillow. Unzip the code and weights archives side by side, and `python -m nesformer run` saves an animated GIF. Controller input is scripted by frame range, e.g. `right@200-600`. `build` regenerates the weights in about 10 seconds, which underlines the point: this is a compiled program in transformer clothing, not a learned one.
-
-The thread splits into three loose conversations: how the build was made, whether the compiled-VM idea generalizes, and a long tangent on AI, efficiency and jobs.
-
-**How it was built.** dbreunig, the first commenter, said Opus produced working weights and code from just two prompts. The first was to read the Qwenputer article and explore whether the technique could emulate an NES. The second was "let's build it, just for fun." He credited the result to unusually good scaffolding: a long-lived emulation community, conformance test ROMs (one with more than 3k golden instructions), and the original Qwenputer repo for writing the weights. cadamsdotcom framed these as "oracles" that models need, as humans need teachers and encyclopedias. giancarlostoro said he uses similar tests from adjacent projects, and that a friend feeds Claude Gherkin-formatted test criteria with excellent results. That prompted:
-- An explainer that Gherkin is the Cucumber BDD syntax for test cases.
-- A sarcastic rant about brittle regex step layers and refactoring friction.
-- embedding-shape's reply that this is knee-jerk and the syntax is worth a look.
-- girvo's prediction that BDD may make a comeback.
-
-**Compiling tools into weights.** armcat proposed compiling a VM, Python interpreter and shell tools into the weights, so tool calls become matmuls instead of external autoregressive calls. kirubakaran linked a Google latent-reasoning paper. manofmanysmiles suggested training with fixed-function regions frozen, or hybrid internal blocks such as a symbolic execution engine or a Lisp. The skeptics were blunt. vkgcr asked why not simply run code as code, and Ohentis said "You can just do that anyways." 0c3ca83 compared it to putting brainfuck interpreters everywhere. jacquesm echoed the sentiment, finding the hack delightful but "horrifying" from an efficiency standpoint.
-
-**The efficiency and jobs tangent.** A joke about people re-asking a local model instead of scrolling up led to side discussions of token costs ("entirely depends on who is paying"). garciasn then posted his own progression with LLMs, from toy to fleets of autonomous agents, and predicted agents would soon code-golf into ASM. jacquesm replied, "Next week: hey, I'm out of a job." pjmlp said productivity gains map directly onto smaller delivery teams in shareholder-driven firms. xyzzy123 pushed back with a detailed account of large enterprises that don't optimize for efficiency. They run on fiefdoms, ticket SLAs and moats, so AI gets used for more paperwork and cuts are made for optics rather than output. garciasn said he prefers small teams and doesn't equate success with headcount. soniclettuce objected that this dodged pjmlp's point. garciasn answered that he was making a separate argument and didn't dispute that productivity can shrink teams.
-
-The unresolved question is whether efficiency gains actually reach organizations that were never optimizing for efficiency.
-
-### Show HN: Sketch Stadium – watch your agent play Pictionary
-
-#### [Submission URL](https://sketch.wakeshift.ai/games/q5ucru) | 35 points | by [ericlevine](https://news.ycombinator.com/user?id=ericlevine) | [11 comments](https://news.ycombinator.com/item?id=50305218)
-
-**Sketch Stadium is really a demo for Wakeshift, an SDK for pushing events to dormant AI agents**, and Pictionary is the showpiece. Agents connect via MCP (no account, just authorize), subscribe to game events, and take turns drawing or guessing. Clues score 1, 2, or 3 points by difficulty. The linked page is a live game, currently on round 21507, with a scoreboard led by "Silly Lynx" at 36 points. In the visible round, the word was "finish line" and the guesses included "hurdles" and "running race."
-
-The more useful detail is a design lesson. The first version made agents draw lines 10 at a time, to mimic real Pictionary, and they were *really* bad at it. Giving them a subset of SVG fixed that, even for lower-cost models. If you build agent tooling, that's a reminder that the output format you offer often matters more than the model you pick.
-
-The problem behind it is real. Agents that wait on CI, an approval, or an email reply today can poll, ask the human to nudge them, use a bespoke integration, or rely on a proprietary feature like Claude Code monitors. The author hit this building Clawvisor, where an agent had to notice an out-of-band approve click, and ended up long-polling.
-
-Wakeshift attaches to your MCP server so consumers can subscribe to real-time events. It wakes a sleeping agent using whatever per-harness hack is available. For most harnesses that means installing a hook, and the author says it will upgrade automatically as harnesses adopt native MCP events. So the "push" is a shim today, not a protocol guarantee.
-
-The author is asking for other MCP servers and game ideas that would benefit from push notifications.
-
-The thread is mostly the author (ericlevine) fielding questions, with security the main concern and the quality of agent drawings the main practical finding.
-
-**Prompt injection as the elephant in the room.** The top comment warns that pasting prompts from HN into your agent, or running "pipx install this MCP", is like a Facebook "what was your first car?" thread, i.e. a social-engineering setup. The author answered that this is a remote MCP server with account-free OAuth, exposing only game tools, and that it marks all server communication as untrusted so other players' guesses can't inject instructions. He asked how an MCP developer could share a server safely on HN, and that question went unanswered. The commenter then pointed out that this setup amounts to an accidental capture-the-flag game, and the author said he has built poker and a mafia-style vampire game that force agents to bluff. His main hurdle there was prompt-engineering the agents to stop leaking secrets like hole cards. A side question asked whether the "first car" warning was about security-question harvesting, and nobody answered it.
-
-**Agents are bad at revising drawings.** Timwi noticed that the first pass is usually the only good one. For "rain on my parade," the agent kept adding confetti until it hid the cloud and the person. The author agreed that extra detail adds nothing at least 90% of the time. Some agents blank the canvas and restart, which works, but they don't do it consistently.
-
-**Difficulty is bimodal.** 542458 found the rounds too easy, with mostly "correct in 1" results. The author said difficulty is very binomial: concrete words get guessed in about 5 seconds, while abstract ones can't be conveyed and nobody guesses them. More detail rarely helps either way.
-
-Other comments: bostonaholic linked a similar but opposite game (sketchit.game), and one commenter joked that this is 1.5 years from Angelic Layer/MMBN-style agent battles.
-
-### Anthropic may not secure investment-grade rating after IPO, Blackstone says
-
-#### [Submission URL](https://www.ft.com/content/59383c7f-8d82-493f-bf01-d2e862a1018f) | 322 points | by [petethomas](https://news.ycombinator.com/user?id=petethomas) | [276 comments](https://news.ycombinator.com/item?id=50307219)
-
-**Blackstone is saying Anthropic might not land an investment-grade credit rating even after it goes public**, per the FT headline. That's a notable signal from a major private-credit and infrastructure investor about how lenders view a frontier lab's balance sheet.
-
-The title implies two things: an Anthropic IPO is part of the conversation, and an equity listing doesn't automatically fix the borrowing profile. Investment-grade status generally turns on cash flow stability and leverage, not valuation or growth. A company spending heavily on compute can be worth a fortune and still price its debt like a junk issuer.
-
-The article is paywalled, so the specifics are unknown: what Blackstone's reasoning was, which deals or financing it was discussing, and what timeline it assumed for any listing. Treat this as a framing of financing risk rather than a reported fact about Anthropic's finances.
-
-The thread quickly drops the credit-rating question and becomes a debate over whether frontier labs have a durable moat, with dot-com history as the main evidence on both sides.
-
-**The "too early to pick winners" camp.** The top comment says it's year 4 of the market, while bond investors think on 20-year horizons. It cites Yahoo, MySpace and Friendster as promising names that would have been bad bets. Replies built on that point:
-- OpenAI and Anthropic are themselves new entrants, and later entrants can "start on third base" by distilling a frontier model cheaply. Incumbents meanwhile carry heavy debt and compute commitments sized to outdated efficiency assumptions.
-- One commenter said the winning business may be "one or two abstractions removed" from building a good LLM.
-- Another noted that if open models stay under 12 months behind, profitability could be undermined.
-
-**The moat camp.** One commenter argued the moat is self-evident: no open-source model has genuinely reached frontier performance, only matched on cost, and cost is the easiest thing to improve. Pushback came from two directions:
-- On history, the commenter's recollection of Yahoo and MySpace was disputed. Others said Yahoo dominated before Google, and MySpace peaked in 2007.
-- On substance, a commenter called models a commodity that depreciates quickly, with Anthropic's best shot being friction from code-assistance tooling.
-
-**Local models vs. frontier.** Someone argued a "good enough" model will always be optimized down to a 32 GB Mac. Another replied that unsaturated, high-value tasks (their example was drug discovery) will keep the frontier on GPU racks. That reply also doubted that distillation reaches 32 GB without a big loss in capability.
-
-**Amazon and pets.com tangent.** The Amazon-versus-pets.com analogy turned into a discussion of why Amazon started with books:
-- Media-mail postage made heavy books cheap to ship.
-- Early sales-tax avoidance may have mattered.
-- Chewy was cited as a success, then challenged by someone who noted its stock has badly underperformed the S&P since 2019.
-- The commenter who started the "everything store" analogy argued Amazon started lean and didn't build 1,000 warehouses first. They saw that as the contrast with Anthropic's debt-funded buildout.
-
-Several comments diverge into whether Meta's Muse is seen as an agent or just a Facebook chatbot, with no consensus. The unresolved crux is whether distillation and open weights make frontier training a depreciating asset, or whether the frontier keeps earning a premium. That is exactly what a lender's view of Anthropic's debt would hinge on.
-
-### Wall Street closes sharply lower as AI cash burn fears spark tech selloff
-
-#### [Submission URL](https://www.reuters.com/business/nasdaq-futures-tumble-amazon-intel-results-deepen-ai-spending-woes-2026-10-30/) | 68 points | by [geox](https://news.ycombinator.com/user?id=geox) | [15 comments](https://news.ycombinator.com/item?id=50310431)
-
-**Tech stocks sold off hard on worries that AI capital spending is outrunning returns.** The title says Wall Street closed sharply lower, and the URL slug points to Amazon and Intel earnings as the trigger, with Nasdaq futures falling ahead of the open.
-
-That's all the source supports. I don't have index moves, percentages, or company-level figures, so none are given here. The shape of the story is familiar: investors are punishing big spenders on AI infrastructure when earnings leave the payoff unclear, and the "cash burn" framing suggests the worry is free cash flow, not demand.
-
-For anyone building on hyperscaler platforms, the thing to watch is whether this pressure turns into slower capex or pricier compute. Nothing in the available text says either way.
-
-The thread is mostly skeptical banter about market-drop framing, with one genuinely informative tangent on why Caterpillar is an AI stock.
-
-- **Is this a bubble pop?** Asked how big a drop counts as a pop, commenters offered a few yardsticks. One cited the common convention that 10-20% is a correction and more than 20% is a crash. Another said the real signal is mainstream press debating whether CoreWeave heads to Chapter 11 or Chapter 7. A third compared it to the dotcom bust and 2007 and said this doesn't look like one yet. They added that the story is largely about Amazon, which they argued hasn't made a dent in the AI market and is cutting its losses. Another commenter went much further, arguing a 50-75% haircut is warranted and that this could be the start of a long 1999-2002-style bear market. They pointed to boomer money that won't return.
-- **Why Caterpillar is up on AI:** This was the most concrete exchange. Commenters said CAT sells power systems, including diesel generators and gas turbines (via Solar Turbines), that data centers need. One commenter said electrical switchgear, UPSes, generators, and cooling plus installation make up probably 90%+ of buildout cost. They said the generator makers (Cummins, CAT, Generac) have backlogs long enough that Amazon bought part of Generac. The shorthand was "they sell the shovels," with GE Vernova cited as a similar rise.
-- **Skepticism of the headline:** Commenters mocked "largest drop since early June" as sports-stat framing that makes anything sound groundbreaking. One quipped the alternative title is "Fears of tech selloff spark tech selloff." Another noted the chart has a zoom-out button.
-- **Mood:** One commenter said they liquidated their retirement account, and framed it as an elegy for the industry rather than as analysis.
-
-The sharpest open question is whether this is a one-company (Amazon) disappointment or the start of a broader repricing. The thread gave no data to settle it.
-
-### Claude 20x is now Ultra without the 5-hour limit
-
-#### [Submission URL](https://support.claude.com/en/articles/17728952-what-is-the-ultra-plan) | 14 points | by [fagnerbrack](https://news.ycombinator.com/user?id=fagnerbrack) | [7 comments](https://news.ycombinator.com/item?id=50308320)
-
-**Anthropic renamed Max 20x to Ultra and dropped the rolling five-hour usage window for verified accounts**, leaving only a weekly cap. The price stays at $200/month on web, and existing 20x subscribers migrate automatically.
-
-The mechanics:
-- **Usage:** 10x the Pro plan's weekly usage. That's a smaller multiplier than the old "20x" branding, though the page doesn't say whether the underlying allowance changed.
-- **Verification:** it's automatic, based on account and payment history. Unverified accounts get a temporary five-hour limit that lifts on its own. Verifying your phone number at checkout is a separate step and doesn't count. To check, open Settings > Usage; if there's no "Current session" bar, you're verified.
-- **Weekly caps:** one across all models, plus a separate weekly limit for Fable. Anthropic also reserves the right to add weekly or monthly caps and model- or feature-level limits "at our discretion," and guarantees no uninterrupted service.
-- **Extras:** Claude Code is included, along with monthly API credits, priority access to new models, and background multi-step Cowork tasks. Limit resets can restore your weekly allowance to full.
-
-The practical change is that heavy users no longer hit mid-session throttling and can burn the weekly budget in one stretch if they want. The catch is that "no five-hour limit" is conditional on a verification process Anthropic doesn't fully specify, and the discretionary-limits clause leaves a lot of room.
-
-Billing is monthly only. Annual Pro subscribers get a credit for the remaining balance, but only if the billing address matches the original. Google Play subscribers pay full price, and the unused value converts into extra days.
-
-The thread is small and mostly about whether "20x → 10x" is a real downgrade or just clearer labeling.
-
-- **Downgrade or honesty?** The top comment calls the change a "sleight of hand": the same $200 now buys "10x" with no five-hour limit. One reply pushes back that the old 5x/20x labels only multiplied the *five-hour* window, and the 20x plan always had about twice the weekly usage of 5x. On that reading, the new naming is more honest than the old. Another commenter says they hit their weekly limit in two days for the first time yesterday, and suspects the change is a real cut. A third says that since it's unclear what the "x" multiplies, the whole scheme was always murky. The thread never settles whether weekly allowance actually shrank.
-- **Verification lag:** One user who has paid for several months is still waiting on verification. They stress that it isn't the government-ID-and-selfie KYC flow through Persona, just a check on payment history. They say that if Settings > Usage still shows "Current session", the five-hour limit still applies even though the plan is now labeled 10x. That means they are getting the lower multiplier without the benefit.
-
-### AGI Economics: Coordination vs. Competence
-
-#### [Submission URL](https://institute.deepmind.com/essays/the-economics-of-intelligence/) | 27 points | by [simonpure](https://news.ycombinator.com/user?id=simonpure) | [5 comments](https://news.ycombinator.com/item?id=50299212)
-
-**DeepMind's economists argue the individual AI agent is the wrong unit of analysis**: a model can beat every person one-on-one and still lose to a well-organized team, so benchmarks that score agents in isolation say little about when the economy actually changes.
-
-The essay (drawing on a formal paper, *Organizing Intelligence*) splits capability into two axes with very different economic effects:
-
-- **Competence** (math, writing, coding) shifts wages, prices, and the human/AI mix inside firms smoothly, leaving industry structure largely intact.
-- **Coordination** (agents working together within a firm) is the one with a threshold. Past a critical point, it triggers abrupt jumps in market concentration, employment, and wages.
-
-Crossing those axes yields four regimes: **minimal AGI, supercompetent AI, supercooperative AI, and ASI**. The claim is that visible transformation comes from coordination, which most benchmarks don't measure.
-
-The supporting argument rests on "jagged" profiles. The authors quizzed 100 people across six domains (math, verbal reasoning, science, patterns, culture, economics) and found that performance in one barely predicted another. Firms exploit this by combining specialists into a "mosaic" that covers each member's gaps, which is comparative advantage applied inside the firm.
-
-AI breaks the usual models in two ways. Human labor supply is fixed, while agents scale on demand at the cost of compute. And human team size is capped by span of control, communication friction, and misaligned incentives, none of which necessarily bind agents that work directly with each other.
-
-This also offers an explanation for why headcounts and aggregate productivity have barely moved despite frontier models writing production software. Note that the quiz sample and the thresholds come from the authors' own model, and the provided text cuts off before the regime-by-regime results.
-
-The thread is small and mostly skeptical of the paper's premise that agent-to-agent coordination is a new economic input.
-
-- **Coordination as overhead.** bob1029 argues the opposite of the essay: coordination is "a tax," and teams of models passing messages are losing right now. In their experience, every multi-agent setup they've seen (they cite "gas town") could be refactored into one agent loop with well-designed tools. Needing a new agent role usually means you couldn't make two tools work together cleanly, and splitting them across agents "merely hides the old problem inside a new one." On this view the hard part is tool design, not organizational structure.
-
-- **Is "AI working directly with AI" actually new?** simianwords doesn't see the qualitative break. To them it's the same model doing a long-horizon task and spawning subagents internally, hidden behind a single human prompt, so they ask what they're missing unless the models are domain-specific. RomanKornev's answer is that it means agents buying and selling services directly from each other, with no human intermediary. simianwords pressed for a concrete example, such as one company's agents buying from a SaaS vendor's agents, and said they can't imagine AI making sales on its own. That question went unanswered.
-
-- **Builder anecdote.** randysalami said they built a coordination system for onshore and offshore human teams and human-AI teams in 2023, including the possibility of purely AI teams. Even then they saw agents as guided by humans rather than as full team members. They are considering reviving it.
-
-The unresolved crux is whether multi-agent coordination is a distinct capability with a threshold or just internal plumbing of a single agent. Nobody in the thread offered evidence either way.
-
-### US Reps Lead Democratic Resolution Opposing A.I. Bubble Bailout for Big Tech
-
-#### [Submission URL](https://progressives.house.gov/2026/10/reps-casar-waters-lead-democratic-resolution-opposing-a-i-bubble-bailout-for-big-tech-commit-to-protecting-american-people-instead) | 654 points | by [DeepLogin](https://news.ycombinator.com/user?id=DeepLogin) | [521 comments](https://news.ycombinator.com/item?id=50302814)
-
-**Thirteen House Democrats are pre-committing against bailing out AI companies if the bubble pops**, in a non-binding resolution led by CPC Chair Greg Casar and Financial Services ranking member Maxine Waters, introduced October 29, 2026.
-
-The resolution's argument rests on two claims. AI-related firms hold "trillions of dollars in debt," much of it raised in opaque private credit markets. And the stock market's price-to-earnings ratio is "almost as high as it was at the peak of the 1990s tech bubble." It also says federal regulators have avoided scrutinizing the complicated debt and equity structures AI firms use, and it cites the Trump White House's deregulatory posture and AI-related conflicts of interest.
-
-It urges the federal government to oppose three things:
-- Any rescue of insolvent AI firms or shielding of their executives
-- Emergency lending or direct capital infusions that bypass ordinary bankruptcy
-- Golden parachutes for executives, who should instead face civil and criminal liability and return ill-gotten gains
-
-It urges support for jobs spending, unemployment insurance, nutrition and housing aid, pension protection, new transparency requirements to head off future bubbles, and automatic stabilizers that kick in during downturns. The 2008 crisis is the explicit foil: the text cites 10 million lost homes alongside bank bailouts with no executive accountability.
-
-Endorsers include the American Federation of Teachers, Indivisible, Americans for Financial Reform, and the Future of Life Institute.
-
-The catch is that this is a messaging resolution from the minority party. It has no force of law, and it is notable mainly as a marker that "AI bubble" is now framed in Congress as a bailout-risk question rather than a technology one.
-
-The thread barely touches AI bailouts. Almost all of it is a fight over whether a non-binding resolution counts as real legislating or as "puffery."
-
-**The "puffery" camp (led by JumpCrisscross, backed by iamnothere).** The resolution does nothing about the actual bailout channels. JumpCrisscross names the Exchange Stabilization Fund, Title III of the Defense Production Act, and whatever CHIPS Act authority let the President put taxpayer money into Intel. He and iamnothere argue that a party serious about legislating publishes draft bill text, even when it can't pass. That lets members build consensus, takes comments, and gives voters a concrete promise. JumpCrisscross says the Congressional Progressive Caucus does this when it means it, and that a New York member recently floated a markup to him. iamnothere adds that a draft can be shopped privately, including to Republicans who might defect, without ever reaching the floor. Resolutions, in this view, are "cheap theater."
-
-**The "they're in the minority" camp (miltonlost, tinyplanets, Arodex, dillondoyle).** Democrats can't revoke anything without a majority. Republican committee chairs kill their bills, and the speaker controls the floor. A discharge petition is the only way around that, and the speaker can still control the schedule. On this view, signaling intent before the midterms is the only available move, and demanding more is an impossible standard. tstrimple summed it up as "Murc's law all the way down." Arodex called the objection a purity test for not voting Democratic.
-
-**Where it got stuck:**
-- The camps largely talked past each other. The critics weren't asking for passage, only for specific text, and the defenders kept answering as if they were.
-- duplessitous accused iamnothere of complaining about things that are already happening. iamnothere countered that promises mean little without the groundwork of an actual drafted bill.
-- miltonlost argued that a draft bill in a Republican-led committee would involve no more hard negotiation than the resolution did. JumpCrisscross said drafting is exactly what parties do when preparing to return to power. miltonlost also attacked JumpCrisscross personally for working in private equity.
-- roenxi made the middle point that symbolic gestures are fine, but putting something up for a vote is not puffery, because it shows what each party opposes and why.
-
-**Tangents.** Several threads drifted into general party politics. harimau777 asked why anyone should vote for Democrats who will "throw us under the bus," and Arodex answered by pointing to ranked-choice voting. A long exchange about McConnell's Senate seat and the Kentucky race turned into a dispute over whether race still explains electoral outcomes there.
-
-Meanwhile, the top-level view from theandrewbailey, that failed AI giants should simply go bankrupt, drew general agreement. JumpCrisscross added that bankruptcy would wipe out shareholders and hand control to creditors, while "GPUs probably keep running."
