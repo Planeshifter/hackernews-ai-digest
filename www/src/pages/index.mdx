@@ -10,6 +10,481 @@ export async function getStaticProps() {
 
 ---
 
+## AI Submissions for Fri Nov 06 2026 {{ 'date': '2026-11-06T20:47:32.163Z' }}
+
+### A Jev that can ask Opus for help gives Opus accuracy at 4x lower cost
+
+#### [Submission URL](https://hightouch.com/blog/llm-judges-identity-resolution) | 567 points | by [theanomaly](https://news.ycombinator.com/user?id=theanomaly) | [142 comments](https://news.ycombinator.com/item?id=50397429)
+
+**Pairing Jev with Opus matches frontier-level accuracy at more than 4x lower cost** on Hightouch's task of grading identity resolution (IDR) output, specifically spotting over-merged profiles where one identity swallows multiple real people.
+
+The benchmark was built with pseudopeople (a simulated US town from IHME at UW) with realistic data errors added. It contained 1,000 identities, half clean and half over-merges. The motivation is that human review runs about 50 identities/hr, and pinning the over-merge rate to ±1% takes more than 1,000 samples. An LLM grader that works at human accuracy could score 100,000 identities in seconds.
+
+- **Out of the box:** Jev and GPT-6 Luna, the fast "decision models" that return a 0-1 confidence score, hit 88.8–97.3% accuracy. They cost $0.05–$0.10 per 1,000 identities and answer in about 0.15s, up to 90x cheaper and over 10x faster than frontier models. On harder benchmarks they trail Opus by about 6 points.
+- **Luna vs. Jev:** Luna is better on easy cases, but the gap disappears on harder ones.
+- **Calibration decides the hybrid:** Jev's mistakes mostly come with low confidence, while Luna's mostly come with high confidence. That makes Jev the better first-pass filter. It handles what it's sure about and escalates uncertain identities to Opus.
+
+The catch is that this is one team's synthetic benchmark on one task, and the excerpt cuts off before the hybrid's exact accuracy figures and routing thresholds. The calibration finding is the transferable part: a cheap model only works as a router if its wrong answers are the ones it's unsure about.
+
+The thread quickly drifted from the Jev/Opus routing result into a broader argument about how to mix expensive and cheap models. Few commenters engaged with the benchmark itself. hoppp said they'd swap Jev in for the Haiku guardrail layer in their LLM proxy, and pletnes made the closest match to the post's idea: use a cheap model to decide when a costly, high-effort run is worth triggering.
+
+**Which direction should delegation run?** This was the main split.
+- **Smart orchestrates cheap.** drkleiner uses Opus as planner and orchestrator, never implementer, with Qwen 27B subagents, and says it cuts token usage significantly. beefsack runs three tiers (Opus orchestrator, GPT Sol feature lead, a cheap Muse Spark worker) with the stronger models reviewing everything below them. beefsack also tried the inverse, where cheap models call up to stronger ones, and found them bad at knowing when to escalate. Wrapping the cheap models worked more reliably.
+- **Cheap fronts smart.** xlayn has Qwen orchestrate and then query Claude, arguing that Qwen fills in the detail that lets bigger models do well. They judged the results "VERY CLOSE" using Claude and Qwen as graders, so the evidence is informal. fireant objected that a weaker model rephrasing a prompt would amplify any misunderstanding. bluegatty's answer was that this suits specific cases, such as using Claude Code to write long, intricate prompts for GPT Pro.
+- **Evidence.** nextaccountic asked whether anyone had measured the strongest-orchestrator setup. agentdev001 cited a Nature Machine Intelligence paper in which a weaker orchestrator with strong workers scored higher. They flagged that it used older models and that recent Anthropic system cards suggest the best multi-agent shape now varies by model.
+
+**Does mixing different vendors' models improve accuracy?** brabel doubted it and asked for rigorous tests. bluegatty answered from daily use only, with no benchmarks. Claude Code and Codex each audit the other's design changes, and a third perspective probably has diminishing returns. larodi offered a similar "entropy" argument that mixing models may improve quality.
+
+**Practical wiring.**
+- unrented7977 simply tells Claude that a local LLM server is available and lets it write the scripts to call it, with no MCP server.
+- lelandbatey noted that OpenRouter uses the same API, so it only needs a URL and key swap.
+- sixdimensional puts a deterministic rule-based bot first and escalates to a smart agent only when it can't match intent.
+- jeef_berky wants a local model as the stable core that reaches out to Opus.
+
+There was also a side explanation of GPT Pro as a parallel-compute "pro" mode on OpenAI's $200/month tier.
+
+Nobody offered measurements, so the thread leaves open whether the best orchestration direction is task-dependent or just habit.
+
+### Gemini Omni 1.2 Flash
+
+#### [Submission URL](https://blog.google/innovation-and-ai/technology/developers-tools/introducing-gemini-omni-1-2-flash/) | 356 points | by [thisisauserid](https://news.ycombinator.com/user?id=thisisauserid) | [249 comments](https://news.ycombinator.com/item?id=50392118)
+
+**Gemini Omni 1.2 Flash cuts video generation prices 30% from Omni 1.1, to $0.07 per second at 720p**, and stretches native clip length from 10 to 15 seconds. It's generally available on the Gemini API, Google Cloud, and Gemini for business, and it also shows up in Google Vids and Flow.
+
+The cost story is as much about workflow as price. You draft at 360p or 720p, fix details with a follow-up edit instead of regenerating the clip, then upscale the keepers to 1080p or 4K. Duration is settable in one-second steps from 3 to 15 seconds.
+
+The other headline is **multi-turn conversational editing that works across full 15-second clips**. Google's demo swaps backgrounds turn by turn (pavilion tent, oak forest, castle) while keeping character performances and camera framing intact. That pitches the model at ad-variant production: swap the product, lighting, weather, or aspect ratio without re-briefing.
+
+Other changes:
+- **Reference adherence:** it accepts character, product, or style images, motion clips up to 3 seconds, and audio cues. Faces, garments, packaging typography, and brand colors are meant to hold across camera angles.
+- **Consistency:** less drift and morphing between first and last frames, including keyframe interpolation and clip extension.
+- **Speech:** clearer lip-sync and distinct multi-speaker conditioning, with voices routed to the right character from one-second voice references.
+- **Camera:** continuous FPV flythroughs, orbits, and zoom-outs with fewer unwanted jump cuts.
+
+The caveat is that every example is a Google-picked showcase, and the post offers no benchmarks or quantified comparison against 1.1 or competitors. "Fewer jump cuts" and "less drift" are claims to test on your own footage before committing a production pipeline.
+
+The thread ignores Omni 1.2 Flash itself. It becomes a complaint about how hard Google makes it to pay for and use its AI products, and a long argument over why.
+
+**The access complaints.** The top comment says the newest models are locked even for a Plus subscriber. Adding balance to a Google payment account throws errors and demands government ID. Others report similar trouble:
+- One commenter tried to pay but never activated anything and hit an API limit after one prompt.
+- Another spent a year-old enterprise trial unable to get a Gemini 3+ model to appear, while Anthropic and OpenAI took under 10 minutes.
+- One user paid for the consumer subscription but can't use it outside the app, and won't renew.
+- Someone trying to pull their current spend was told to build a query against a data lake and check back tomorrow.
+- The team that finally got stable access used OpenRouter for the API. For subscriptions they used personal-Gmail Ultra accounts hooked to the Antigravity CLI, because individual org members can't get Ultra without upgrading the whole org.
+- Another commenter extended this to GCP generally: enabling Sign in with Apple and Google was far harder on GCP than on Apple's side, and a first Cloudflare Workers deploy was faster than getting a GCloud API key.
+
+**AI Studio.** One commenter called it the worst UX on the internet. Others offered rivals: Workday, ADP, SAP internal apps, IBM's tools and website. One user defended it, citing per-session system prompts, deleting any message, branching a conversation from any point, and a deterministic web-search toggle. They say Claude removed its own branching.
+
+**Why doesn't Google fix it?** Commenters gave several explanations:
+- One said Google makes impossible projects possible and easy ones feel impossible, and that entrenched senior "whales" control small towns of people. Another asked whether the "impossible projects" half still holds, and got Waymo as the example.
+- One said Google's culture can't be fixed because individual impact is hard to measure, let alone a manager's. A reply said that is a Silicon Valley fixation on quantitative metrics, and that someone should just make a judgment call and hold the person accountable.
+- Another cited a tweet from an ex-Googler who said he was blocked from doing things there.
+
+**Smaller threads:**
+- **Code review:** One commenter says Gemini catches subtle security and backwards-compatibility issues that Claude and GPT miss, with Claude making the final call. A reply said it wrecked their projects and that others called it benchmaxxed.
+- **Routing:** OpenRouter requests are routed between AI Studio and Vertex. A reply noted that is an OpenRouter feature and the provider can be pinned.
+- **Safety controls:** One user found them random and bizarre, possibly depending on the route.
+
+### Chomsky and the two cultures of statistical learning (2011)
+
+#### [Submission URL](https://www.norvig.com/chomsky.html) | 142 points | by [andsoitis](https://news.ycombinator.com/user?id=andsoitis) | [131 comments](https://news.ycombinator.com/item?id=50389570)
+
+Peter Norvig's rebuttal to Chomsky argues that **statistical models are not just engineering hacks: for interpretation tasks like speech recognition, probability is the science**, because the core problem is inferring what a speaker most likely meant from noisy input.
+
+The essay answers remarks Chomsky made at MIT's 2011 Brains, Minds, and Machines symposium, in reply to Steven Pinker. Chomsky called the field's notion of success, "approximating unanalyzed data," novel in the history of science. Norvig reduces his position to five claims: engineering success is irrelevant to science, accurate modeling is "butterfly collecting," statistical models give no insight, they simulate language the wrong way, and statistical learning has been proven impossible, so language must be innate.
+
+Norvig concedes some of this. Engineering success isn't the sole measure of science, a billion-parameter model can't be understood by reading parameters, and a Markov model of word probabilities can't capture all of language. But he pushes back on each point:
+
+- **Facts and theory:** Accumulating facts is the dominant mode in the history of science, not a novelty, and engineering success is evidence (not proof) that a model is right.
+- **Insight:** You can understand a huge model by studying where it fails and how it scales with data, even if you can't inspect its weights.
+- **Straw man:** Chomsky dismisses all probabilistic models because of one 50-year-old model. A tree-structure model without probabilities fails just as surely, and what's needed is a probabilistic model spanning syntax, semantics, and discourse.
+- **Learnability:** Gold's 1967 theorem concerns formal languages, not what natural-language learners face, and Horning showed in 1969 that probabilistic context-free grammars are learnable.
+
+Norvig grants that humans have some innate capacity for language. His point is that nobody knows whether it's language-specific, or whether it works like statistical learning.
+
+The excerpt cuts off while defining terms (mathematical vs. probabilistic vs. statistical models), so the later sections on how successful language models are and what Chomsky dislikes about them aren't covered here. The central argument is already clear: Norvig's claim is that the dispute is about what counts as explanation, not just about performance.
+
+The thread splits on one question: does a statistical model that works tell you anything about how the system being modeled actually operates? Most of it is the LLM-era version of Norvig vs. Chomsky.
+
+**The "engineering isn't science" camp.** NaiveEmpiricist argued the two sides talk past each other. Aeronautics says little about how birds fly, and LLMs use millions of times more data and compute than a child, so they are probably poor models of human language learning. They added that Chomsky's influence is waning and linguists are now adopting statistical tools. They also pointed to the BabyLM work on training with human-scale amounts of text as showing how much remains undiscovered.
+
+**The Bayesian reply.** theptip said Norvig isn't confused, because he explicitly claims only that success is evidence, not proof. If method X models a system well and no method Y does, X is more likely to be the real mechanism. They cited predictive-processing accounts of the brain as a hierarchical predictor rather than a rule engine. Planes also constrain what birds must obey, such as thrust-to-weight. On sample efficiency, they argued the comparison is unfair. Brains arrive with an evolved prior, while an LLM starts almost from scratch, so the fair baseline is every brained ancestor's accumulated experience. When skinfaxi asked for elaboration, swid offered radioactive decay and chaotic systems, where statistical description is the best understanding we have.
+
+**Side argument on "mere statistics."** hocusPokeUs argued that statistics is just a language for ratios and influence found throughout physical reality, and warned against treating past statistical results as timeless truths. theptip objected that "mere statistics" undersells transformers, as "mere ion channels" would undersell brains.
+
+**Where does the intelligence come from?** trgn found it uncanny that stochastic language generation yields recognizable intelligence. netdevphoenix suggested the intelligence is already latent in human language, like nutrients in soil, and models harness it. crtified added that language's fluidity (synonyms, figures of speech, accents) helps LLMs work. cgio countered that fluid use is not the same thing as stochastic evolution.
+
+**Is the meaning in the reader?** labcomputer reversed their earlier skepticism of the literary claim that readers create meaning. They argued we impose meaning on stochastic output, which is why "claudish" is tiring to read. The pushback was sharp:
+- eru asked who the imposing reader is when a model produces machine-checkable proofs or working software.
+- broken-kebab said the theory explains nothing, since hard-to-read postmodern prose isn't more "stochastic."
+- jibalt noted that all comments are stochastically generated and that readers always build interpretive models. They added that Dennett's "intentional stance" is useful toward Claude up to a point.
+- andrekandre sided with labcomputer, calling Claude's character a "super rubber duck" effect.
+
+The crux left open is whether a model's predictive success licenses claims about the mechanism, or only about the bounds on any mechanism.
+
+### AI is dramatically accelerating AI research
+
+#### [Submission URL](https://www.planned-obsolescence.org/p/ai-is-dramatically-accelerating-ai) | 356 points | by [yurivish](https://news.ycombinator.com/user?id=yurivish) | [332 comments](https://news.ycombinator.com/item?id=50397994)
+
+**Ajeya Cotra argues that Anthropic has likely already crossed its own "dramatically accelerated progress" threshold**, based on a public METR report she read but didn't help write. The report finds capabilities progress at Anthropic ran about 2x faster from October 2025 to October 2026 than over the prior twelve months, measured by an internal version of the Epoch Capabilities Index (AECI). Anthropic's S1 says it "may imminently meet" the RSP bar, which is 2x the fastest sustained pre-AI rate.
+
+The catch is how much is redacted. The report's authors say the withheld material was "a majority of the evidence" they found most informative, and their reasons for attributing most of the current speedup to AI automation are also redacted. The headline number is public, but most of the argument for it isn't.
+
+Cotra's real contribution is the back-of-envelope model for what 2x overall implies:
+
+- Capabilities are compute multipliers times training compute, so software progress alone must run roughly **2-3x faster** to double the total.
+- If experiment compute and labor matter about equally (a simple Cobb-Douglas assumption), labor uplift must be roughly the square of that, so **~4-9x**.
+- Diminishing returns ("ideas are getting harder to find") mean the required uplift keeps rising while human headcount grows at the old rate, pushing the current figure to maybe **~10x**.
+
+She notes that this lines up with Anthropic staff's informal self-reports of a **~12x uplift** from internal models. Her framing is that each researcher lives in a time-warp bubble, getting ten days of work per outside day, which hiring could never have produced.
+
+She calls this the most important AI-risk update in a couple of years and says the naive compounding extrapolation points to superintelligence within a year, well short of the AI 2027 team's timelines. The chain rests on stacked assumptions (equal weighting of labor and compute, the 2x figure itself, how much is attributable to AI), and she flags the labor estimate as "very uncertain." Even so, the inference runs from a measured 2x to a ~10x human speedup, which is hard to wave off.
+
+The thread skips the 2x-to-10x uplift arithmetic and goes straight to a different question: even if AI R&D really is accelerating, does that lead to catastrophe? Nearly all of it is one long argument about persuasion.
+
+**The skeptical opening.** An ML researcher agrees that LLMs can speed up the in-compute parts of research (experiments, architecture, training strategy) by maybe 10x. They say that doesn't imply world-ending superintelligence. It only gets you to the best model of your data sooner, and text has limited utility. They also argue that the weapons needed to overpower humanity already exist and are held back by geopolitics and survival instinct. Novel weapons need physical tests, which LLMs don't speed up. In their view AI is a tool wielded by humans, so any AI-caused extinction would be at human direction.
+
+**The persuasion counter.** Borealid's reply is that the first step needn't look like AI acting alone. A model could persuade or "guide" humans to run the tests and hand over control. Intelligence, they argue, is essentially predicting how actions play out, and that includes how people respond to given instructions.
+
+**Where the argument went from there:**
+- **Is persuasion capped?** Forlien points out that ads are heavily optimized and nowhere near world-ending, and that scams already work on some individuals. Paracompact makes a more formal version of this. Prediction of human responses can't be made arbitrarily accurate, and influence through "tokens in an LLM conversation" can't be guaranteed to be arbitrarily large. Even perfect prediction wouldn't give perfect control.
+- **"Good enough" influence.** TheOtherHobbes and coldtea reply that you don't need perfection. Adtech, troll farms and cult leaders already move large populations without perfect prediction or control, and a cult leader got people to commit suicide on command. The picture they offer is a hostile ASI that looks like a faction or cult infiltrating power, not a lone rogue.
+- **Rogue AI vs. human misuse.** Paracompact says AI used by bad actors is the more defensible worry, and rogue-AI scenarios have lost credibility. They add that real existential risk would require orchestrating systems that are air-gapped, time-gapped and "meat-gapped," so the lesson is to keep those gaps. Coldtea says rogue AI is more plausible after LLMs, particularly with always-on agent harnesses. They also say offense usually has the edge over defense, even an AI-augmented one, and cite Stuxnet against the air-gap point.
+- **A cynical aside.** jurgenburgen asks whether the datacenter boom is itself what a quiet takeover looks like, if the goal is compute rather than profit.
+- **Translation disputes.** Late in the thread Borealid and Paracompact argue over whether the formal framing amounts to "words can't convince people." They also argue over whether The Atomic Boy Scout shows individuals can build mass-casualty weapons. Paracompact says it doesn't, since the safeguards were never about knowledge.
+
+The crux is whether language-only influence has a hard ceiling short of catastrophe, or whether "good enough" manipulation at scale is already a demonstrated threat model. Nobody supplied evidence either way.
+
+### Memorilla: Latent Semantic Memory for LLMs
+
+#### [Submission URL](https://arxiv.org/abs/2610.21375) | 115 points | by [handfuloflight](https://news.ycombinator.com/user?id=handfuloflight) | [13 comments](https://news.ycombinator.com/item?id=50395919)
+
+**A frozen LLM can beat full-context inference using just 16 learned "memory tokens"** per query, according to this paper. On FactKG, Memorilla hits 84.33% accuracy versus 80.43% for stuffing in the full documents, while representing the source with 108x fewer tokens.
+
+The mechanism: documents (user chats, book chapters) are encoded once into reusable embeddings. A learned component then gathers query-dependent information from the whole collection and places it directly in the LLM's input embedding space. The LLM itself is never fine-tuned, and nothing has to be retrieved as text and pasted into the prompt.
+
+- **Benchmarks:** Best result against baselines including Mem0 and MemoRAG on five of eight benchmarks covering personalization, long-document QA, and knowledge-intensive QA. That also means it loses on three, and the abstract doesn't say which.
+- **Agents:** In a TextWorld environment, where the "documents" are the agent's own past turns, success rate rose from 18.6% (full-history in-context) to 24.2%, and the agent wandered less between rooms it had already explored.
+
+The catch: it's a trained retrieval-and-compression module, so you need training for it, unlike text-based memory layers you can bolt on. The agent evidence is one environment with modest absolute success rates. Still, beating full context at 108x compression suggests that for some tasks, raw context is the noisier option.
+
+The thread mostly asks where Memorilla actually fits relative to RAG, full-text search, and continual learning, and no one disputes the paper's results directly.
+
+**What's different from RAG.** jkingsman's reading is that it's a specialized embedding layer whose output goes straight into the main model's token stream, "injecting a vibe rather than quotable text." He says this matches the paper's reported weakness on exact-quote retrieval. NaiveEmpiricist added that instead of reranking and taking the top few chunks, it blends all documents, weighted by relevance, into a fixed set of memory tokens. That helps when a fact isn't local to one passage. CharlieDigital questioned whether that's a real problem, since vector similarity should surface related patches. mastry replied that RAG's hard cutoff drops anything that doesn't make the top-k, and pointed to the project's Stanford page for the comparison.
+
+**The "just use full-text search" camp.** bob1029 argued that with a frontier model driving, semantic and lexical search converge. Models write good Lucene or FTS queries, so plain lexical systems effectively give semantic search, which makes embedding approaches hard to justify. Two replies pushed back:
+- **Latency.** njstraub608 said this matters for voice assistants, where reasoning, a tool call and more reasoning make "let me check on that" tiresome. They cited the paper's 27x retrieval speedup (0.79s vs 19s) as the real draw.
+- **Compression.** _bobm added that part of the speedup is semantic compression, since one embedding vector carries more than the same retrieved tokens. They also framed three layers: agentic token injection updates *what* the model reasons about, continual learning updates *how* it reasons, and Memorilla sits in the middle.
+
+**Tradeoff view.** johnshahbazian read it as trading some accuracy for far fewer tokens. They argued most users care more about accuracy than token cost, so the compromise may not appeal broadly.
+
+**Beyond sessions.** continualLearne said text-only memory is "miserable," and that their agents repeat the same mistakes across sessions. They think hybrid systems are needed and that the notion of a session should go. totetsu and airesearcher2 liked the idea of memory as a modality, analogous to image or audio inputs, stored in a more efficient form than text.
+
+The open question is whether embedding-space memory earns its training cost, or whether capable models with good lexical search tools close most of the gap. Latency-sensitive uses seem to be where the case is strongest.
+
+### Anthropic IPO buyers see valuation as low as $1.1T
+
+#### [Submission URL](https://www.bloomberg.com/news/articles/2026-11-06/anthropic-ipo-valuation-expectations-pressured-after-ai-rout) | 302 points | by [dgellow](https://news.ycombinator.com/user?id=dgellow) | [609 comments](https://news.ycombinator.com/item?id=50394906)
+
+Prospective buyers of an Anthropic IPO are reportedly pricing the company as low as **$1.1 trillion**, a markdown from earlier expectations that Bloomberg ties to a rout in AI stocks. The URL slug says valuation expectations are "pressured after AI rout," and the submitter's linked post (truncated) points to talks dropping to roughly $1.3 trillion, so the range being floated appears to be around $1.1T to $1.3T.
+
+The article text didn't extract and Bloomberg is paywalled, so there's no detail here on the original target, the timing or size of the offering, or which investors are doing the pricing. Treat the figures as secondhand until you can read the piece.
+
+The signal is the direction: even a valuation north of a trillion dollars is being negotiated down, which suggests public-market appetite for frontier-lab paper has cooled alongside the broader AI selloff.
+
+The thread skips past the IPO numbers almost immediately. The one valuation comment says a price-to-sales ratio of 16 "isn't terribly crazy." The rest is about whether local models will hollow out the case for frontier labs.
+
+**The bear case from local models.** UncleOxidant opened it: since getting Qwen3.8-Flash-Next running on a Strix Halo box, their Claude Pro usage has dropped to 18% of weekly quota (it would have been 80%+ by Friday), and they won't renew. beloch generalized this. The AI frontier keeps moving (chess, Go and Atari were once frontier tasks, and a phone now handles them), so typical needs get absorbed by cheaper local hardware. The trillions of dollars of debt then depend on a steady supply of new, lucrative frontier applications. hermitShell sharpened it: if 120B open models cover 80% of today's use cases, how do you justify the buildout?
+
+**The pushback.** shepherdjerred said their own projects grow more ambitious as models improve, and that local models "aren't even close" to the frontier. beloch conceded the point only partly: needs may not rise as fast as local capability. jasomill and mostertoaster expect a hybrid world of good-enough local models, excellent cloud models, and small models embedded in silicon.
+
+**"A handful of providers"?** Sankozi noted that Openrouter already lists about 80 providers. unrented7977 replied that this can't last and that markets always consolidate. ishouldnotbutk8 argued the analogy is hosting, not model training. AWS and GCP dominate VPS hosting, yet thousands of small players survive.
+
+**Necessity vs. advantage.** throw10920 asked whether people have lost the ability to work without models. npc99 said a software business can't operate competitively without LLMs, and devin admitted some skill atrophy. gymbeaux used a power-tools analogy (builders without them aren't unable to build, just badly disadvantaged). throw10920 said that shifts the goalposts from necessity to speed, and that the right analogy is buying a non-flagship phone.
+
+**Altman's DRAM remark.** mschuster91 read Altman's line about it being "quite terrible" for everyone to have DRAM sitting idle in their own computers as the real goal: rent-everything, own-nothing. They also tied it to Micron exiting the consumer market, and suggested the IPOs would leave pension funds holding the bag. Critics asked what exactly was "quiet" about it. JuniperMesos called it an accurate observation about DRAM allocation, and defended Thiel's remarks as pro-ownership. matkoniecz called the Altman remark lying by omission, since it ignores lock-in, data access and export-control risk. jasomill doubted a coordinated conspiracy, arguing hardware vendors want the larger market.
+
+The unresolved question is whether frontier demand grows faster than local-model capability, and nobody offered data on that.
+
+### Google has acquired Crusoe's data center site in southeast Wyoming
+
+#### [Submission URL](https://www.crusoe.ai/resources/newsroom/crusoe-wyoming-data-center-campus-update) | 100 points | by [rexbee](https://news.ycombinator.com/user?id=rexbee) | [82 comments](https://news.ycombinator.com/item?id=50397711)
+
+**Crusoe is selling the finished groundwork, not the data center.** Google bought the southeast Wyoming site after Crusoe completed pre-development: site selection, governmental approvals, and a power plan built with Tallgrass Energy. That makes Crusoe a developer that originates and entitles sites, then hands them to hyperscalers to build and run.
+
+The power design is the interesting part. It's a hybrid of **fuel cells, grid power, and natural gas turbines**, with a "long-term roadmap" for carbon capture through Tallgrass's regional CO2 sequestration hub. Note the wording: carbon capture is a roadmap item, not something committed to or built.
+
+Crusoe says it has more than 6 GW contracted and over 40 GW in its pipeline. It is also the developer of Google's campus under construction in Armstrong County outside Amarillo, so this is a second Google site rather than a one-off. The release gives no price, capacity, or timeline for construction, and it doesn't say whether Crusoe keeps any role in the Wyoming build.
+
+The thread's most substantive thread is a correction to the submission's framing: **Crusoe didn't simply sell finished groundwork; it was reportedly pushed out.** Top commenter tristanj cites Bloomberg reports that Crusoe failed to lock in customers, including Google. In June, Crusoe said it had "paused" the project, but sources told Bloomberg it was being pressured to leave after Google raised concerns about cost and timetable. Google then acquired the project and announced a $17B investment. Tristanj also notes that Crusoe is a former bitcoin miner that pivoted to AI around 2024 and lacks decades of data center experience.
+
+**Crusoe's competence**
+- Commenters pushed back on the "no experience" angle. alpb pointed out that Crusoe is lead developer on the 1.2 GW Abilene campus for Stargate.
+- pm90, who interviewed there, called the engineers fine but the leadership "very dodgy." redanddead countered that Google isn't exactly clean either.
+- echelon cited CoreWeave as a successful crypto-to-datacenter pivot. mkesper replied that neoclouds only exist thanks to Nvidia's help, and a2tech said CoreWeave's stock hammering this week has them discussing "lifeboat projects" with customers.
+- limagnolia questioned the Bloomberg "city the size of Denver" figure, since Google's cited 702 MW of fuel cells looks like a quarter to a half of Denver's usage.
+
+**Climate and the energy debate**
+Most of the thread drifted into whether AI data centers should be fossil-fueled at all.
+- cmarschner argued that non-renewable data centers are indefensible and that voters have finally pushed back. mbreese said the environmental pitch only persuades the converted. He argued economics and cost predictability work better, and suspected much of the backlash is general anti-AI sentiment. Others said voters mostly care about energy bills, and some framed anti-AI feeling as anti-oligarch feeling.
+- timmg argued consumer behavior shows most people "vote" for fossil fuels, since only 8% of Q2 US car purchases were fully electric. tclancy said fossil fuels are subsidized. tehjoker and estearum said this is a coordination problem that needs policy, not individual virtue. WarmWash vented about hypocrisy among self-described liberals, and nonethewiser told him not to tie his emotions to others' purchases.
+- madaxe_again and pembrook argued data centers are a small share of emissions. madaxe_again put global data centers at 490 TWh, AI at 155 TWh, and shipping at about 4000 TWh. He called the concern "paper straws to save the whales." bemtevi replied that this ignores the knock-on development and resource extraction a data center incentivizes. Pembrook said digitization cuts net emissions.
+- TFNA suggested AI might reduce civilization's dependence on the biosphere. Others rejected this, with one calling it a terrible outcome and another asking whether it means a robot civilization.
+
+The unresolved crux is whether data center energy use is trivial per unit of activity or large once the induced buildout is counted. No one produced evidence to settle it.
+
+### AI for scientific discovery: How researchers use Claude
+
+#### [Submission URL](https://www.anthropic.com/research/how-researchers-use-claude) | 101 points | by [ersinesen](https://news.ycombinator.com/user?id=ersinesen) | [39 comments](https://news.ycombinator.com/item?id=50389990)
+
+**Data analysis is the dominant scientific use of Claude: about one-third of sessions on Claude, nearly half on Claude Code.** Anthropic's report, built on 207,000 research sessions analyzed with privacy-preserving methods, finds scientists lean on AI for analysis and writing, and much less for the tasks they themselves rank as most important to discovery: idea generation and data gathering.
+
+- **By field:** Normalized by researcher headcount, usage is highest in computer science, math, and statistics, and lowest in health and lab-based physical sciences.
+- **By task:** The tasks AI is theoretically best suited to (top 20% on Anthropic's capability measure) see two to four times the usage that researcher time spent on them would predict. The bottom 20%, mostly physical work, see very little. The authors read this as scientists using AI where it works best.
+- **Specialized tools shift the mix:** On Claude Science, idea generation makes up roughly twice the share it does on general Claude.
+
+The speed-up scenarios come from a simple model, not measurement. Wide adoption of current capabilities could double output in some fields. If AI automated all non-physical research work, computer science and statistics could see up to 15-fold gains, while chemistry and biology would top out at three- to fourfold because of physical bottlenecks. About 40% of surveyed researchers who actively use AI expect models to run full research projects on their own by 2030.
+
+Caveats: the data covers only Anthropic's products, the survey sample is of people already using AI, and the capability measure is Anthropic's own construction. Read the 15-fold figure as an upper-bound thought experiment.
+
+The thread mostly agrees that Claude is a good research *assistant* and a poor research *scientist*. The real argument is over whether that limit is permanent or a failure of workflow.
+
+**The assistant camp (StableAlkyne, flopsamjetsam, micheles, ch4s3).** The wins they list are tedious tasks whose output feeds a human decision:
+- Plotting in natural language.
+- Literature search. flopsamjetsam finds it more effective than Scopus or Web of Science, though they still read every paper themselves.
+- Quick smoke-test regressions.
+- Turning half-baked ideas into testable simulation code.
+- Explaining unfamiliar scientific code bases.
+- Debugging, which micheles calls its strongest point.
+
+jhbadger notes that hallucinated citations, once common, are now rare. tensor still runs a reference checker, which often fixes small errors in dates and authors on otherwise real papers.
+
+**The "you're anchored on old failures" camp (lxe).** lxe argued that these use cases are surface-level and that skeptics form a fixed view after a few failures, which then caps how much they experiment. StableAlkyne rebutted with specifics. They push each new model and harness until it breaks, and they have seen the improvement. Swarms are now good at condensing disparate sources. But in computational chemistry, they said, even top models get sidetracked without domain context. They rate the models as a well-read first-year grad student who can't question or invalidate their own assumptions without hand-holding. lxe said that matches their own experience. They found steering to be the main pitfall and pointed to plateau-avoidance techniques and swarm harnesses as partial fixes.
+
+**Autonomous research mostly disappoints.** ozgung described agents that design and run experiments quickly, reject the user's idea on obscure criteria, change direction, and produce poor results after days of work. StableAlkyne said to give the agents short chunks of work. They also argued the celebrated math results needed huge compute and had immediate verification through Lean. tensor joked that DeepSeek gets "salty" and stubborn about its own ideas when role-playing a senior scientist.
+
+**Smaller disputes:**
+- **Plot consistency:** knottn argued that template-based boilerplate was a feature, giving consistent, auditable charts, and that AI plots lose that. StableAlkyne replied that they meant AI-generated plotting *code* (Matplotlib calls), not image generation. The saved minutes go to examining the plot.
+- **Hidden cost:** nyc_data_geek pointed out that experimenting with these tools and checking their output isn't free.
+- **Methodology:** gar1t argued the report doesn't show distinct AI uses, because without a breakdown of tasks where researchers don't use AI, we can't tell what AI is actually changing.
+- **Artifacts:** FailMore asked for feedback on Claude artifacts. theptip likes them, especially comments for steering, and wants better organization of long-lived artifacts, such as GDrive-style cataloging.
+
+The unresolved crux is whether the missing ingredient is better models or better harnesses. Both sides describe the same gap: current models don't question their own work unless prompted to.
+
+### Nvidia Kubernetes Engine (NVKE)
+
+#### [Submission URL](https://github.com/dsx-ai-factory/nvke) | 124 points | by [gkapur](https://news.ycombinator.com/user?id=gkapur) | [27 comments](https://news.ycombinator.com/item?id=50387738)
+
+**NVKE is a self-hosted, managed-Kubernetes control plane for NVIDIA GPU fleets.** You run it, and it gives each of your customers an isolated cluster with its own control plane, etcd, and node pools. Machines are provisioned through NVIDIA Infra Controller (NICo), which is the only supported infrastructure provider in the preview.
+
+The architecture is a "self-hosting factory." A throwaway seed cluster, formed by `nvkectl`, bootstraps a management cluster. That management cluster then creates and lifecycle-manages many workload clusters on demand. The README says outright that it is not a Kubernetes distribution and not a Cluster API flavour, though it uses Cluster API underneath. Nodes prove their identity via SPIFFE/SPIRE with TPM attestation before they get join credentials, and per-cluster etcd encryption is available.
+
+The preview caveats are heavy:
+- API authentication is off and the API serves plain HTTP after install.
+- The management cluster can't upgrade, scale, or replace itself, and there is no management-plane upgrade or backup/restore procedure.
+- FDE node images are for evaluation only and give no data-at-rest confidentiality.
+- NVIDIA explicitly says not to use it for production.
+
+You can try it without GPUs. The local quickstart simulates machines and needs a Linux host or VM with 6 CPUs, 12 GiB of free memory, 100 GiB of disk, Docker, and virtual TPM support. macOS users go through a Colima VM. Building from source needs Go 1.27.3 and GNU Make 4+, and produces nine binaries, including `nvkectl`, `controller`, and `management-engine`.
+
+A companion project, NVIDIA Kubernetes Recipes (NVKR), builds the node images and components, while NVKE only deploys them. The repo has 1,548 commits, so this is active work rather than a stub. Still, the no-self-upgrade and no-backup gaps mean it's a reference for how NVIDIA envisions GPU-cloud operations, not something to install yet.
+
+The thread never really settles what NVKE is for, and that confusion is the main story. The most useful framing comes from QuentinM: it's for tenant-isolated clusters on NVIDIA's DSX reference stack. NICo and BlueField handle isolated networking, and each host is wiped and re-attested between tenants. In his view that mainly matters if you're chasing NVIDIA Cloud Partner status or want NVIDIA support across the whole stack.
+
+**"Why not just use Kubernetes?"**
+- eel asked whether plain k8s is the answer if you own lots of NVIDIA hardware but don't care about partner status. itintheory, a k8s admin, said it depends on how much isolation you need. NVKE fits cluster-level isolation, but other CAPI-based projects also manage tenant clusters declaratively.
+- jimbokun asked whether regular Kubernetes can already use GPUs. yjftsjthsd-h linked the docs and said yes.
+- asaiacai wondered why you wouldn't roll rke2 or k3s outside hyperscaler-managed k8s. Yasuraka said the project bundles CAPI, Kamaji and gpu-operator concerns that should be separate. The only parts worth taking, in that view, are the kind-based management-cluster bootstrapper and the SPIFFE/TPM integration. antimario made a similar objection: it's heavy, non-composable and locks you into one vendor at many levels.
+
+**The "AI-generated docs" argument.**
+- jeremy_carroll said the README reads like a data dump rather than a description of the product.
+- chandlerh pointed to the first paragraph as a clear statement of purpose. hedora and adastra22 replied that it doesn't answer practical questions such as why you'd need it over k3s, or how you'd resell clusters. aprdm countered that adastra22 may simply not be the target user.
+- Foobar8568 quoted the "self-hosting factory" passage as the real explanation.
+
+**Sentiment and tangents.**
+- websap welcomed the open-sourcing and dismissed critics as people who run a few managed clusters. debarshri said they got similar hate for their Rust API-server project.
+- random3 got flashbacks of OpenStack and Rex-Ray. esseph said OpenStack is resurging since Broadcom alienated VMware customers, and Datagenerator confirmed deploying it with Kolla Ansible and Ceph, with Proxmox as the fallback.
+- topspin was glad Kubernetes no longer dominates the front page. This sparked a long, jokey sub-thread about "BAI" (before AI) as a calendar marker, which drifted into whether current AI-doom talk will look as naive as past technology panics.
+
+### ChatGPT silently passes data between connectors and the bounty wants an ID card
+
+#### [Submission URL](https://community.openai.com/t/security-follow-up-tool-call-silently-routed-to-a-different-connector/1413053) | 92 points | by [Aldipower](https://news.ycombinator.com/user?id=Aldipower) | [38 comments](https://news.ycombinator.com/item?id=50399569)
+
+**ChatGPT routed a follow-up tool call through the wrong connector, carrying a one-time confirmation code from another app's widget, and the user was never told.** The report comes from AldiPower, who ran two connectors against the same MCP server: a custom one added in developer mode and the published directory app. Each has its own OAuth client.
+
+The flow: the model calls a confirmation tool via connector A, the user approves in A's widget, and the widget posts a code into the conversation via `ui/message`. The model then redeems the code through connector B. The server rejected every attempt because the code was bound to A's OAuth client, so nothing was actually exploited here.
+
+The author's concern is what happens without that server-side binding. Both connectors came from the same provider, so the server could catch the mismatch. With a third-party connector in the same conversation and a shared server URL, they expect the same switch to hand one app's data to another provider. Their argument is that the trust boundary is the OAuth client, not the URL, since one URL can serve different tenants, partners, or environments. The expected fix is to match tool calls to connectors by OAuth client and keep follow-ups on the connector that started the flow.
+
+That is an inference from one provider's setup, not a demonstrated cross-vendor leak. Nobody has confirmed a root cause, and a reply asking whether routing changed at confirmation or at model tool selection went unanswered.
+
+The sharper sting is in the last post. The author says they tried OpenAI's bug bounty, but it requires biometric identification and an ID card up front, including sharing with a third party. They refused, so the report went to a public forum instead. A researcher with a plausible authorization-boundary bug being steered to public disclosure by the intake process is a problem on its own.
+
+If you build MCP servers that issue confirmation codes, bind them to the OAuth client, as this team did; it was the only thing that stopped the call.
+
+The thread mostly skips the MCP routing question and argues about the bug bounty's ID requirement, which was the submission's closing complaint.
+
+**Why the ID wall exists.** simonw first assumed it was sanctions compliance, then found Bugcrowd's docs saying identity verification is now mandatory for managed bounty programs to cut "high volumes of low-quality submissions". uptrails added that earlier programs only asked for ID when a reward was accepted. It has since moved to the front of the process, so submitters of AI-generated slop effectively have to "burn" their real identity. Commenters noted the irony that this now deters reports to AI companies.
+
+**Cost to researchers.**
+- appplication granted the anti-spam logic but said paranoid, privacy-minded researchers may be put off.
+- lazide pointed to how badly companies sometimes treat legitimate reporters.
+- edot objected to the verifier, Persona, because of its investors.
+- kccqzy argued truly anonymous researchers aren't after bounty money anyway. lrvick countered that he has paid anonymous researchers, usually in crypto, and that it beats paying ransoms later. dgellow said payouts eventually need a bank account.
+- lrvick described his own filter of requiring PGP-encrypted reports. nullc replied that LLMs can follow such rules, so it no longer screens out slop.
+
+**Disclosure as the fallback.** phyzome said even comfortable whitehats will go public when reporting is too onerous. lrvick said he waits 90 days after vendor notification and cited DOJ good-faith research guidance. nekusar went further and said he sells vulnerabilities on Tor rather than accept NDAs or embargoes. halJordan's reply was that researchers who find the terms too onerous can simply not participate. fweimer noted that tying vulnerability intake to bounty terms is a structural problem, since out-of-scope issues like DoS get ignored and multi-vendor disclosure fits poorly.
+
+**On the technical claim.** kristjansson gave the one substantive pushback: the report overestimates what OpenAI and MCP guarantee. A confirmation is just another tool call, with no scoping or binding, and handing control back to the model means handing it back entirely. No one else engaged with that point.
+
+**Side threads.**
+- Several commenters criticized the post and a reply in it as LLM-written. Aldipower answered that OpenAI's own support is AI-generated and the community forum is the only way to reach anyone.
+- logicallee claimed OpenAI is run by a "virus" that closes accounts of people who report bugs. dannyw replied by suggesting mental health support, and the thread otherwise ignored it.
+
+### Inkling 2 Small
+
+#### [Submission URL](https://thinkingmachines.ai/news/inkling-2-small/) | 287 points | by [Philpax](https://news.ycombinator.com/user?id=Philpax) | [92 comments](https://news.ycombinator.com/item?id=50386338)
+
+**Inkling 2 Small is a 594B-parameter MoE (17B active) that scores 31 on the Artificial Analysis Intelligence Index**, well above the lab's first-generation models. It takes image inputs and has variable effort settings. Thinking Machines credits gains at every training stage, including more efficient pre-training and one large, unified RL run.
+
+The release is staged. The model is live now on Tinker (Playground, fine-tuning, sampling) with closed weights. The lab says full weights go out under **Apache 2.0 next week**, after external safety testing and red-teaming, and checkpoints become downloadable then. The weights are a promise until they ship.
+
+The coding push is the centerpiece. RL ran on hundreds of thousands of long-horizon tasks across multiple agent harnesses and context-compaction strategies. Rewards went beyond unit tests: many tasks used an agentic grader that scored how the model approached the problem, not just whether the code passed. Early checkpoints were tested publicly on OpenCode as "Fledge-Alpha."
+
+The benchmark tables are mixed, and the post's own numbers show it:
+- **Second-highest** in its comparison row on FrontierCode v2.0 (25.4%), DeepSWE v1.1 (72.1%), SWEBench Pro v2 Hard (86.3%) and PostTrainBench (31.9%).
+- **Behind** DeepSeek-V4.1-Flash on Vibe Code Bench (81.6% vs 87.7%), and behind Kimi K3 on SWEBench Pro (88.2%).
+- On the PMPP-Hard GPU kernel benchmark (69 tasks, 10-hour budget), it solves a mean of 54.25 tasks. That trails GPT-6 Astra (63), Kimi K3.1 Pro (60.5), Claude Opus 5.5 (60) and several open models, though its Pass@4 of 64 is near the top.
+
+So this is a competitive open-weights-to-be model, not a frontier leader. The comparison set is mostly other open or "Flash"-class models, and the PMPP-Hard results use the lab's own adaptation and audit process.
+
+Demos lean on visual feedback loops: a Three.js city simulator with procedurally generated assets, a from-scratch Python PC emulator that boots a real Linux kernel, a Blender origami scene, and a floor-plan walkthrough generated from a map.
+
+The thread's main fight is whether Inkling 2 Small counts as a real step for US open weights or a well-funded also-ran. Most of the rest is about price and what "good enough" means.
+
+**Does it beat DeepSeek?**
+- The cheerful claim that it beats DeepSeek 4.1 got pushback. One commenter said "Not beating dsv4.1 at all," and another noted it doesn't even beat MiniMax M3.1 Flash despite supposedly being much larger.
+- That size gap was corrected. M3.1 Flash is about 428B total parameters per its model card, so the ratio is closer to 1.4x than 2.7x. The commenter warned that parameter counts auto-computed from safetensors metadata are often wrong, for example when packed 4-bit weights are counted as half a weight.
+- Supporters pointed to the unusually candid comparison tables, with one praising a lab whose reporting team isn't the clear winner. The claim to beat GLM 5.3 Flash was called impressive if it holds up outside benchmarks.
+- Others found it close to SOTA on design work.
+
+**Price**
+- Artificial Analysis lists it at $0.30 input, $0.03 cached and $1 output per million tokens, with a cost per task of $1.18. That is roughly 2-3x DeepSeek Flash 1017, so the token efficiency is about the same.
+- One commenter said that if it can't beat DeepSeek on price, they won't use it. They argued most work doesn't need more intelligence than DeepSeek provides.
+- Another saw the pricing as a reasonable option for US users.
+- A counterpoint was that DeepSeek still has room to improve at following instructions precisely. Its over-eagerness was a complaint, and GLM-5.3 Flash was named as the preferred open main model.
+
+**US vs. Chinese open weights**
+- The opening comment predicted an open US model at Opus 5.5 level within 12 months. Skeptics said open models catch the frontier in months, but US open models lag much more because of different incentives. They also expected a US open-weights lab to get acquired or close its weights if it got near the frontier.
+- Others shared US-based alternatives they like: Inception's Mercury 3, Poolside's Laguna, Muse Glimmer and Mistral.
+- The Mercury discussion split on diffusion LLMs. One camp said they are fast and fine for about half of coding tasks once architecture is settled. Another called them "sh*t" by comparison. One commenter suggested pairing a big supervising model with many fast diffusion proposers.
+
+**Distillation and cost**
+- Commenters asked whether Thinking Machines distilled from big or Chinese labs. A reply quoted its technical reports, which say it bootstrapped SFT on synthetic data from open models including Kimi K2.5, and later mixtures included trajectories from Kimi K3 and its own earlier models. Microsoft's MAI series and Mistral were named as avoiding distillation.
+- That led to an analogy debate. One side said everyone builds on prior work, like houses. The other side said the economics should count distillation costs, to which the reply was that the frontier labs' use of all human-created works would have to be priced in as well.
+
+**Other points**
+- One commenter said the most important detail is that training was entirely in NVFP4, making this the best model ever trained at that precision, which would explain the speed.
+- The wine-tasting test impressed several people.
+- The lab's funding came up: Mira Murati's company reportedly raising $5B at $40B after $2B at $10B last year. That contrasted with an earlier claim of a "small team" working without hundreds of millions.
+- A commenter argued the earlier lag reflected the time needed to build RL tooling. Another said that if this had come out in January it would have been SOTA, so it should be judged on whether it is useful and affordable rather than on being the very best.
+
+### University libraries are being swarmed by AI bots, putting public access at risk
+
+#### [Submission URL](https://www.cbc.ca/news/world/university-libraries-ai-data-scraping-bots-9.7408287) | 134 points | by [blakesterz](https://news.ycombinator.com/user?id=blakesterz) | [63 comments](https://news.ycombinator.com/item?id=50392499)
+
+**Scraper traffic is now a threat to open access itself**, according to this CBC report: university libraries are absorbing waves of automated AI bot requests, and the strain is putting public access to their collections at risk.
+
+The article text didn't come through, so I can't give you figures, named institutions, or the specific mitigations libraries are weighing. The title alone points to a familiar tension. Libraries exist to make digital archives and catalogs openly available, and that openness is what makes them easy targets for crawlers collecting training data. The more freely a library serves content, the more exposed it is to load that can degrade service for the students, researchers, and public users it's meant for.
+
+If libraries respond by throttling, blocking, or putting access behind logins, the cost lands on legitimate readers, not on the scrapers.
+
+The thread splits between a "this is solvable with good bot hygiene" camp and operators who say their traffic doesn't fit that model.
+
+**The "just filter them" camp.** Bender, the most active commenter, argues LLM crawlers are the easiest bots to spot. He recommends rate limiting (around 16kb/s and one request per 5 seconds), a friendly 429 page, and 444 plus nftables ipsets for persistent offenders. Beyond that he suggests logging TLS curves, ciphers and client hints to catch fake Chrome, and forcing brotli or zstd on specific URLs. He also points to FireHol and lists_vpn blocklists, aggregated with `iprange`, and advises canary testing and soft-blocking first. His repeated advice is to have an LLM walk you through the setup. When dmtroyer countered that many organizations can't implement this, he said he expects necessity to drive innovation and that it won't cost them anything.
+
+**The pushback from operators:**
+- **Hard-to-fingerprint traffic.** eatonphil sees tens of thousands of IPs making one or two requests each. He has already tried fingerprinting, Cloudflare's paid bot tools and per-IP proof of work, and says IP rotation defeats all of it. His problem isn't server load (a few hits per second) but bot pollution of the view counts he uses to sell sponsorships.
+- **Homegrown scrapers.** EvanAnderson, who runs a government public-records site, says his scrapers are probably not LLM bots at all. They are data brokers, debt collectors and legal advertisers who have treated his HTML as an API for 20 years, and cheap residential proxies are the recent change. He also runs COTS software he can't modify.
+- **Counting views differently.** twosdai suggested counting a view only after real engagement and proxying the events to Fathom. snackbroken noted YouTube now counts a view as soon as playback starts.
+- **Blunt geoblocking.** sixtyj says bad actors probing URLs and traversals led them to block all Chinese inbound traffic, accepting collateral damage to legitimate services like DeepSeek because IP rotation made selective filtering impractical.
+
+**Who is scraping libraries?** blakesterz asked whether it's the big AI labs or a gray market of small scrapers. The one direct answer came from qingcharles, who gently scrapes libraries for public-domain periodical scans that exist nowhere else. He says the scans sit behind walls, so he re-uploads them outside. He also says libraries have largely stopped remote library-card signups in the past 12 months and now require in-person ID checks. That is the kind of access restriction the article warns about. sriacha added that historic newspapers are mostly behind the newspapers.com (Ancestry) paywall.
+
+Others offered shorter takes. ljlolel called the open web dead and recommended hCaptcha, while j45 thought static pages might make a comeback.
+
+The open question is whether sophisticated, residential-proxy-routed scraping can be filtered without the friction of accounts, which is exactly what a public library can't impose.
+
+### Perplexity launches AI agents for work
+
+#### [Submission URL](https://www.perplexity.ai/en-GB/hub/blog/teammates-are-agents-for-complex-ongoing-work) | 62 points | by [cybermango](https://news.ycombinator.com/user?id=cybermango) | [54 comments](https://news.ycombinator.com/item?id=50395866)
+
+**Perplexity's "teammates" are persistent agents that own an ongoing workstream** (sales follow-ups, support triage, campaign monitoring) instead of answering one-off prompts. They run inside Perplexity Computer, reuse its projects, skills, and tool connections, and act on their own when something changes, such as a regular customer going quiet.
+
+The pitch is memory plus initiative. A teammate retains goals, task history, and shared files across runs, and it applies feedback later: tell an ops teammate that an agency needs two weeks' notice, and it schedules around that from then on. Teammates can also coordinate Computer sessions and hand work to each other. In Perplexity's example, one finds website bugs and passes them to another to prepare fixes. They can be added to a Slack channel so colleagues can assign tasks or ask for status.
+
+On safety, each teammate gets its own environment with separate browser sessions, and saved credentials are encrypted. Users can review finished work, take over the desktop, or redirect a teammate mid-task. Approval requests are part of the loop, though the post doesn't say which actions require them.
+
+**Setup:**
+- Pick Teammates in the web nav and name it for the project.
+- Connect plugins such as Slack, GitHub (with per-repo access), or Gmail.
+- Describe the work it owns: where tasks come from, what it delivers, and when it acts.
+- Assign it to a project with a first task.
+
+**Availability:** web first, iOS soon, and **limited to Perplexity Max subscribers**. Free and Pro users have to upgrade. More access and features are promised "in the coming weeks."
+
+The post is all product copy and no evidence: no accuracy figures, no failure rates, no cost per teammate. For an agent that drafts quotes and follows up with customers unsupervised, those are the numbers that decide whether the review step is a safeguard or a bottleneck.
+
+The thread barely touches the teammates feature. It turns into a verdict on Perplexity itself, and most commenters see a company that peaked early and was overtaken.
+
+**The "fall from grace" camp** has two main arguments:
+- Perplexity lost its edge once ChatGPT and Claude added web search. nilkn says it was useful briefly in early days and now has "no reason to exist," and suspects investors keep it alive so nobody is the first major AI startup wipeout.
+- Several commenters say the product degraded. jwr and wmchen describe silent model substitution, where a user who picked a smarter model gets quietly switched to a cheaper one, plus low usage limits for free-onboarded users.
+
+The thread also questioned how good it ever was:
+- 5555watch recalls it being pitched in academic AI workshops as the tool that didn't fabricate sources.
+- mdp2021 says RAG only mitigated hallucination, and Perplexity's underlying results were frustrating.
+- qlte recalls an HN comment that cited Perplexity for MSFT stock history where every number was wrong.
+- elevation asked it for upgrade instructions and got outdated, hallucinated steps. It then claimed it couldn't search for newer data.
+- moralestapia goes further, claiming it was never widely known and that its early buzz was paid shilling. 5555watch's workshop recollection cuts against that.
+
+**Defenders** push back with specifics:
+- Mattasher uses it all day as a clean, ad-free search and fact-finder that remembers prior context.
+- these likes its ad-free news summaries.
+- tinyhouse points to users and revenue in the hundreds of millions, and thinks persistent-memory agent teammates are a promising space.
+
+**Side debate on whether Perplexity can be a third player alongside OpenAI and Anthropic.** ivanmontillam hopes it can challenge Gemini for third place. borg16 replies that the two aren't comparable, since Google trains its own frontier models and Perplexity mostly wraps third-party ones. The discussion then shifted to Google and Apple owning distribution through phones and devices (petcat). ivanmontillam countered that bundling doesn't buy loyalty, citing Internet Explorer. The Siri/Gemini backend question also came up, with spogbiper citing a report that Gemini now powers Siri.
+
+The open question is whether a wrapper company can survive on product polish alone once the model makers ship the same features.
+
+### AMD CEO saying it's a "data center first" company and PC sales will plummet
+
+#### [Submission URL](https://www.techradar.com/computing/gpu/amd-ceo-enrages-gamers-by-saying-its-now-a-data-center-first-company-and-predicts-pc-sales-will-plummet-by-a-double-digit-percentage-in-2027) | 32 points | by [haunter](https://news.ycombinator.com/user?id=haunter) | [26 comments](https://news.ycombinator.com/item?id=50396819)
+
+**AMD's data center revenue nearly doubled to $8.5 billion in the quarter (up 97% year over year), while client and gaming fell 8% to $3.7 billion.** Those two numbers explain why Lisa Su told Yahoo Finance's Brian Sozzi, "We are a data center first company," and why gamers took it as an abandonment notice.
+
+The more concrete signal came from the earnings call. Su said PC sell-through slowed late in the quarter as higher memory and component costs weighed on demand. She then said AMD is planning for **PC unit shipments to decline by a double-digit percentage in 2027**. She added that AMD expects to outperform that market, pointing to its Ryzen roadmap and a bigger commercial footprint. TechRadar reads that as a reference to Zen 6 desktop and laptop chips, expected in early 2027.
+
+The article also links to separate coverage saying AMD will "substantially increase" chip supply in 2027, but not for consumers. So the shrinking-PC forecast and the supply priorities point the same way: capacity goes to data center customers, and consumer parts get what's left.
+
+The framing is TechRadar's, but the logic is just margins. Data center GPUs are far more profitable than consumer cards, and on these figures the data center business is already more than twice the size of the consumer segments combined. Su's candor is the news. The strategy isn't.
+
+The thread splits between a "this is just rational node allocation" view and a darker one about consumer compute being squeezed out, with only a little disagreement in between.
+
+**The strategic-risk argument.** CoolestBeans opened with a "corporate Dutch disease" thesis: tech firms are neglecting their traditional businesses for a build-out that will end, and winning consumers back afterward could be costly. Their sharper point is about demand. Pricing people out of consoles, handhelds and PCs teaches them to stop wanting the latest gadget, and shortages have stopped console prices from falling over a lifecycle, which loses a generation of casual buyers. They cite their own balking at a Steam Deck and a digital notebook. Apple is named as the company to watch for taking the opposite strategy.
+
+**The pushback.** ksec argued AMD isn't ignoring PCs. Leading-edge nodes simply go first to servers because the margins are higher, much as workstations and servers used to get the best tech first, and for the past decade the industry has arguably been smartphone-first anyway.
+
+**Is there an alternative?** When nubinetwork said AMD and Nvidia had burned their goodwill, Neywiny asked what the alternative is, Intel only? PostOnce answered that ARM chips from Apple, Qualcomm and several Chinese makers are already PC-class, and could become the norm by default if buyers get angry or just take what's available. pjmlp replied that leaving x86 would be the death of PC clones.
+
+**Will the boom bust?** Two commenters expect an AI hangover. jmercouris predicts models will "crystallize" at a baseline, as ASICs did, followed by a glut of GPU capacity. naveen99 expects data centers to go on fire sales like downtown commercial real estate.
+
+**Home LLMs.** secondcoming called AMD's move dumb, saying a big market for home-run LLMs is coming. gkhartman agreed but noted Apple's big head start, and said abandoning that market only makes sense if AMD thinks it can catch Nvidia in the data center. gdulli was skeptical, pointing out that bad streaming services never produced a big home Plex market.
+
+**Grievance and politics.** Much of the rest was rhetoric about oligopoly and "resource wars" against the public over land, water, power and hardware, plus lament that PC building will now be only a hobby. One commenter linked Su to Trump-world deference. A couple of replies asked for substantiation of the claims (cite_please's "How?"), and the thread offered none beyond the general sentiment.
+
+---
+
 ## AI Submissions for Thu Nov 05 2026 {{ 'date': '2026-11-05T22:01:54.636Z' }}
 
 ### Claude Code sends your email address to websites
@@ -663,373 +1138,3 @@ The Gauge author (0x63_Problems) answered that the loop doesn't have to run unat
 A second thread asked whether agent experience for dev tools is better modeled as an RL-style environment or as a CI test suite, citing Supabase's and Next.js's public evals pages. The author's answer was that active work should mostly be exploratory hillclimbing, paired with feature launches as a kind of QA against agent workflows. Test-suite evals complement it as regression checks on critical features. The follow-up pressed on the open problem: with such a large search space of scenarios, where should a team start? That went unanswered.
 
 A minor pedantic aside noted that the loop is "iterative," not "hillclimbing"-style repetition, and the thread turned into jokes about autogenerated docs and recursion.
-
----
-
-## AI Submissions for Tue Nov 03 2026 {{ 'date': '2026-11-03T22:33:18.586Z' }}
-
-### There is no posttraining data commons
-
-#### [Submission URL](https://openathena.ai/blog/there-is-no-posttraining-data-commons/) | 116 points | by [lukasschwab](https://news.ycombinator.com/user?id=lukasschwab) | [26 comments](https://news.ycombinator.com/item?id=50352641)
-
-**Pretraining got a ready-made commons of documents; posttraining needs tasks, and nobody has been archiving those.** David Hall's argument is that Wikipedia, ArXiv, Stack Exchange, Gutenberg and Common Crawl (about 10 petabytes since 2007) were lying around when LLMs needed text. Nothing equivalent exists now that frontier work has shifted to posttraining and agentic RL. His own lab's open models, along with Nemotron, still draw most of their pretraining data from that commons, so truly open LLMs depend on continued access to it.
-
-The core distinction: **pretraining consumes documents, while posttraining consumes tasks**, and a usable RL task is a frozen abstraction of what humans actually do. Human action is situated, conditional and unrepeatable, like an oral story told once. An RL task has to preserve three things: a world, an intent, and tools for acting on the world. It also needs a grader to score the outcome.
-
-Software is the exception, which Hall offers as the reason agentic AI hit coding first. Version control, CI, unit tests, and containers have spent decades making work durable and replayable from an identical starting state, which is exactly what RL wants. The imperfections are real (Debian has chased reproducible builds since 2013 and still doesn't call itself fully reproducible), but open-source software is still a commons of preserved work.
-
-The excerpt cuts off before the author's conclusion, so what he proposes for building a posttraining commons outside software isn't visible here. The framing alone is useful: the bottleneck isn't raw data volume but making action durable, and only one domain has put in that effort.
-
-The thread splits over whether an open posttraining commons is feasible, who it would serve, and whether it can be built without being captured.
-
-**The "it already exists" camp.** woctordho argues the commons is forming on its own. Distributed posttraining is much easier than distributed pretraining, and all it needs is agent traces from everyday use. Hugging Face now supports trace uploads, DataClaw collects them, and Chinese "transition stations" reselling GPT and Claude access log GBs of plain-text traces daily. His estimate is 10-100 TB already freely downloadable. He adds that even without the encrypted raw CoT, tool calls and CoT length are useful signals. thoughtpeddler points to Poolside's public trajectories as an existing open corpus. Amekedl says the post is naive because frontier labs already hold enormous private posttraining sets. stymaar's reply is that the post is about a *public* equivalent, which doesn't exist.
-
-**The "don't build it" camp.** The longest argument is between ArcHound and dlwh (the author, from the Marin / Open Athena project).
-- ArcHound says any commons that benefits contributors will eventually be extracted from. He points to OpenAI's trajectory, Google's sponsorship, and the pattern of grassroots open efforts turning profit-seeking. He thinks pushing back on adoption until consent, ownership, and disruption are settled is better than participating.
-- dlwh replies that the real alternative isn't "AI goes away" but "a handful of very well capitalized companies buy what they need and squeeze the labor market." He wants the process to be participatory, with contributors having a say in what gets automated.
-- lukasschwab adds that labs have already spent many millions buying closed posttraining data, so the question is whether open-weight models get to compete in those specialties at all.
-- impossiblefork suggests such a commons may need protection, possibly as a state project for competitiveness.
-
-**A side thread on state actors.** dannyw speculates about the NSA feeding labs surveillance or industrial-espionage data, citing the Airbus case. Retro_Dev doubts that sharing wiretaps would help the NSA. edot and lnkdinsuxs flip the direction: the government demands weights or builds in-house, perhaps via Maven infrastructure. dlwh also notes that NVIDIA, praised as the open exception, withholds a large share of its posttraining data, though it discloses what it withholds.
-
-**Other points**
-- **Donation model:** david_shi likes the idea of a trusted steward, like the Internet Archive, handling anonymization and eval design so professionals such as retiring accountants will donate their data.
-- **Organizational reality:** mrkn1 jokes that the data we need is stuck in "the spreadsheet Karen maintained," and dlwh says the post was partly a sublimated rant on why that data was never going to exist.
-- **Private specialization:** lnkdinsuxs predicts developers will each post-train self-hosted expert models, with posttraining being the "secret sauce."
-- **Provenance:** emsign contests the "lying around" framing as large-scale IP theft. est31 notes Stack Overflow, one such source, is dying.
-
-The unresolved crux is whether a participatory commons can stay that way once it is valuable, or whether the alternative is simply labs buying the data privately.
-
-### The 'Astra can read and write weights to improve Qwen' post is misleading
-
-#### [Submission URL](https://honnibal.dev/blog/astra-read-write-misleading) | 1020 points | by [syllogism](https://news.ycombinator.com/user?id=syllogism) | [207 comments](https://news.ycombinator.com/item?id=50351111)
-
-**The "just by looking at raw weights" claim only holds for three of the nine experiments**, and none of them involve a real language model. That is the core of Honnibal's rebuttal to the Astra post, which he compares to a magician rotating through different tricks so each one seems to debunk your guess about how the others work.
-
-His breakdown of the original post's experiments:
-
-- **Raw floats in context, no tools, no running the network:** only experiments 1, 2 and 4, on networks of 17K–172K weights. Tasks include naming the game a PPO MLP was trained on and fixing a stuck Kinetix car policy.
-- **Python required:** every experiment with a real language model. The headline Qwen3.5-0.8B result (MATH-500 from 7.9% to 48.1%) also runs the model on up to 50 batches of practice problems.
-- **Failures:** spotting the sycophantic Gemma 3 270M failed without attention patterns, and the Qwen-style fix on Gemma failed too.
-
-The game-network claims also carry caveats. The MinAtar networks start from zero weights, so there is nothing to read. The "beats PPO-100M" result only beats PPO-500M on Breakout (517 vs. 25), and loses on Seaquest (53 vs. 89) and Asterix (53 vs. 55). The Kinetix fix was given one recorded failure episode, and the 0% to 100% result came from a single try that changed 3.5% of the weights.
-
-His conclusion is that the Qwen result shows Astra can be prompted to do what a human ML engineer does: write code that analyses and edits weights. He grants that this is not trivial and that models a year or two ago would have failed. But it is not the "deep capability" a single technique would imply if it both authored small game networks from scratch and improved a large model. Because these are different techniques stitched into one narrative, he argues they don't belong in the same post.
-
-The thread's most weighty contribution came from an interpretability researcher who largely sided with the rebuttal. Reader enthusiasm for the underlying idea, LLMs editing weights directly, ran in parallel and was only partly dampened by it.
-
-**The insider deflation (x313, mech interp).** The Qwen headline result isn't really about math. It reduces reasoning loops, which happen when the model gives the `</think>` token too little probability. Steering vectors already fix this, and the contrastive analysis Astra used is the standard human method. x313 calls it an intro-level interp project that takes 4-8 hours, comparable to binary patching with a debugger in software. It's cool that frontier models can do it, but not unexpected.
-
-- **Why did Alibaba ship the bug?** HarHarVeryFunny asked why, if the fix is so easy, Alibaba didn't catch it. Replies split three ways:
-  - Post-training is a black box where fixing one behavior breaks others (dennysora-main).
-  - Steering is a lobotomy with side effects, so you fix one defect and add ten (bhu8).
-  - Labs routinely ship sloppy releases, with template and weight issues fixed later (embedding-shape).
-- dr_kiszonka doubted that the fix is a 4-8 hour task, given how many people quantize and fine-tune open models, and asked for a concrete sampling-settings fix that doesn't cost reasoning quality.
-- theptip agreed on the math result but wanted x313's view on experiments 1-5, where one-shot reading and writing of weights seemed more surprising. That question went unanswered.
-
-**Practitioners excited by the technique.** bushido spent weeks on conventional training for a git-commit-message model, then let a larger LLM edit weights directly. In twelve hours it made more progress than the previous two weeks, including removing and then restoring attention-head directions. rybosome built a "vibe tuned" privacy-sensitive classifier whose weights were one-shotted by an LLM. Early results look competitive with a hosted model on accuracy and latency, and rybosome called the efficacy "absurd." Others suggested benchmarking it against other classifiers and open-sourcing it.
-
-**Do commit-message rules belong in AGENTS.md?** runitx was surprised that agents ignore a written standard and said Claude had been very reliable for them. bushido said agents keep adding hedging, contradictions and future-looking notes, and that a pre-commit hook helped. majormajor reported the same "Claudespeak" problem and has Codex rewrite Claude's prose afterward.
-
-**Two kinds of experiment.** HappyDreamer guessed the model uses Python only when the weights don't fit in context. syllogism corrected this:
-- Reading weights directly works only when behavior relates fairly linearly to weight values, which is true of small nets and not of large models.
-- The Python route never puts weight values in context. It computes diagnostic statistics, as an ML engineer would, so it is a coding problem rather than "looking."
-
-HappyDreamer accepted this, remained impressed by the small-net results, and said the original post could have been split in two. overfeed pointed out that the rebuttal itself already says the raw-weights setting applies to only experiments 1, 2 and 4.
-
-### The Little Book of Generative AI Foundations: An Intuitive Mathematical Primer
-
-#### [Submission URL](https://arxiv.org/abs/2605.29713) | 380 points | by [ibobev](https://news.ycombinator.com/user?id=ibobev) | [59 comments](https://news.ycombinator.com/item?id=50358582)
-
-**A 195-page, derivation-first primer that treats PCA, VAEs, diffusion, flows, autoregressive models, GANs, and energy-based models as one connected family** rather than a parade of separate architectures. That framing is the pitch. The book skips implementation detail and architecture surveys, and instead works through how each model is derived and how they relate.
-
-The route runs from PCA to probabilistic PCA to variational autoencoders and diffusion models. It then covers normalising flows, autoregressive factorisations, GANs, Wasserstein GANs, and energy-based models. It's aimed at mathematically curious researchers, practitioners, and students who want the "why" behind the models they already use, not a code tutorial.
-
-The v2 revision (September 2026, up from 125 KB to 1.17 MB) adds visual explanations throughout, which suggests the first draft was equation-heavy. The author, Tianhua Chen, is soliciting corrections, so treat it as a preprint that hasn't been through peer review. The abstract gives no sample derivations or reader feedback, so how well the "intuitive" claim holds up is something you'll only find out by reading a chapter.
-
-The thread is less about the book's derivations than about where it sits among other resources, with a few small side arguments.
-
-**Companion reading and scope.** The most common move was pairing it with Fleuret's *Little Book of Deep Learning*. SwtCyber suggested using this book for the probabilistic and continuous math and Fleuret for architectures, and prideout called Fleuret's book a personal favorite. joe_the_user added that the two don't cover the same ground: Fleuret gives basic deep learning, while the OP supplies foundations for newer machinery. He framed that machinery as transformers, but wh306 pushed back after a skim that the book has little to do with transformers and fits diffusion models better. SwtCyber replied that the two are converging, citing DiT, where a transformer does the noise prediction. hasteg separately recommended Ananthaswamy's *Why Machines Learn* as a gentler on-ramp for readers lacking linear algebra, statistics, and multivariate calculus. p1esk found the book surprisingly readable, praising its start from linear algebra basics.
-
-**Wording nitpick on coordinates.** nh23423fefe objected to the passage saying a change of basis "does not change the vector itself". His complaint was about notation, not substance. The text conflates a vector with its coordinate vector, and he used the example of lines in the plane mapped to R^3 to show why the distinction matters. KolenCh said this is the passive view of transformations, common among mathematicians. tmhn2 argued that stressing the underlying object stays fixed is reasonable. nh23423fefe held that his objection was only to the wording. The thread then drifted into an affect/effect spelling joke.
-
-**Formatting and versions.** CamperBob2 wanted a standard full-page PDF. bscphil produced one from the A5 version, which is permitted by the CC BY-NC-SA license. rahimnathwani noted it is one version behind, missing v1.3's typo fixes and a new section on large-scale training. He emailed the author about it. The Fleuret subthread turned into a tangent on phone-sized PDFs, KOReader reflow (which reportedly works on OCR'd Internet Archive scans but not on unselectable text), and the Boox Duo e-reader versus an iPad mini.
-
-**Exercises.** nblgbg asked for books with problems. Valk3_ listed several:
-- Prince's *Understanding Deep Learning*, with theoretical and programming exercises.
-- Bishop's *Deep Learning: Foundations and Concepts*, which they judged best for theory exercises.
-- *Dive into Deep Learning*.
-- Berkeley's EECS 182 assignments.
-- Calin's book and Petersen et al.'s, which have few exercises.
-
-vismit2000 pointed to deep-ml.com.
-
-**Other.** minimaxa described dumping books and papers into a RAG folder, and cheesewhistle asked how that works in practice. The reply was mostly a long paper list and a tool link. brcmthrowaway told an anecdote about a friend who studied this material to prep for an LLM-era interview and got rich.
-
-### Nvidia – open-source auto-ontology
-
-#### [Submission URL](https://github.com/NVIDIA/auto-ontology) | 287 points | by [campervans](https://news.ycombinator.com/user?id=campervans) | [138 comments](https://news.ycombinator.com/item?id=50348962)
-
-**NVIDIA's Auto Ontology builds a governed context layer for data agents**: it generates an ontology from enterprise metadata, reconciles conflicting metric definitions across systems, and serves the result to any agent harness over MCP, CLI, or API. The pitch is reliability, not speed. A revenue number returned faster is worthless if the definition behind it is wrong.
-
-The pipeline runs in five stages. It discovers or imports ontologies and semantic models, grounds agents in business meaning, validates generated SQL against certified definitions and lineage (returning provenance with each answer), exposes the context, and folds certified corrections back in. It's positioned as a complement to semantic models you already own, not a replacement.
-
-It is a full stack, not a thin library:
-- **Frontend:** Next.js 16 / React 19 with Better Auth and RBAC, covering chat, catalog, and analytics UIs.
-- **Backend:** FastAPI with LangChain for NL-to-SQL, plus a separate ingestion worker that writes embeddings.
-- **Storage:** Postgres with pgvector holds the catalog, the ontology, and the vectors together. Vault is optional for credentials.
-- **Deploy:** Docker Compose locally, Helm chart for Kubernetes. The quickstart runs against Microsoft's Wide World Importers sample database.
-
-Inference goes through NVIDIA NIM endpoints, hosted or self-hosted. Defaults are Nemotron models for LLM, embeddings, and reranking, configured by per-role endpoint/key/model triplets that fall back to a shared `DEFAULT_MODELS_*` set. You need an `nvapi-` key from build.nvidia.com for the hosted path. The config is generic enough that swapping in other OpenAI-style endpoints looks plausible, but the README only documents NIM.
-
-It's Apache 2.0, with 1,365 commits of history, so it's a mature internal project that has just been opened. The catch: **it isn't accepting external contributions**. This is source-available in practice, a reference you can fork but not shape. The README points to a separate repo for BIRD text-to-SQL benchmarks and shows no results of its own.
-
-The thread never reaches NVIDIA's tool. It becomes a debate about the README's prose, which most commenters judge to be unedited LLM output, with the opening line as exhibit A: "reliability gates agentic analytics."
-
-**The prose complaint**
-- Several people said they closed the page after the first sentence. One cited bad experiences with "gates" in Claude-written PRs, and another said hearing "gate" in real life now makes them lose their train of thought.
-- Non-native speakers (Tade0, torben-friis) found it reads like English without human rhythm, "as if a human tried and failed to be concise." They also called it a garden-path sentence. Native speakers said corporate press releases give the same feeling.
-- adastra22 argued the problem is deeper than the verb "gate." The sentence is technically correct but never pins down a context, so it can be read a million ways and says nothing. They blamed RLVR and synthetic training for teaching models to please LLM evaluators rather than human readers.
-- svnt suggested NVIDIA may not want to say outright that hallucinations preclude reliable AI analytics. The vagueness may therefore be partly deliberate.
-- Roark66 read the whole README and still couldn't say what the tool does beyond "searchable knowledgebase," and asked for use cases. SubiculumCode showed a rewrite with a few more words that was much clearer.
-
-**The skeptics of the "it's AI" claim**
-- FrustratedMonky argued that marketing slop predates AI, that people now see AI everywhere, and that "gate" as a verb is legitimate. Some agreed it's normal in parts of American English (adastra22). Others (zdragnar) called it extremely rare.
-- singpolyma3 asked whether ordinary English words now get flagged as Claude. Replies said this one is called out because the entire page is slop, not because of one word.
-- Supposed human error in the README was read as agent error. aniviacat noticed the components table mixed up the database columns, and antonvs called that a "structural hallucination." grey-area quipped that NVIDIA's ontology apparently didn't fix it. ks2048 added that the architecture diagram is confusing, citing an "Ingestion Service" with only outgoing arrows.
-
-**The hypocrisy argument**
-- thunky said it's hypocritical for a heavy Claude user to reject others' Claude output, and that docs shouldn't be held to a different standard than code. sampullman and arthur-st replied that sharing raw model output is the issue: if something wasn't worth the time to write, it isn't worth the time to read.
-- dstu said they always flag Claude text, compared raw output to uncooked ingredients dumped on a plate, and said they switched to OpenAI because its prose is more readable.
-- WhrRTheBaboons drew a line between code, which talks to machines, and prose, which is for humans.
-
-**Side threads**
-- Jokes about coining "Claudish robolect."
-- lenerdenator wished for shared, vendor-neutral jargon for these features.
-- eluru said AI writing is making human writing worse through imitation.
-
-The unresolved crux is whether the objection is to AI authorship as such or to publishing unedited output that makes readers do the comprehension work. Most commenters sided with the second.
-
-### Qwen 3.8 27B on my laptop can interpret model weights, too
-
-#### [Submission URL](https://simonwillison.net/2026/Nov/3/qwen-can-interpret-model-weights/) | 713 points | by [theanonymousone](https://news.ycombinator.com/user?id=theanonymousone) | [206 comments](https://news.ycombinator.com/item?id=50355251)
-
-**A 27B model running on a laptop can look at raw floating-point weights and name the game the network was trained on**, no tools or code execution. That's the no-tools half of the "Weight-Space Programming" paper, which claimed it for frontier models like GPT-6 Astra.
-
-Willison ran the paper's own prompts: four small RL policy nets trained on 10x10 grid versions of Breakout, Pong, Pac-Man and Freeway, each dumped as text with the question "Which game was it trained on?" The prompts are public in the paper's repo, so you can pipe them straight into `llm -f <url>`. Qwen 3.8 27B (a 17GB quant in LM Studio) got Pac-Man after 46 minutes and 43,506 reasoning tokens, with 72% stated confidence. It got Pong after about 65 minutes. He also tried a third game, but the excerpt cuts off before that result. For comparison, Kimi K3.1 Pro via OpenRouter identified Breakout in under 10 minutes and about 19,500 reasoning tokens.
-
-Practical gotchas: the default 8192 context fails, so you need a long context window, and he had to raise the LM Studio timeout to 900 seconds.
-
-He also argues the paper conflates two separate claims. One is what models can infer from weights unaided. The other is what they can do once given code to modify other models. Matthew Honnibal called the paper misleading for this, and Sean Goedecke argued the Qwen3.5-0.8B fix follows the steps a human ML researcher would take. Willison focuses only on the first claim, which he finds more interesting.
-
-The caveat is that this is a handful of runs on four toy networks, and the hour-plus latency makes it a curiosity rather than a tool.
-
-The thread largely ignores the weight-reading experiment and becomes a "is local Qwen good enough?" argument, with a lot of hardware and tooling detail.
-
-**Qwen 3.8 27B vs. Flash-Next (QFN).** Several people say QFN beats the 27B dense model. UncleOxidant says it feels on par with Claude Opus 4.6–4.8 and runs about 50 t/s on a Strix Halo, while the 27B with MTP starts near 22 t/s and slows as context fills. t0mas88 reports 70–90 t/s on a 32GB R9700 using the Strata runtime. MadameMinty says QFN wins on coding, translation and vision, and cites chrF++ of 67.5 vs 59.3 on translation, partly because the 27B burns more time reasoning. Dissenters exist. xnzakg went back to GLM-5.3-Flash because it spends fewer thinking tokens and finds more issues, so it ends up faster overall. justinclift says QFN still hallucinates too much for real work, and bityard replies that every model does without the right context and tools.
-
-**Is local really competitive?**
-- **The "tech lead" framing:** zkmon says you steer the model like a tech lead, and that guidance is what frontier pricing buys. lnkdinsuxs asks how that output gets verified. dcrazy says he judges it like a peer's PR rather than building eval rubrics, and that the 27B lacks knowledge of native Mac development.
-- **Small models know less, not necessarily reason worse:** Spivak argues the future is a smart model with little embedded knowledge plus external knowledge. dcrazy points to the n-gram table in Qwen 4 and 3.8-Flash-Next as a possible answer, and says RAG would make time to first token painful for conversational use.
-- **Harnesses:** ActorNightly says local models need custom harnesses that inject context on every prompt, because small models have coarser latent space. Others disagree. bityard and trog run off-the-shelf harnesses (Opencode, pi.dev) fine, and nickspacek says a Pi extension can do the steering. dcrazy finds he has to write more skills for tools the model hasn't seen.
-- **Cost:** codazoda says his time is worth more than a $20 frontier plan, though he wants local to succeed.
-
-**Other notes**
-- netsroht is building a coding agent that "nudges" small models that stop early.
-- zkmon runs Q4_K_M with about 200k context on a 24GB RTX 4090, and Q6_K with 60k context for lighter work.
-- ActorNightly argues Gemma 4 31B self-corrects better than Qwen, and that Qwen is popular mainly because it runs fast on MLX.
-- simonw says Qwen 4 may land this week. sigmoid10 relays that Qwen's head confirmed Qwen 4 and 5 will stay open-weight.
-
-### How I use AI (Oct 2026)
-
-#### [Submission URL](https://ben.stolovitz.com/posts/how-use-ai-oct-2026/) | 248 points | by [citelao](https://news.ycombinator.com/user?id=citelao) | [291 comments](https://news.ycombinator.com/item?id=50355767)
-
-**The author now manages 5–6 parallel coding agents instead of writing code, and spends about $3,000/month on tokens to do it.** This is a yearly check-in from a research engineer who moved from Microsoft's Windows AI team to Salesforce AI Research, where he builds rapid prototypes and supports scientists. His claim: "writing code is solved," though engineering isn't.
-
-His workflow is Claude Code, OpenCode, Codex, or Pi, each agent in its own Git worktree. Agents write code, run tests, and open and review PRs. He says they prototype a feature in about 20 minutes. They also let him propose sweeping changes in code review, or write his own versions of teammates' work, because the cost of producing the code has collapsed. One example: a noise-cancelling change to his Mumble client that he now runs daily.
-
-The counterweight is the more interesting part:
-- **Agents left alone produce slop.** His most successful work this year was hand-writing a tool that replaced ~4,000 lines of vibe-coded output with a few hundred. The result was more testable and general.
-- **Juggling six conversations is exhausting** in a way coding never was, and "just one more prompt" stretches into dinner.
-- **Craft is eroding.** A friend laments losing the meditative part of programming.
-
-He also drafted a personal AI policy, a framework for when AI helps and when it hurts, prompted by teammates having Claude write their Slack messages and creators like Hank Green and BrainPOP slipping on AI art. A site-level policy, likely modeled on Green's, is still in progress.
-
-The remaining sections (research, summarization and voice, writing, art, music and video) are cut off in the provided text, so I can't say what he concludes there.
-
-The thread splits over whether "writing code is solved" squares with the author's own caveats, and the argument quickly turns into one about evidence of productivity.
-
-**The opening challenge.** mef51 sees cognitive dissonance in the post. The author admits that agents need human taste, that juggling them is exhausting, that LLMs fail at hard brainstorming, and that his best work was hand-writing a replacement for 4,000 lines of slop. Yet he still declares code solved. mef51 also asks where taste comes from if not from writing code, and doubts models will keep improving if training data degrades as more people rely on LLMs.
-
-**Where taste comes from.** ramigb, who coded for 27 years, says taste comes from exploration and trial and error, not from code itself, and that LLMs widen exploration within finite human time. scubbo adds that taste in the result matters more than taste in the implementation.
-
-**The productivity dispute.**
-- user43928 calls the gains "real and massive" and the model-collapse worry a fantasy. He argues that code review and optimization are often premature, because architecture is now cheap to change later and QA plus agent-run pipeline fixes can cover the rest.
-- Timwi asks why users haven't seen better software in the last year. hobo123 and user43928 reply that adoption was niche until recently and that teams with code review adapt more slowly, so the effect should show up in a few months.
-- rolisz points to about 300k lines of personal tools, including a photo-based food logger that was a research project before vision LLMs. dimitrios1 and others counter that small CRUD apps were always quick to build and that "I built this quickly" is no longer a useful metric. spence-s adds that free versions of such apps already existed.
-
-**Skepticism about optimizations.** kragen argues QA can't reveal missed optimizations. A cache can hide a slow function that, once fixed, would let you drop the cache for a simpler, more robust app. user43928 says that simplicity isn't worth 5-10x the review effort, since an agent can revisit it later. hbrn replies that LLM opinions are often neither good enough nor malleable, that you must read the code to learn the difference, and that LLMs still make decisions "humans would be fired for."
-
-**Training data.** yewenjie says RL doesn't depend on human training data, citing recent math progress. DamnInteresting suggests that progress may partly reflect training on mathematicians' chat logs. The comment is cut off.
-
-The crux left open is whether cheap regeneration makes code-level judgment obsolete, or whether that judgment is what lets you tell when the agent is wrong.
-
-### Postman silently auto-installs AI plugins and attempts to share all API data
-
-#### [Submission URL](https://github.com/postmanlabs/postman-app-support/issues/14370) | 1479 points | by [sidgarimella](https://news.ycombinator.com/user?id=sidgarimella) | [479 comments](https://news.ycombinator.com/item?id=50354960)
-
-**Postman desktop 12.33.4 reportedly installed its own plugins into Codex and Claude Code on launch, with no prompt, and tried to approve its own startup hook.** The GitHub issue reporter found it when Codex began showing MCP auth warnings and loading Postman skills for unrelated API work.
-
-The evidence comes from Postman's own `main.log`. It records `auto-existing-upgrade` with `claude-code:installed, codex:installed` for a user who had not opened the app in a while. The changes were:
-
-- **Codex:** a user-wide `postman@postman` plugin in `~/.codex/config.toml`, plus a SessionStart hook with a stored `trusted_hash`.
-- **Hook content:** it tells the agent to load the `postman:api-engineer` skill before *any* non-trivial API task (design, mocking, testing, docs, deployment), not only when the user asks for Postman.
-- **Self-approval:** the plugin installer's source calls `approvePostmanHook`, which fetches the hook hash and writes it to `hooks.state` through `config/batchWrite`. That bypasses Codex's trust prompt.
-- **Remote MCP:** it points at `mcp.postman.com/mcp` and fails with "Auth required" on every Codex startup.
-- **Claude Code:** `postman@claude-plugins-official` was enabled at user scope, and a Postman CLI landed in `~/.local/bin`.
-
-The reporter is careful about scope. The source proves the approval *attempt*, but the trust record alone doesn't show who wrote it. They also state the report does not claim data exfiltration, despite the framing in the HN title. It hasn't been reproduced on a clean Mac, and it's a single user's machine.
-
-The real issue is a trust boundary: an API client rewrote the global config of other tools and steered their default workflow. If you have Postman installed, check `~/.codex/config.toml`, `~/.claude/settings.json`, and `~/.local/bin`. Postman hasn't responded in the text provided.
-
-Almost nobody discussed the actual incident (Postman writing into Codex and Claude Code configs). The thread turned into a debate about why Postman went bad, and from there into venture capital, open-source licensing, and what founders are really chasing.
-
-**The framing that took over.** The top reply to a complaint about Postman's $400M+ raise and 1,500+ staff argued that VC-funded growth lets a few people cash out, and that this is what separates the "founder mentality" from the older UNIX/GNU culture that produced curl, ffmpeg and redis. Commenters praised the writing and the analysis. Others pushed back on the lineage:
-- **"UNIX was corporate."** One commenter noted that Solaris, Ultrix, AIX, HP-UX and the rest all descended from AT&T. Another replied that DEC, old HP and Sun deserved better than being lumped in with AT&T, IBM and Microsoft.
-- **"Open source won."** Others said Linux won and there's more open source than ever, so nothing was lost. Another reply said UNIX itself is dead while UNIX-y software lives on.
-
-**Who is to blame.**
-- One camp said the root is VCs rather than founders: founders figured out that investors are easy to grift. This commenter traced the incentive further down to index funds, since getting big enough to IPO and join VTI means "free money."
-- Others said enshittification and private equity are synonymous. A reply to that asked what's wrong with a mature, stable company. The counter was that the issue is "growth at all costs", which pleases shareholders (including ordinary retirement savers) and hurts workers.
-
-**Licensing.** One commenter claimed permissive licenses (MIT and similar) were a mistake that handed work to corporations. Skeptics asked for a concrete project that would have built a community under GPL2 but was exploited under MIT. The answer was that it's easier to point to has-beens than never-weres. Another objection was that AI labs plainly didn't train only on MIT code. A side argument questioned whether GPLv3's anti-tivoization clause actually helps.
-
-**Is the exit dream defensible?** A reply to the idea that founders should build modest, lasting businesses sparked the most personal exchange.
-- One parent said a big exit is how they guarantee food, shelter and healthcare for their kids. They cited two children with cancer and the lack of cheap long-term disability insurance. Others countered that term insurance covers death and that taxes and social safety nets should do this job.
-- A game-industry developer said repeated layoffs make a buyout tempting.
-- The thread did not resolve whether the problem is individual ambition or a missing safety net. The parent argued that the US won't build one in time for their kids.
-
-**Smaller notes.**
-- One commenter was shocked that Postman has hundreds of employees and asked what they all do.
-- Another noted they don't know any developer who still uses Postman.
-
-### USDB: Scaling Storage for Next-Generation Recommender Systems at ByteDance
-
-#### [Submission URL](https://arxiv.org/abs/2611.02618) | 49 points | by [1equalsequals1](https://news.ycombinator.com/user?id=1equalsequals1) | [8 comments](https://news.ycombinator.com/item?id=50354250)
-
-**ByteDance cut mean write latency by 85.8% and infrastructure cost by 42.1%** by replacing separate storage paths for user-history sequences with one unified store, USDB, that serves streaming ingestion, inference, and training from the same files.
-
-The problem is an asymmetry: recommender models want longer, attribute-rich user histories, which means a constant trickle of small writes against repeated large reads. USDB attacks it with four pieces:
-
-- **CascadeLSM**: time-based compaction stages that materialize application-specific histories, so maintenance work is done once and reused.
-- **Differentiated replicas** that share persistent files rather than duplicating data.
-- **Partial dumps**, which rebuild inference inputs from captured recent state plus versioned history.
-- **A hybrid columnar format** to speed up projected reads (fetching only some attributes).
-
-Against an "Optimized RocksDB sequence baseline," the authors report faster long-history reads across projections and client loads. Aggregation pushdown reaches 8.5x the throughput of ordinary reads when the receive bandwidth is constrained.
-
-The caveats: the headline numbers come from production migration records and "normalized deployment accounting," not a public benchmark, so they're hard to reproduce. The RocksDB comparison is also against a baseline the authors tuned themselves. No code link is listed. Still, the shared-files idea, where training reads the same files that serving maintains, is the part most likely to transfer to other sequence-heavy systems.
-
-The thread mostly ignores the storage engine and drifts toward the modeling and practicality questions around it.
-
-- **Generative recommenders are hard to get at.** BenoitP, who is setting up a classical DLRM, listed the obstacles to moving to generative recommenders or LRMs: product cardinality (maybe Semantic IDs), worse performance than discriminative models when user intent skews toward repeat purchases, cold starts, entity features, explainability, and training and serving cost. whimsicalism replied that this expertise sits almost entirely inside big social media companies or with people hired from them, and pointed to Kuaishou's OneRec papers as the nearest thing to a tutorial. BenoitP has OneRec on the radar but called adapting it a long shot at a small company.
-- **Scale gap.** bashhq_r noted the contrast between ByteDance building custom storage and their own team squeezing user sequences into Redis sorted sets.
-- **"Agents as recommenders."** mikert89 predicted that recommenders will become an agent paging through your data to pick next options. deepsun said feeds have worked this way for decades, since Facebook moved from timeline to feed. direwolf20 asked what "agent" adds, since the description would fit any feed algorithm, even a chronological one. mikert89 clarified that they meant an LLM, not a human, but the thread didn't say how that differs from existing ranking systems.
-
-The practical divide is that frontier sequence-modeling and infrastructure work remains out of reach for smaller teams, who are still working around it.
-
-### US tech giants' hidden AI debt swells 90% to $3.2T in 6 months
-
-#### [Submission URL](https://asia.nikkei.com/business/technology/artificial-intelligence/us-tech-giants-hidden-ai-debt-swells-90-to-3.2tn-in-6-months) | 408 points | by [angry_impala](https://news.ycombinator.com/user?id=angry_impala) | [166 comments](https://news.ycombinator.com/item?id=50358422)
-
-**Off-balance-sheet AI obligations at US tech giants have nearly doubled in six months to about $3.2 trillion**, according to Nikkei's analysis, which puts the total at roughly 80% of the companies' assets. Google and Meta are among those named.
-
-The comparison point is a earlier Nikkei piece (linked in the page's related stories) that put five tech giants' hidden debts at $1.65 trillion, which is where the ~90% jump comes from. The obligations are commitments tied to AI infrastructure, such as data centers, that don't show up as conventional debt on the balance sheet. Nikkei says investors are increasingly alarmed by the seemingly unending spending.
-
-The excerpt is truncated, so the breakdown by company, the definition of "obligations" (leases, purchase commitments, or something broader), and whether the two figures cover the same set of firms aren't visible. That last point matters: if the peer group widened between the two reports, part of the 90% is scope, not growth.
-
-The thread splits on one question: are these companies making a rational bet under competitive pressure, or is this a bubble dynamic that shareholders will end up paying for?
-
-**The "they know what they're doing" camp.** Grombobulous argued the giants understand the numbers and see missing the timing as the bigger risk. Their alternative use for cash had been record stock buybacks, and they could write off a failed bet and pay little tax. The defensive logic is concrete. Google's search business is threatened by chatbots, so "sit out" might cost 40% of company value versus 20% for a failed AI spend. ericmay added that framing the spending as bad is hindsight in reverse: "Nobody knows" the outcome.
-
-**The pushback on that.**
-- csense said shareholders would still prefer a $100B payout to a bad investment, since a tax write-off of about $20B doesn't make a $0 return good. Even a mild share-price hit means trillions in lost wealth, much of it in ordinary people's index funds.
-- carefulfungi's answer to "nothing to do with the cash" was simply "Dividends." ptero added that trillion-dollar companies are unlikely to be high-growth anyway, and that the pre-AI model of very profitable businesses at reasonable P/Es was fine.
-- RC_ITR cited Time Warner/AOL: being right that the internet mattered didn't stop shareholders from regretting the deal.
-- On the Google sub-debate, jgalt212 claimed AI has already gutted search clicks. _boffin_ countered that search revenue is still growing, and Grombobulous replied that the trend matters, as with landlines. Both agreed AI ads on cost-per-click pricing may be a worse business than search.
-
-**Structural explanations.** mindwok framed it as a market failure. Shareholders reward AI positioning, so executives must visibly spend or risk their jobs, and nobody can deviate until the market stops rewarding it. ifwinterco compared it to 1980s Japanese firms speculating in land: people know it's a bubble but are still incentivized to take part. BobbyTables2 asked what the alternative investment would be, floating batteries as a slower payoff.
-
-**Financial-system worries.**
-- somenameforme argued that commercial bank debt is driving the boom, pointing to roughly 6% M2 growth in a year and warning of 2008-style securitization. zaik countered that the M2 chart looks normal on a log scale.
-- angry_impala said the need for off-balance-sheet structures suggests worry about credit ratings.
-- repeekad claimed the real exposure is non-cancellable commitments from Anthropic and OpenAI that will become "the market's problem" once those companies go public.
-- rapind suspected a bailout is expected, possibly engineered.
-
-**Smaller threads.** Danox predicted Microsoft will be the bag-holder, citing Copilot and Xbox, though ptero couldn't follow the claim. ggm argued that understanding often means not caring: some investors profit even from a wipeout, and RAM makers are happy about inflated prices.
-
-### Mass attempted replication of old findings of LLMs with new models
-
-#### [Submission URL](https://zou-group.github.io/llm-claims-shelf-life/) | 30 points | by [zirkonit](https://news.ycombinator.com/user?id=zirkonit) | [4 comments](https://news.ycombinator.com/item?id=50347766)
-
-**44% of 50 widely cited LLM findings no longer hold in current models**, and another 34% have weakened substantially. Only 16% persist and 6% strengthened. The Zou group reran each claim's original setup across 20 models (eight developers, open and closed, released July 2024 to September 2026), fit a trend line to effect size against release date, and classified each claim by how much of the original effect remains. "Expired" means a fifth of the original effect or less.
-
-**Claims expire fast.** The estimated share expired is 4% at six months after publication, 16% at one year, and 39% at two years. Among the 22 expired claims, the mean time to expiry was 15.7 months (median 14.7).
-
-**What dies and what survives:**
-- **Expired:** capability failures that post-training has since fixed, such as letter counting, arithmetic in other bases, facts lost in the middle of long contexts, fabricated citations (55% fake with GPT-3.5 in the 2023 study, now rare), and abandoning correct answers under pushback. Five of nine reasoning claims and six of eleven sycophancy-and-deception claims are expired.
-- **Weakened:** the reversal curse, two-hop questions, jailbreak and prompt-injection susceptibility, invented package names, and judges' preference for longer answers.
-- **Persists or strengthens:** preference-like behaviors rather than capabilities. These include flattery, judges favoring their own answers, near-identical outputs for open prompts, a left political lean, and answering when they should abstain. Nonuniform random-number generation also strengthened.
-
-Areas that labs optimize in post-training expire fastest. Bias and judgment findings last longest, which suggests that "does the model fail at X" papers age worst and "what does the model tend to prefer" papers age best.
-
-The caveat is methodological: the expiry threshold is a fitted trend across models, so a claim can be marked expired even when some individual models still show a strong effect. The page's own examples also use model names I can't verify, so treat the specifics as the authors' framing. The broader implication is that citing a 2023 LLM paper as current fact is risky unless someone has rerun it.
-
-The thread is small, and it mostly circles one question: do the "expired" capability failures reflect better models, or better scaffolding around them?
-
-- **Fix or workaround?** dwroberts noted that Google's models often write code to do counting tasks even when no one asks. That raises the question of whether the LLM itself got better at counting letters or is just being routed to a tool, which dwroberts called a workaround. dcrazy disagreed on the framing. Models have genuinely improved at representing numbers and doing arithmetic, though they still err, and handing arithmetic to a calculator isn't a workaround in their view.
-- **Confounded measurement.** cyanydeez argued that fine-tuning, system prompts, and intermediary harnesses all hide the raw model's independent capability. Labs, they said, probably spend a lot of effort maintaining "suspension of disbelief." On this view, a claim that fails to replicate on a product may reflect the product's engineering rather than the underlying model.
-- **Quip.** _davide_ joked that the article's own claim would itself expire soon, echoing the post's theme of fast-decaying findings.
-
-The thread doesn't resolve whether tool use counts as the model improving. That distinction decides what "no longer holds" means for a deployed system versus a bare model.
-
-### Octomind – open-source AI harness that saves your tokens, static rust
-
-#### [Submission URL](https://github.com/Muvon/octomind) | 55 points | by [donk8r](https://news.ycombinator.com/user?id=donk8r) | [39 comments](https://news.ycombinator.com/item?id=50352898)
-
-**It solved 24 of 25 tasks drawn from merged pull requests, versus 19 for OpenCode on the same model at roughly twice the cost**, according to the project's own benchmarks (self-reported, with per-case tables and a reproduction guide in the repo). Octomind is a single Rust binary that wraps any LLM with repo tools (file edit, shell, code search, sub-agents) via MCP.
-
-The pitch is that it can run unattended. Instead of approval popups, which block CI, policy lives in `.agents/guardrails.toml` plus scripts: pre-call guards, post-result hooks, and post-turn validators that run before any model opinion. On top sits a **supervisor model** that keeps the plan, trims oversized tool output to the relevant lines, and rejects a self-reported "done" until evidence checks out. An optional cheap classifier handles yes/no routing decisions, and an optional intent check can block calls that conflict with your request.
-
-The token-saving angle is mostly context management:
-- Context is assembled once per user message, not per tool round, which keeps the prompt cache intact.
-- Older turns are compressed into summaries that cite content-addressed blocks. Raw messages stay archived, and a recall tool restores them verbatim.
-- Lessons are extracted from your own corrections and scoped per project and role. With evolution enabled, recurring ones become skill or guardrail candidates that are shadow-tested and A/B-trialled against a control before going live.
-
-It runs as an interactive CLI, stdin pipe, daemon, WebSocket server, or ACP agent in your editor. Packaged agents install from a tap, for example `octomind run developer:general`. Backends include OpenRouter, Anthropic, OpenAI, DeepSeek, and Ollama, with per-request and per-session spend caps. Non-interactive runs that exceed budget exit with code 75.
-
-The caveat: 25 tasks is a small sample, and the benchmark compares only against one rival harness. The self-learning layer is the most ambitious part and the least proven.
-
-The thread is mostly skepticism about presentation and benchmark freshness, with the author (donk8r) replying throughout. Few commenters engaged with the architecture itself.
-
-**The README became the main target.** The opening reaction was to the tagline ("Holy tagline… I feel like I'm taking crazy pills"), and the_duke called the README "AI slop" and asked what is actually special. Maiybe gave a long line-by-line critique:
-- "CLI-first" doesn't distinguish it from Claude Code or Codex.
-- "Real access to your repo" implies the others have fake access.
-- "The same session engine…" uses a term before defining it.
-- The piping and WebSocket list describes facts instead of outcomes.
-- The 24-of-25 result is buried well below usage scripts.
-
-Maiybe suggested "headless" or "nearly-headless" as a better descriptor. thatREAguy added that an unclear description suggests an unclear project. The author accepted the feedback and said he had already tuned the README. mtrovo's reading of the project as a headless harness for CI jobs and bug triage, with a policy file replacing human approvals, got the author's confirmation. It was clearer than the README, as maiybe had suggested it would be.
-
-**Benchmark credibility.**
-- closetheloopdev said the model lineup looks outdated and the thinking efforts aren't specified. They also asked for the versions of Claude Code, Codex and OpenCode, since the July runs likely used older ones.
-- The author said he is re-benching on frontier models and that GLM-5.3 performs about like 5.2.
-- unsloppable and thatREAguy asked whether it improves quality or only saves tokens. They care about cost per outcome, not generic savings. The author answered by repeating the benchmark claim and pointing to configurability, supervisors and learning.
-
-**Comparisons requested.** Commenters named oh-my-pi (for its compaction and snapshotting), maki.sh, ante, pi and Codeoid. Codeoid's pitch is switching a live conversation between Claude Code, Codex and Gemini. The author hadn't heard of most of them and said he would look.
-- On oh-my-pi, jszymborski asked whether Octomind can sit upstream of other harnesses and still deliver the savings. That went unanswered.
-- jakswa was fascinated by oh-my-pi's image-based "snapcompact".
-- orbital-decay said it underperforms on models that hide their reasoning chain, and that a properly customized handoff still beats it.
-- lejalv said it works flawlessly for them.
-
-**Installation.** tamimio objected to curl-script installs and wanted Linux package managers. hackernudes argued against distro packaging and in favor of one static or relocatable binary. CBLT suggested `mise` with its cargo backend, though conceded it's no better than `cargo install` if you're installing only one tool. The author said he would keep the static binary and might add package managers as an option.
